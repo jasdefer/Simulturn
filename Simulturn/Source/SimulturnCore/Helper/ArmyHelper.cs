@@ -1,7 +1,7 @@
 ﻿using SimulturnCore.Model;
 
 namespace SimulturnCore.Helper;
-internal static class ArmyHelper
+public static class ArmyHelper
 {
     internal static ushort GetTotalCost(this Army army, Army cost)
     {
@@ -24,5 +24,10 @@ internal static class ArmyHelper
     {
         var enoughMatter = army.GetTotalCost(cost) <= matter;
         return enoughMatter;
+    }
+
+    public static Army ArmyWithRequiredStructures(this Army army, Army requiredStructureIds, Structure structures)
+    {
+        return army * (requiredStructureIds * structures);
     }
 }

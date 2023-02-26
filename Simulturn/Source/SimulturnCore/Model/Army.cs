@@ -60,6 +60,28 @@ public readonly struct Army
         };
     }
 
+    public static Army operator *(Army army, Structure structures)
+    {
+        return new Army()
+        {
+            Triangle = structures[army.Triangle],
+            Square = structures[army.Square],
+            Circle = structures[army.Circle],
+            Line = structures[army.Line]
+        };
+    }
+
+    public Army Max(Army max)
+    {
+        return new Army()
+        {
+            Triangle = Triangle > max.Triangle ? max.Triangle : Triangle,
+            Square = Square > max.Square ? max.Square : Square,
+            Circle = Circle > max.Circle ? max.Circle : Circle,
+            Line = Line > max.Line ? max.Line : Line,
+        };
+    }
+
     public ushort Sum()
     {
         return Convert.ToUInt16(Triangle + Square + Circle + Line);

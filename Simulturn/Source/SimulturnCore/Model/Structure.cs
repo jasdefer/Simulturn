@@ -1,7 +1,11 @@
 ﻿namespace SimulturnCore.Model;
 public readonly struct Structure
 {
-    public Structure(ushort root, ushort cube, ushort pyramid, ushort sphere, ushort plane)
+    public Structure(ushort root,
+        ushort cube,
+        ushort pyramid,
+        ushort sphere,
+        ushort plane)
     {
         Root = root;
         Cube = cube;
@@ -16,6 +20,21 @@ public readonly struct Structure
     public ushort Sphere { get; init; }
     public ushort Plane { get; init; }
 
+    public ushort this[ushort index]
+    {
+        get
+        {
+            return index switch
+            {
+                (ushort)StructureIds.Root => Root,
+                (ushort)StructureIds.Cube => Cube,
+                (ushort)StructureIds.Pyramid => Pyramid,
+                (ushort)StructureIds.Sphere => Sphere,
+                (ushort)StructureIds.Plane => Plane,
+                _ => throw new ArgumentOutOfRangeException(nameof(index)),
+            };
+        }
+    }
     public static Structure operator *(Structure a, Structure b)
     {
         return new Structure()
