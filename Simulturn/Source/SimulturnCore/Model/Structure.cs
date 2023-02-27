@@ -1,11 +1,11 @@
 ﻿namespace SimulturnCore.Model;
 public readonly struct Structure
 {
-    public Structure(ushort root,
-        ushort cube,
-        ushort pyramid,
-        ushort sphere,
-        ushort plane)
+    public Structure(short root,
+        short cube,
+        short pyramid,
+        short sphere,
+        short plane)
     {
         Root = root;
         Cube = cube;
@@ -14,23 +14,23 @@ public readonly struct Structure
         Plane = plane;
     }
 
-    public ushort Root { get; init; }
-    public ushort Cube { get; init; }
-    public ushort Pyramid { get; init; }
-    public ushort Sphere { get; init; }
-    public ushort Plane { get; init; }
+    public short Root { get; init; }
+    public short Cube { get; init; }
+    public short Pyramid { get; init; }
+    public short Sphere { get; init; }
+    public short Plane { get; init; }
 
-    public ushort this[ushort index]
+    public short this[short index]
     {
         get
         {
             return index switch
             {
-                (ushort)StructureIds.Root => Root,
-                (ushort)StructureIds.Cube => Cube,
-                (ushort)StructureIds.Pyramid => Pyramid,
-                (ushort)StructureIds.Sphere => Sphere,
-                (ushort)StructureIds.Plane => Plane,
+                (short)StructureIds.Root => Root,
+                (short)StructureIds.Cube => Cube,
+                (short)StructureIds.Pyramid => Pyramid,
+                (short)StructureIds.Sphere => Sphere,
+                (short)StructureIds.Plane => Plane,
                 _ => throw new ArgumentOutOfRangeException(nameof(index)),
             };
         }
@@ -39,16 +39,16 @@ public readonly struct Structure
     {
         return new Structure()
         {
-            Root = Convert.ToUInt16(a.Root * b.Root),
-            Cube = Convert.ToUInt16(a.Cube * b.Cube),
-            Pyramid = Convert.ToUInt16(a.Pyramid * b.Pyramid),
-            Sphere = Convert.ToUInt16(a.Sphere * b.Sphere),
-            Plane = Convert.ToUInt16(a.Plane * b.Plane)
+            Root = Convert.ToInt16(a.Root * b.Root),
+            Cube = Convert.ToInt16(a.Cube * b.Cube),
+            Pyramid = Convert.ToInt16(a.Pyramid * b.Pyramid),
+            Sphere = Convert.ToInt16(a.Sphere * b.Sphere),
+            Plane = Convert.ToInt16(a.Plane * b.Plane)
         };
     }
 
-    public ushort Sum()
+    public short Sum()
     {
-        return Convert.ToUInt16(Root + Cube + Pyramid + Sphere + Plane);
+        return Convert.ToInt16(Root + Cube + Pyramid + Sphere + Plane);
     }
 }

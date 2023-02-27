@@ -1,7 +1,7 @@
 ﻿using SimulturnCore.Model.Settings;
 
 namespace SimulturnCore.Model;
-internal class Game
+public class Game
 {
     public Game(Player[] players, GameSettings settings)
     {

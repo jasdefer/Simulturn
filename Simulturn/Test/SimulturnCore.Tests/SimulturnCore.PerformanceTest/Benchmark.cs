@@ -5,7 +5,7 @@ namespace SimulturnCore.PerformanceTest;
 [MemoryDiagnoser]
 public class Benchmark
 {
-     public struct ValuesContainer
+    public struct ValuesContainer
     {
         public ValuesContainer(int a, int b, int c, int d, int e)
         {
@@ -26,9 +26,9 @@ public class Benchmark
     [Benchmark]
     public int WithStruct()
     {
-        var jo = new ValuesContainer(1,2,3,4,5);
-        var sum = jo.A+jo.B+jo.C+jo.D+jo.E;
-        
+        var jo = new ValuesContainer(1, 2, 3, 4, 5);
+        var sum = jo.A + jo.B + jo.C + jo.D + jo.E;
+
         return sum;
     }
 

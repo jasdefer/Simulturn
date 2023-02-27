@@ -3,24 +3,24 @@
 namespace SimulturnCore.Helper;
 public static class ArmyHelper
 {
-    internal static ushort GetTotalCost(this Army army, Army cost)
+    internal static short GetTotalCost(this Army army, Army cost)
     {
         return (army * cost).Sum();
     }
 
-    internal static ushort GetProvidedSpace(this Structure structure, Structure providedSpace)
+    internal static short GetProvidedSpace(this Structure structure, Structure providedSpace)
     {
         return (structure * providedSpace).Sum();
     }
 
-    internal static ushort GetRequiredSpace(this Army army, Army requiredSpace)
+    internal static short GetRequiredSpace(this Army army, Army requiredSpace)
     {
         return (army * requiredSpace).Sum();
     }
 
     internal static bool EnoughMatter(this Army army,
         Army cost,
-        ushort matter)
+        short matter)
     {
         var enoughMatter = army.GetTotalCost(cost) <= matter;
         return enoughMatter;
