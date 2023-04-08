@@ -22,4 +22,8 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\Source\SimulturnDomain\SimulturnDomain.csproj" />
+  </ItemGroup>
+
 </Project>

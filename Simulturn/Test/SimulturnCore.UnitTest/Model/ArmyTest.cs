@@ -1,8 +1,10 @@
-﻿namespace SimulturnCore.UnitTest.Model;
+﻿using SimulturnDomain.Entities;
+
+namespace SimulturnCore.UnitTest.Model;
 
 public class ArmyTest
 {
-    private static readonly Army[] armies = new Army[2]
+    private static readonly Army[] _armies = new Army[2]
     {
         new Army(01,02,03,04,05),
         new Army(21,17,13,11,07)
@@ -11,7 +13,7 @@ public class ArmyTest
     [Fact]
     public void PlusOperator()
     {
-        var result = armies[0] + armies[1];
+        var result = _armies[0] + _armies[1];
         result.Triangle.Should().Be(22);
         result.Square.Should().Be(19);
         result.Circle.Should().Be(16);
@@ -22,7 +24,7 @@ public class ArmyTest
     [Fact]
     public void Sum()
     {
-        var sum = armies[0].Sum();
+        var sum = _armies[0].Sum();
         sum.Should().Be(15);
     }
 }
