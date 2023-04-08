@@ -1,7 +1,7 @@
 ﻿using MediatR;
 using SimulturnApplication.Common.Interfaces;
 
-namespace SimulturnApplication.Commands.EndTurn;
+namespace SimulturnApplication.Commands.Game.EndTurn;
 public class EndTurnCommandHandler : IRequestHandler<EndTurnCommand>
 {
     private readonly ICurrentUserService currentUserService;

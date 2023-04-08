@@ -1,4 +1,6 @@
-﻿namespace SimulturnDomain.Settings;
+﻿using SimulturnDomain.Entities;
+
+namespace SimulturnDomain.Settings;
 public class ArmySettings
 {
     public Army Cost { get; set; } = new Army(100, 100, 100, 200, 50);

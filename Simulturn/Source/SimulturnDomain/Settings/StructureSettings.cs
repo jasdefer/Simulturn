@@ -1,4 +1,6 @@
-﻿namespace SimulturnDomain.Settings;
+﻿using SimulturnDomain.Entities;
+
+namespace SimulturnDomain.Settings;
 public class StructureSettings
 {
     public Structure Cost { get; set; }

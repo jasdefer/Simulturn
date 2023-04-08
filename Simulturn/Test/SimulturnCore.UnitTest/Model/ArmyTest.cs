@@ -1,6 +1,4 @@
-﻿using SimulturnCore.Model;
-
-namespace SimulturnCore.UnitTest.Model;
+﻿namespace SimulturnCore.UnitTest.Model;
 
 public class ArmyTest
 {
