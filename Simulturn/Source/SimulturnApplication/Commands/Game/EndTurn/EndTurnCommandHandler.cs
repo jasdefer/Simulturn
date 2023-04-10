@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using SimulturnApplication.Common.GameLogik;
 using SimulturnApplication.Common.Interfaces;
 
 namespace SimulturnApplication.Commands.Game.EndTurn;
@@ -21,10 +22,15 @@ public class EndTurnCommandHandler : IRequestHandler<EndTurnCommand>
         var playerId = _currentUserService.UserId;
         await _playerRepository.EndTurn(request.GameId, playerId);
 
-        var allPlayersEndedTheirTurn = await _gameRepository.AllPlayersEndedTheirTurn(request.GameId);
-        if (allPlayersEndedTheirTurn)
+        var endTurn = await _gameRepository.AllPlayersEndedTheirTurn(request.GameId);
+        if (!endTurn)
         {
-            // End turn
+            return;
         }
+
+        // End turn
+        var game = await _gameRepository.Get(request.GameId);
+        Turn.EndTurn(game);
+        await _gameRepository.Update(game);
     }
 }

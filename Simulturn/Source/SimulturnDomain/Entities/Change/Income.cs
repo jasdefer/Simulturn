@@ -1,7 +1,5 @@
 ﻿namespace SimulturnDomain.Entities.Change;
-public class Income
+public record Income(ushort Gross, ushort Upkeep)
 {
-    public ushort Gross { get; set; }
-    public ushort Upkeep { get; set; }
     public ushort Nett => (ushort)(Gross - Upkeep);
 }
