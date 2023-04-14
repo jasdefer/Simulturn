@@ -1,4 +1,4 @@
-﻿namespace SimulturnDomain.Entities.Change;
+﻿namespace SimulturnDomain.Entities;
 public record Fight(IReadOnlyDictionary<string, Army> ArmyPerPlayer,
     IReadOnlyDictionary<string, Army> LossesPerPlayer)
 {

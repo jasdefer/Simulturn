@@ -1,5 +1,4 @@
 ﻿using SimulturnDomain.Entities;
-using SimulturnDomain.Settings;
 
 namespace SimulturnApplication.Common.Interfaces;
 public interface IGameRepository

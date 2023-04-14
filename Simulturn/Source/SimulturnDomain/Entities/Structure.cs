@@ -49,6 +49,30 @@ public readonly struct Structure
         };
     }
 
+    public static Structure operator +(Structure a, Structure b)
+    {
+        return new Structure()
+        {
+            Root = Convert.ToInt16(a.Root + b.Root),
+            Cube = Convert.ToInt16(a.Cube + b.Cube),
+            Pyramid = Convert.ToInt16(a.Pyramid + b.Pyramid),
+            Sphere = Convert.ToInt16(a.Sphere + b.Sphere),
+            Plane = Convert.ToInt16(a.Plane + b.Plane)
+        };
+    }
+
+    public static Structure operator -(Structure a, Structure b)
+    {
+        return new Structure()
+        {
+            Root = Convert.ToInt16(a.Root - b.Root),
+            Cube = Convert.ToInt16(a.Cube - b.Cube),
+            Pyramid = Convert.ToInt16(a.Pyramid - b.Pyramid),
+            Sphere = Convert.ToInt16(a.Sphere - b.Sphere),
+            Plane = Convert.ToInt16(a.Plane - b.Plane)
+        };
+    }
+
     public short Sum()
     {
         return Convert.ToInt16(Root + Cube + Pyramid + Sphere + Plane);
