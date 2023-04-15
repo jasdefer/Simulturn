@@ -25,23 +25,45 @@ public static class Turn
             if(fighters.Length > 0)
             {
                 var armiesPerPlayer = fighters.ToDictionary(x => x.Name, x=> x.Armies[coordinates]);
-                Fight(armiesPerPlayer, game.Settings);
+                var fight = Fight(armiesPerPlayer, game.Settings.FightExponent);
+                game.FightsPerCoordinatesPerTurn[game.Turn][coordinates] = fight;
             }
         }
     }
 
-    public static void Fight(IReadOnlyDictionary<string,Army> armiesPerPlayer, GameSettings settings)
+    public static Fight Fight(IReadOnlyDictionary<string,Army> armiesPerPlayer, double fightExponent)
     {
         var fighters = armiesPerPlayer.Keys.ToArray();
-        var lossesPerPlayer = new Dictionary<string, Army>();
+        var lossesPerPlayer = fighters.ToDictionary(x => x, x => new Army());
         for (int i = 0; i < fighters.Length - 1; i++)
         {
+            var army1 = armiesPerPlayer[fighters[i]];
             for (int j = i+1; j < fighters.Length; j++)
             {
-                var strength1 = armiesPerPlayer[fighters[i]].GetStrengthOver(armiesPerPlayer[fighters[j]])
+                var army2 = armiesPerPlayer[fighters[j]];
+                (Army losses1, Army losses2) = Fight(army1, army2, fightExponent);
+                losses1 = losses1 + lossesPerPlayer[fighters[i]];
+                lossesPerPlayer[fighters[i]] = losses1.Max(army1);
+                losses2 = losses2 + lossesPerPlayer[fighters[j]];
+                lossesPerPlayer[fighters[j]] = losses2.Max(army1);
             }
         }
-        var fight = new Fight(fighters, lossesPerPlayer);
+        var fight = new Fight(armiesPerPlayer, lossesPerPlayer);
+        return fight;
+    }
+
+    public static (Army losses1, Army losses2) Fight(Army army1, Army army2, double fightExponent)
+    {
+        var strength1 = army1.GetStrengthOver(army2, fightExponent);
+        var strength2 = army2.GetStrengthOver(army1, fightExponent);
+        if(strength1 > strength2)
+        {
+            return (army1.MultiplyAndRoundUp(strength2 / (double)strength1), army2);
+        }
+        else
+        {
+            return (army1, army2.MultiplyAndRoundUp(strength1 / (double)strength2));
+        }
     }
 
     public static void ResolveChange(ushort turn, Player player)

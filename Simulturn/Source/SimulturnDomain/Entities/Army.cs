@@ -112,4 +112,16 @@ public readonly struct Army
         strength = (ushort)Math.Pow(strength, exponent);
         return strength;
     }
+
+    public Army MultiplyAndRoundUp(double fraction)
+    {
+        return new Army()
+        {
+            Circle = (short)Math.Ceiling(fraction * Circle),
+            Triangle = (short)Math.Ceiling(fraction * Triangle),
+            Square = (short)Math.Ceiling(fraction * Square),
+            Line = (short)Math.Ceiling(fraction * Line),
+            Point = (short)Math.Ceiling(fraction * Point),
+        };
+    }
 }
