@@ -11,8 +11,37 @@ public static class Turn
         {
             AddIncome(game.Turn, player, game.Settings);
             ResolveChange(game.Turn, player);
+            player.EndedCurrentTurn = false;
         }
+        Fight(game);
         game.Turn++;
+    }
+
+    public static void Fight(Game game)
+    {
+        foreach (var coordinates in game.Settings.Coordinates)
+        {
+            var fighters = game.Players.Where(x => x.Armies[coordinates].Any()).ToArray();
+            if(fighters.Length > 0)
+            {
+                var armiesPerPlayer = fighters.ToDictionary(x => x.Name, x=> x.Armies[coordinates]);
+                Fight(armiesPerPlayer, game.Settings);
+            }
+        }
+    }
+
+    public static void Fight(IReadOnlyDictionary<string,Army> armiesPerPlayer, GameSettings settings)
+    {
+        var fighters = armiesPerPlayer.Keys.ToArray();
+        var lossesPerPlayer = new Dictionary<string, Army>();
+        for (int i = 0; i < fighters.Length - 1; i++)
+        {
+            for (int j = i+1; j < fighters.Length; j++)
+            {
+                var strength1 = armiesPerPlayer[fighters[i]].GetStrengthOver(armiesPerPlayer[fighters[j]])
+            }
+        }
+        var fight = new Fight(fighters, lossesPerPlayer);
     }
 
     public static void ResolveChange(ushort turn, Player player)

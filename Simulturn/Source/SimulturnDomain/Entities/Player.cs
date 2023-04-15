@@ -1,7 +1,7 @@
 ﻿namespace SimulturnDomain.Entities;
 public class Player
 {
-    public required string Id { get; set; }
+    public required string Name { get; set; }
     public Dictionary<Coordinates, Army> Armies { get; set; } = new Dictionary<Coordinates, Army>();
     public Dictionary<Coordinates, Structure> Structures { get; set; } = new Dictionary<Coordinates, Structure>();
     public ushort Matter { get; set; } = 0;

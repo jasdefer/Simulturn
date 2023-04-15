@@ -1,4 +1,6 @@
-﻿namespace SimulturnDomain.Entities;
+﻿using System.Diagnostics;
+
+namespace SimulturnDomain.Entities;
 public readonly struct Army
 {
     public Army(short triangle = 0, short square = 0, short circle = 0, short line = 0, short point = 0)
@@ -88,8 +90,26 @@ public readonly struct Army
         };
     }
 
+    public bool Any()
+    {
+        return Point > 0 ||
+            Line > 0 ||
+            Circle > 0 ||
+            Square > 0 ||
+            Triangle > 0;
+    }
+
     public short Sum()
     {
         return Convert.ToInt16(Triangle + Square + Circle + Line + Point);
+    }
+
+    public ushort GetStrengthOver(Army army, double exponent)
+    {
+        ushort strength = (ushort)(Math.Max(0, Triangle - army.Square) +
+            Math.Max(0, Square - army.Circle) +
+            Math.Max(0, Circle - army.Triangle));
+        strength = (ushort)Math.Pow(strength, exponent);
+        return strength;
     }
 }
