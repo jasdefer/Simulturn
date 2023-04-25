@@ -13,10 +13,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Common\Helper\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\SimulturnDomain\SimulturnDomain.csproj" />
   </ItemGroup>
 

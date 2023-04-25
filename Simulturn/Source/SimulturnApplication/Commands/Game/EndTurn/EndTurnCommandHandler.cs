@@ -1,5 +1,4 @@
 ﻿using MediatR;
-using SimulturnApplication.Common.GameLogik;
 using SimulturnApplication.Common.Interfaces;
 
 namespace SimulturnApplication.Commands.Game.EndTurn;
@@ -13,9 +12,9 @@ public class EndTurnCommandHandler : IRequestHandler<EndTurnCommand>
         IPlayerRepository playerRepository,
         IGameRepository gameRepository)
     {
-        this._currentUserService = currentUserService;
-        this._playerRepository = playerRepository;
-        this._gameRepository = gameRepository;
+        _currentUserService = currentUserService;
+        _playerRepository = playerRepository;
+        _gameRepository = gameRepository;
     }
     public async Task Handle(EndTurnCommand request, CancellationToken cancellationToken)
     {
@@ -28,9 +27,19 @@ public class EndTurnCommandHandler : IRequestHandler<EndTurnCommand>
             return;
         }
 
-        // End turn
-        var game = await _gameRepository.Get(request.GameId);
-        Turn.EndTurn(game);
-        await _gameRepository.Update(game);
+        EndTurn(request.GameId);
+
+    }
+
+    private async Task EndTurn(string gameId)
+    {
+        var settings = await _gameRepository.GetSettings(gameId);
+        var players = await _gameRepository.GetPlayers(gameId);
+        foreach (var player in players)
+        {
+            var income = GetIncome(settings.ArmySettings.Income, );
+            _playerRepository.AddIncome(gameId, player, income);
+            ResolveChanges();
+        }
     }
 }

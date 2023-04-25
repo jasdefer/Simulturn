@@ -1,9 +1,6 @@
 ﻿using SimulturnDomain.Entities;
 
 namespace SimulturnDomain.Settings;
-public class StructureSettings
-{
-    public Structure Cost { get; set; }
-    public Structure ProvidedSpace { get; set; }
-    public Structure ConstructionDuration { get; set; }
-}
+public record StructureSettings(Structure Cost,
+    Structure ProvidedSpace,
+    Structure ConstructionDuration);

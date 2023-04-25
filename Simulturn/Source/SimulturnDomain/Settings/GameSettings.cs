@@ -1,11 +1,8 @@
 ﻿using SimulturnDomain.Entities;
 
 namespace SimulturnDomain.Settings;
-public class GameSettings
-{
-    public double FightExponent { get; set; }
-    public ArmySettings Army { get; set; } = new ArmySettings();
-    public StructureSettings Structure { get; set; } = new StructureSettings();
-    public Dictionary<Coordinates, Army> MaxNumberOfUnitsGeneratingIncome { get; set; } = new Dictionary<Coordinates, Army>();
-    public IEnumerable<Coordinates> Coordinates { get; set; } = new List<Coordinates>();
-}
+public record GameSettings(double FightExponent,
+    ArmySettings ArmySettings,
+    StructureSettings StructureSettings,
+    IReadOnlyList<UpkeepLevel> UpkeepLevels,
+    IReadOnlyDictionary<Coordinates, HexagonSettings> HexagonSettingsPerCoordinates);
