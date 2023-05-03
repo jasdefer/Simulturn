@@ -28,7 +28,6 @@ public class EndTurnCommandHandler : IRequestHandler<EndTurnCommand>
         }
 
         EndTurn(request.GameId);
-
     }
 
     private async Task EndTurn(string gameId)
@@ -37,7 +36,7 @@ public class EndTurnCommandHandler : IRequestHandler<EndTurnCommand>
         var players = await _gameRepository.GetPlayers(gameId);
         foreach (var player in players)
         {
-            var income = GetIncome(settings.ArmySettings.Income, );
+            var income = GetIncome(settings.ArmySettings.Income, player.);
             _playerRepository.AddIncome(gameId, player, income);
             ResolveChanges();
         }
