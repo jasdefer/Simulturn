@@ -1,5 +1,7 @@
 ﻿using MediatR;
 using SimulturnApplication.Common.Interfaces;
+using SimulturnDomain.Entities;
+using SimulturnDomain.Settings;
 
 namespace SimulturnApplication.Commands.Game.EndTurn;
 public class EndTurnCommandHandler : IRequestHandler<EndTurnCommand>
@@ -27,18 +29,41 @@ public class EndTurnCommandHandler : IRequestHandler<EndTurnCommand>
             return;
         }
 
-        EndTurn(request.GameId);
+        await EndTurn(request.GameId);
     }
 
-    private async Task EndTurn(string gameId)
+    public async Task EndTurn(string gameId)
     {
-        var settings = await _gameRepository.GetSettings(gameId);
-        var players = await _gameRepository.GetPlayers(gameId);
-        foreach (var player in players)
+        var game = await _gameRepository.GetGame(gameId);
+        var settings = game.Settings;
+        foreach (var player in game.Players)
         {
-            var income = GetIncome(settings.ArmySettings.Income, player.);
-            _playerRepository.AddIncome(gameId, player, income);
-            ResolveChanges();
+            var grossIncomePerCoordinates = GetGrossIncome(settings.ArmySettings.Income,
+                game.MatterPerCoordinates,
+                game.Settings.HexagonSettingsPerCoordinates,
+                player.Armies);
+            await _gameRepository.SubtractMatter(grossIncomePerCoordinates);
+            var totalGrossIncome = grossIncomePerCoordinates.Sum(x => x.Value);
+            var income = GetIncome(totalGrossIncome,
+                player.Armies,
+                settings.UpkeepLevels,
+                settings.ArmySettings.RequiredSpace);
+            await _playerRepository.AddIncome(gameId, player.Name, game.Turn, income);
         }
+    }
+
+    public static Income GetIncome(int totalGrossIncome, IReadOnlyDictionary<Coordinates, Army> armies, IReadOnlyList<UpkeepLevel> upkeepLevels, Army requiredSpace)
+    {
+        throw new NotImplementedException();
+    }
+
+    public static IReadOnlyDictionary<Coordinates, ushort> GetGrossIncome(Army income, IReadOnlyDictionary<Coordinates, ushort> matterPerCoordinates, IReadOnlyDictionary<Coordinates, HexagonSettings> hexagonSettingsPerCoordinates, IReadOnlyDictionary<Coordinates, Army> armies)
+    {
+        var grossIncomePerCoordinates = new Dictionary<Coordinates, ushort>();
+        foreach (var matterCoordinates in matterPerCoordinates.Where(x => x.Value > 0))
+        {
+            throw new NotImplementedException();
+        }
+        return grossIncomePerCoordinates;
     }
 }

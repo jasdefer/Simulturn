@@ -6,7 +6,6 @@ public interface IGameRepository
 {
     Task<bool> AllPlayersEndedTheirTurn(string gameId);
     Task<string> CreateGame(GameSettings gameSettings, IEnumerable<string> playerNames);
-    Task<IReadOnlyCollection<Player>> GetPlayers(string gameId);
-    Task<GameSettings> GetSettings(string gameId);
-    Task<IReadOnlyDictionary<Coordinates, ushort>> GetMatterPerCoordinates(string gameId);
+    Task<Game> GetGame(string gameId);
+    Task SubtractMatter(IReadOnlyDictionary<Coordinates, ushort> matterPerCoordinates);
 }

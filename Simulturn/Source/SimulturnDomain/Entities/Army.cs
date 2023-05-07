@@ -1,6 +1,4 @@
-﻿using System.Diagnostics;
-
-namespace SimulturnDomain.Entities;
+﻿namespace SimulturnDomain.Entities;
 public readonly struct Army
 {
     public Army(short triangle = 0, short square = 0, short circle = 0, short line = 0, short point = 0)
