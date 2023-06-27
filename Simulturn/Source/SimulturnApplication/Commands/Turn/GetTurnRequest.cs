@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿
+sing MediatR;
 
 namespace SimulturnApplication.Commands.Turn;
 public record GetTurnRequest(string GameId) : IRequest<TurnVm>;

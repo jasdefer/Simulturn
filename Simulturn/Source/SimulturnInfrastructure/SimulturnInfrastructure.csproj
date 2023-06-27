@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\SimulturnApplication\SimulturnApplication.csproj" />
+  </ItemGroup>
+
 </Project>
