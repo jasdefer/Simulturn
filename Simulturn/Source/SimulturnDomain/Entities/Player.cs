@@ -1,4 +1,6 @@
-﻿namespace SimulturnDomain.Entities;
+﻿using System.Collections.Immutable;
+
+namespace SimulturnDomain.Entities;
 public class Player
 {
     private readonly Dictionary<TurnCoordinates, Army> _trainings;
@@ -24,5 +26,20 @@ public class Player
     public void AddTraining(ushort turn, Coordinates coordinates, Army army)
     {
         AddTraining(new TurnCoordinates(turn, coordinates), army);
+    }
+
+    public ImmutableDictionary<TurnCoordinates, Structure> GetConstructions()
+    {
+        return _constructions.ToImmutableDictionary();
+    }
+
+    public ImmutableDictionary<TurnCoordinates, Army> GetTrainings()
+    {
+        return _trainings.ToImmutableDictionary();
+    }
+
+    public ImmutableDictionary<TurnDirection, Army> GetMovements()
+    {
+        return _movements.ToImmutableDictionary();
     }
 }

@@ -1,4 +1,5 @@
 ﻿using SimulturnDomain.Enums;
+using System.Runtime.CompilerServices;
 
 namespace SimulturnDomain.Entities;
 public readonly struct Structure
@@ -90,6 +91,19 @@ public readonly struct Structure
         };
     }
 
+    public static Structure operator +(Structure structure, ushort b)
+    {
+        return new Structure()
+        {
+            Root = Convert.ToInt16(structure.Root + b),
+            Cube = Convert.ToInt16(structure.Cube + b),
+            Pyramid = Convert.ToInt16(structure.Pyramid + b),
+            Sphere = Convert.ToInt16(structure.Sphere + b),
+            Plane = Convert.ToInt16(structure.Plane + b),
+            Axis = Convert.ToInt16(structure.Axis + b)
+        };
+    }
+
     public static Structure operator -(Structure a, Structure b)
     {
         return new Structure()
@@ -99,7 +113,20 @@ public readonly struct Structure
             Pyramid = Convert.ToInt16(a.Pyramid - b.Pyramid),
             Sphere = Convert.ToInt16(a.Sphere - b.Sphere),
             Plane = Convert.ToInt16(a.Plane - b.Plane),
-            Axis = Convert.ToInt16(a.Axis - b.Axis)
+            Axis = Convert.ToInt16(a.Axis- b.Axis)
+        };
+    }
+
+    public static Structure Combine(Structure a, Structure b, Func<short, short, short> func)
+    {
+        return new Structure()
+        {
+            Root =  func(a.Root, b.Root),
+            Cube =  func(a.Cube, b.Cube),
+            Pyramid =  func(a.Pyramid, b.Pyramid),
+            Sphere =  func(a.Sphere, b.Sphere),
+            Plane = func(a.Plane, b.Plane),
+            Axis = func(a.Axis, b.Axis),
         };
     }
 

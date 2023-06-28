@@ -19,6 +19,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimulturnApplication.Integr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimulturnInfrastructure.UnitTests", "Test\SimulturnInfrastructure.UnitTests\SimulturnInfrastructure.UnitTests.csproj", "{BC7DDC65-13B3-42E9-B459-A2A93221C28A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Simulturn.PerformanceTests", "Test\Simulturn.PerformanceTests\Simulturn.PerformanceTests.csproj", "{4B61DFA1-141B-48D8-B1AC-FD1DE2BD73F3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -49,6 +51,10 @@ Global
 		{BC7DDC65-13B3-42E9-B459-A2A93221C28A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BC7DDC65-13B3-42E9-B459-A2A93221C28A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BC7DDC65-13B3-42E9-B459-A2A93221C28A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4B61DFA1-141B-48D8-B1AC-FD1DE2BD73F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4B61DFA1-141B-48D8-B1AC-FD1DE2BD73F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4B61DFA1-141B-48D8-B1AC-FD1DE2BD73F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4B61DFA1-141B-48D8-B1AC-FD1DE2BD73F3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -60,6 +66,7 @@ Global
 		{A351C9C9-9F4F-4607-B0FA-657C802E7434} = {E7B11D7B-7DC0-4D4B-BDAC-CA1509502E4B}
 		{F0E06467-7CD0-4045-80F0-4A88C9EED2FE} = {E7B11D7B-7DC0-4D4B-BDAC-CA1509502E4B}
 		{BC7DDC65-13B3-42E9-B459-A2A93221C28A} = {E7B11D7B-7DC0-4D4B-BDAC-CA1509502E4B}
+		{4B61DFA1-141B-48D8-B1AC-FD1DE2BD73F3} = {E7B11D7B-7DC0-4D4B-BDAC-CA1509502E4B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {38413902-B850-4973-AFC4-2F9A8D2015A4}
