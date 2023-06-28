@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 namespace SimulturnDomain.Settings;
 public record GameSettings(
     double FightExponent,
+    double StartMatter,
     ArmySettings ArmySettings,
     StructureSettings StructureSettings,
     ImmutableArray<UpkeepLevel> UpkeepLevels,
@@ -21,6 +22,7 @@ public record GameSettings(
         {
         }.ToImmutableDictionary();
         return new GameSettings(2,
+            500,
             ArmySettings.Default(),
             StructureSettings.Default(),
             upkeepLevels,

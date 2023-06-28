@@ -7,7 +7,6 @@ public static class ConfigureServices
 {
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services)
     {
-        services.AddSingleton<ICurrentUserService, InMemoryCurrentUserService>();
         services.AddSingleton<IGameRepository, InMemoryGameRepository>();
 
         return services;
