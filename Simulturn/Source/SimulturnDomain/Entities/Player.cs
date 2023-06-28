@@ -3,9 +3,18 @@
 namespace SimulturnDomain.Entities;
 public class Player
 {
-    private readonly Dictionary<TurnCoordinates, Army> _trainings;
-    private readonly Dictionary<TurnCoordinates, Structure> _constructions;
-    private readonly Dictionary<TurnDirection, Army> _movements;
+    /// <summary>
+    /// For each turn and coordinate store the number of completed trainings
+    /// </summary>
+    private readonly Dictionary<ushort, Dictionary<Coordinates, Army>> _trainings;
+    /// <summary>
+    /// For each turn and coordinate store the number of completed constructions
+    /// </summary>
+    private readonly Dictionary<ushort, Dictionary<Coordinates, Structure>> _constructions;
+    /// <summary>
+    /// For each turn, origin coordinates and destination coordinates store moving armies
+    /// </summary>
+    private readonly Dictionary<ushort, Dictionary<Coordinates, Dictionary<Coordinates, Army>>> _movements;
 
     public string Name { get; }
     public bool HasEndedTurn { get; set; }
@@ -13,33 +22,78 @@ public class Player
     public Player(string name)
     {
         Name = name;
-        _trainings = new Dictionary<TurnCoordinates, Army>();
-        _constructions = new Dictionary<TurnCoordinates, Structure>();
-        _movements = new Dictionary<TurnDirection, Army>();
-    }
-
-    public void AddTraining(TurnCoordinates turnCoordinates, Army army)
-    {
-        _trainings.Add(turnCoordinates, army);
+        _trainings = new Dictionary<ushort, Dictionary<Coordinates, Army>>();
+        _constructions = new Dictionary<ushort, Dictionary<Coordinates, Structure>>();
+        _movements = new Dictionary<ushort, Dictionary<Coordinates, Dictionary<Coordinates, Army>>>();
     }
 
     public void AddTraining(ushort turn, Coordinates coordinates, Army army)
     {
-        AddTraining(new TurnCoordinates(turn, coordinates), army);
+        if (!_trainings.ContainsKey(turn))
+        {
+            _trainings.Add(turn, new Dictionary<Coordinates, Army>());
+        }
+        if (!_trainings[turn].ContainsKey(coordinates))
+        {
+            _trainings[turn][coordinates] = army;
+        }
+        else
+        {
+            _trainings[turn][coordinates] += army;
+        }
     }
 
-    public ImmutableDictionary<TurnCoordinates, Structure> GetConstructions()
+    public ImmutableDictionary<Coordinates, Army> GetTrainings(ushort turn)
     {
-        return _constructions.ToImmutableDictionary();
+        if (_trainings.ContainsKey(turn))
+        { 
+            return _trainings[turn].ToImmutableDictionary();
+        }
+        return ImmutableDictionary<Coordinates, Army>.Empty;
     }
 
-    public ImmutableDictionary<TurnCoordinates, Army> GetTrainings()
+    public void AddConstruction(ushort turn, Coordinates coordinates, Structure structure)
     {
-        return _trainings.ToImmutableDictionary();
+        if (!_constructions.ContainsKey(turn))
+        {
+            _constructions.Add(turn, new Dictionary<Coordinates, Structure>());
+        }
+        if (!_constructions[turn].ContainsKey(coordinates))
+        {
+            _constructions[turn][coordinates] = structure;
+        }
+        else
+        {
+            _constructions[turn][coordinates] += structure;
+        }
     }
 
-    public ImmutableDictionary<TurnDirection, Army> GetMovements()
+    public ImmutableDictionary<Coordinates, Structure> GetConstructions(ushort turn)
     {
-        return _movements.ToImmutableDictionary();
+        if (_constructions.ContainsKey(turn))
+        {
+            return _constructions[turn].ToImmutableDictionary();
+        }
+        return ImmutableDictionary<Coordinates, Structure>.Empty;
+    }
+
+    public void AddMovement(ushort turn, Coordinates origin, Coordinates destination, Army army)
+    {
+        if (!_movements.ContainsKey(turn))
+        {
+            _movements.Add(turn, new Dictionary<Coordinates, Dictionary<Coordinates, Army>>());
+        }
+        if (!_movements[turn].ContainsKey(origin))
+        {
+            _movements[turn].Add(origin, new Dictionary<Coordinates, Army>());
+        }
+        if (!_movements[turn][origin].ContainsKey(destination))
+        {
+            _movements[turn][origin].Add(destination, army);
+        }
+        else
+        {
+            _movements[turn][origin][destination] += army;
+        }
     }
 }
