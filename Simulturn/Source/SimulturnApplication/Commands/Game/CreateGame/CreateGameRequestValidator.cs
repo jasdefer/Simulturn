@@ -1,7 +1,7 @@
 ﻿using FluentValidation;
 
 namespace SimulturnApplication.Commands.Game.CreateGame;
-public class CreateGameRequestValidator : AbstractValidator<CreateGameRequest>  
+public class CreateGameRequestValidator : AbstractValidator<CreateGameRequest>
 {
     public CreateGameRequestValidator()
     {

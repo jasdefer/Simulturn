@@ -13,6 +13,6 @@ public class Game
 
     public string Id { get; }
     public ushort Turn { get; set; } = 0;
-    ImmutableArray<Player> Players { get; }
-    GameSettings GameSettings { get;  }
+    public ImmutableArray<Player> Players { get; }
+    public GameSettings GameSettings { get; }
 }

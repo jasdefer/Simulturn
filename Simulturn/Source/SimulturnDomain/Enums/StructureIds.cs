@@ -5,5 +5,6 @@ public enum StructureIds
     Cube,
     Pyramid,
     Sphere,
-    Plane
+    Plane,
+    Axis
 }

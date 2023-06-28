@@ -5,6 +5,6 @@ public class GetTurnRequestValidator : AbstractValidator<GetTurnRequest>
 {
     public GetTurnRequestValidator()
     {
-        
+
     }
 }

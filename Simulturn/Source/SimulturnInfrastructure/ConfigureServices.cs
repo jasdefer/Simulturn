@@ -1,14 +1,14 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SimulturnApplication.Common.Interfaces;
+using SimulturnInfrastructure.Persistance.InMemory;
 
 namespace SimulturnInfrastructure;
-public class ConfigureServices
+public static class ConfigureServices
 {
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services)
     {
-        services.AddSingleton<ICurrentUserService, InMemoryMasterDataRepository>();
-        services.AddSingleton<IGameRepository, MasterDataLibrary>();
-        services.AddSingleton<IPlayerRepository, SyncfusionStreamToDataConverter>();
+        services.AddSingleton<ICurrentUserService, InMemoryCurrentUserService>();
+        services.AddSingleton<IGameRepository, InMemoryGameRepository>();
 
         return services;
     }

@@ -2,8 +2,29 @@
 using System.Collections.Immutable;
 
 namespace SimulturnDomain.Settings;
-public record GameSettings(double FightExponent,
+public record GameSettings(
+    double FightExponent,
     ArmySettings ArmySettings,
     StructureSettings StructureSettings,
-    ImmutableList<UpkeepLevel> UpkeepLevels,
-    ImmutableDictionary<Coordinates, HexagonSettings> HexagonSettingsPerCoordinates);
+    ImmutableArray<UpkeepLevel> UpkeepLevels,
+    ImmutableDictionary<Coordinates, HexagonSettings> HexagonSettingsPerCoordinates,
+    int? Seed = null)
+{
+    public static GameSettings Default(int? seed = null)
+    {
+        var upkeepLevels = new UpkeepLevel[]
+        {
+            new UpkeepLevel(50, 0.2),
+            new UpkeepLevel(80, 0.5)
+        }.ToImmutableArray();
+        var hexagonSettings = new Dictionary<Coordinates, HexagonSettings>()
+        {
+        }.ToImmutableDictionary();
+        return new GameSettings(2,
+            ArmySettings.Default(),
+            StructureSettings.Default(),
+            upkeepLevels,
+            hexagonSettings,
+            seed);
+    }
+};

@@ -6,6 +6,7 @@ public class Player
     private readonly Dictionary<TurnDirection, Army> _movements;
 
     public string Name { get; }
+    public bool HasEndedTurn { get; set; }
 
     public Player(string name)
     {
