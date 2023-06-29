@@ -1,5 +1,7 @@
-﻿namespace SimulturnDomain.Entities;
-public readonly struct Army
+﻿using System.Numerics;
+
+namespace SimulturnDomain.Entities;
+public readonly struct Army : IAdditionOperators<Army, Army, Army>, ISubtractionOperators<Army, Army, Army>
 {
     public Army(short triangle = 0, short square = 0, short circle = 0, short line = 0, short point = 0)
     {

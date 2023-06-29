@@ -96,4 +96,13 @@ public class Player
             _movements[turn][origin][destination] += army;
         }
     }
+
+    public ImmutableDictionary<Coordinates, ImmutableDictionary<Coordinates, Army>> GetMovements(ushort turn)
+    {
+        if (!_movements.ContainsKey(turn))
+        {
+            return ImmutableDictionary<Coordinates, ImmutableDictionary<Coordinates, Army>>.Empty;
+        }
+        return _movements[turn].ToDictionary(x => x.Key, x => x.Value.ToImmutableDictionary()).ToImmutableDictionary();
+    }
 }

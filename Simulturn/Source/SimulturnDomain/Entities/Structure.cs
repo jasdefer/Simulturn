@@ -1,8 +1,8 @@
 ﻿using SimulturnDomain.Enums;
-using System.Runtime.CompilerServices;
+using System.Numerics;
 
 namespace SimulturnDomain.Entities;
-public readonly struct Structure
+public readonly struct Structure : IAdditionOperators<Structure, Structure, Structure>, ISubtractionOperators<Structure, Structure, Structure>
 {
     public Structure(short root,
         short cube,
