@@ -3,7 +3,7 @@
 namespace SimulturnDomain.Helper;
 public static class DictionaryHelper
 {
-    public static void AddOrAdd<TKey, TValue>(this IDictionary<TKey,TValue> dictionary, TKey key, TValue value)
+    public static void AddOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, TValue value)
         where TValue : IAdditionOperators<TValue, TValue, TValue>
         where TKey : notnull
     {
@@ -39,7 +39,7 @@ public static class DictionaryHelper
     }
 
     public static void Subtract<TKey, TValue>(this IDictionary<TKey, TValue> a, IReadOnlyDictionary<TKey, TValue> b)
-        where TValue : struct, ISubtractionOperators<TValue, TValue, TValue> 
+        where TValue : struct, ISubtractionOperators<TValue, TValue, TValue>
         where TKey : notnull
     {
         foreach (var keyValuePair in b)

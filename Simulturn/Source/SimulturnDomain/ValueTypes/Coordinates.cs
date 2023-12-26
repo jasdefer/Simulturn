@@ -1,4 +1,4 @@
-﻿namespace SimulturnDomain.Entities;
+﻿namespace SimulturnDomain.ValueTypes;
 public readonly struct Coordinates
 {
     public Coordinates(ushort x, ushort y, ushort z)

@@ -1,4 +1,4 @@
-﻿using SimulturnDomain.Entities;
+﻿using SimulturnDomain.ValueTypes;
 
 namespace SimulturnDomain.Settings;
 public record ArmySettings(Army Cost,

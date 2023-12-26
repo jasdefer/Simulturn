@@ -1,4 +1,4 @@
-﻿using SimulturnDomain.Entities;
+﻿using SimulturnDomain.ValueTypes;
 using System.Collections.Immutable;
 
 namespace SimulturnDomain.Settings;
