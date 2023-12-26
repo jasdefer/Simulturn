@@ -1,14 +1,39 @@
 ﻿namespace SimulturnDomain.ValueTypes;
-public readonly struct Coordinates
+public readonly struct Coordinates : IEquatable<Coordinates>
 {
-    public Coordinates(ushort x, ushort y, ushort z)
+    public Coordinates(short x, short y)
     {
         X = x;
         Y = y;
-        Z = z;
     }
 
-    public ushort X { get; init; }
-    public ushort Y { get; init; }
-    public ushort Z { get; init; }
+    public short X { get; init; }
+    public short Y { get; init; }
+    public short Z => Convert.ToInt16(-X - Y);
+
+    public override bool Equals(object? obj)
+    {
+        return obj is Coordinates coordinates && Equals(coordinates);
+    }
+
+    public bool Equals(Coordinates other)
+    {
+        return X == other.X &&
+               Y == other.Y;
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(X, Y);
+    }
+
+    public static bool operator ==(Coordinates left, Coordinates right)
+    {
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(Coordinates left, Coordinates right)
+    {
+        return !(left == right);
+    }
 }
