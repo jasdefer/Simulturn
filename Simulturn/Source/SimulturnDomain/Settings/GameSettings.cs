@@ -1,4 +1,5 @@
-﻿using SimulturnDomain.ValueTypes;
+﻿using SimulturnDomain.DataStructures;
+using SimulturnDomain.ValueTypes;
 using System.Collections.Immutable;
 
 namespace SimulturnDomain.Settings;
@@ -8,7 +9,7 @@ public record GameSettings(
     ArmySettings ArmySettings,
     StructureSettings StructureSettings,
     ImmutableArray<UpkeepLevel> UpkeepLevels,
-    ImmutableDictionary<Coordinates, HexagonSettings> HexagonSettingsPerCoordinates,
+    HexMap<HexagonSettings> HexagonSettingsPerCoordinates,
     int Seed = 1)
 {
     public IEnumerable<Coordinates> Coordinates => HexagonSettingsPerCoordinates.Keys;
@@ -42,13 +43,13 @@ public record GameSettings(
             { new Coordinates(+2,-2), new HexagonSettings(1000, points, true) },
             { new Coordinates(+2,-1), new HexagonSettings(1000, points, true) },
             { new Coordinates(+2,+0), new HexagonSettings(1000, points, true) },
-        }.ToImmutableDictionary();
+        };
         return new GameSettings(2,
             500,
             ArmySettings.Default(),
             StructureSettings.Default(),
             upkeepLevels,
-            hexagonSettings,
+            new HexMap<HexagonSettings>(hexagonSettings),
             seed);
     }
 };

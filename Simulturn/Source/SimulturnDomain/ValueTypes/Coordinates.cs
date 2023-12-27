@@ -1,4 +1,6 @@
-﻿namespace SimulturnDomain.ValueTypes;
+﻿using SimulturnDomain.Enums;
+
+namespace SimulturnDomain.ValueTypes;
 public readonly struct Coordinates : IEquatable<Coordinates>
 {
     public Coordinates(short x, short y)
@@ -35,5 +37,19 @@ public readonly struct Coordinates : IEquatable<Coordinates>
     public static bool operator !=(Coordinates left, Coordinates right)
     {
         return !(left == right);
+    }
+
+    public Coordinates GetNeighbor(HexDirection direction)
+    {
+        return direction switch
+        {
+            HexDirection.NorthEast => new Coordinates(X, Convert.ToInt16(Y - 1)),
+            HexDirection.East => new Coordinates(Convert.ToInt16(X + 1), Convert.ToInt16(Y - 1)),
+            HexDirection.SouthEast => new Coordinates(Convert.ToInt16(X + 1), Y),
+            HexDirection.SouthWest => new Coordinates(X, Convert.ToInt16(Y + 1)),
+            HexDirection.West => new Coordinates(Convert.ToInt16(X - 1), Convert.ToInt16(Y + 1)),
+            HexDirection.NorthWest => new Coordinates(Convert.ToInt16(X - 1), Y),
+            _ => throw new ArgumentException("Invalid hex direction")
+        };
     }
 }
