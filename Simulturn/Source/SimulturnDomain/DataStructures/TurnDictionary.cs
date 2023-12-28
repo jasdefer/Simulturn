@@ -37,5 +37,7 @@ public class TurnDictionary
              .ToImmutableDictionary(x => x.PlayerId, x => x.Order);
     }
 
+    public ushort NumberOfTurns => Convert.ToUInt16(_ordersPerPlayer.Max(x => x.Value.Count));
+
     public ImmutableHashSet<string> PlayerIds { get; }
 }
