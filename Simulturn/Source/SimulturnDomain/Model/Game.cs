@@ -1,6 +1,8 @@
-﻿using SimulturnDomain.Settings;
+﻿using SimulturnDomain.DataStructures;
+using SimulturnDomain.Settings;
+using System.Collections.Immutable;
 
 namespace SimulturnDomain.Model;
 public record Game(string Id,
-    IReadOnlySet<string> PlayerIds,
+    TurnMap<ImmutableDictionary<string, List<Order>>> TurnsPerPlayer,
     GameSettings GameSettings);
