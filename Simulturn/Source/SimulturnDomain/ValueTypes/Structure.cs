@@ -49,19 +49,19 @@ public readonly struct Structure : IAdditionOperators<Structure, Structure, Stru
     /// </summary>
     public short Axis { get; init; }
 
-    public short this[short index]
+    public short this[StructureId structureId]
     {
         get
         {
-            return index switch
+            return structureId switch
             {
-                (short)StructureIds.Root => Root,
-                (short)StructureIds.Cube => Cube,
-                (short)StructureIds.Pyramid => Pyramid,
-                (short)StructureIds.Sphere => Sphere,
-                (short)StructureIds.Plane => Plane,
-                (short)StructureIds.Axis => Axis,
-                _ => throw new ArgumentOutOfRangeException(nameof(index)),
+                StructureId.Root => Root,
+                StructureId.Cube => Cube,
+                StructureId.Pyramid => Pyramid,
+                StructureId.Sphere => Sphere,
+                StructureId.Plane => Plane,
+                StructureId.Axis => Axis,
+                _ => throw new ArgumentOutOfRangeException(nameof(structureId)),
             };
         }
     }
