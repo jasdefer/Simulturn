@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using SimulturnDomain.Enums;
+using System.Numerics;
 
 namespace SimulturnDomain.ValueTypes;
 public readonly struct Army : IAdditionOperators<Army, Army, Army>, ISubtractionOperators<Army, Army, Army>
@@ -18,6 +19,8 @@ public readonly struct Army : IAdditionOperators<Army, Army, Army>, ISubtraction
     public short Circle { get; init; }
     public short Line { get; init; }
 
+    public short this[Unit unit] => GetUnitCount(unit);
+
     public static Army operator +(Army a, Army b)
     {
         return new Army()
@@ -27,6 +30,32 @@ public readonly struct Army : IAdditionOperators<Army, Army, Army>, ISubtraction
             Circle = Convert.ToInt16(a.Circle + b.Circle),
             Line = Convert.ToInt16(a.Line + b.Line),
             Point = Convert.ToInt16(a.Point + b.Point)
+        };
+    }
+
+    public short GetUnitCount(Unit unit)
+    {
+        return unit switch
+        {
+            Unit.Triangle => Triangle,
+            Unit.Square => Square,
+            Unit.Circle => Circle,
+            Unit.Line => Line,
+            Unit.Point => Point,
+            _ => throw new NotImplementedException()
+        };
+    }
+
+    public Army Add(Unit unit, short count)
+    {
+        return unit switch
+        {
+            Unit.Triangle => new Army(Convert.ToInt16(Triangle + count), Square, Circle, Line, Point),
+            Unit.Square => new Army(Triangle, Convert.ToInt16(Square + count), Circle, Line, Point),
+            Unit.Circle => new Army(Triangle, Square, Convert.ToInt16(Circle + count), Line, Point),
+            Unit.Line => new Army(Triangle, Square, Circle, Convert.ToInt16(Line + count), Point),
+            Unit.Point => new Army(Triangle, Square, Circle, Line, Convert.ToInt16(Point + count)),
+            _ => throw new NotImplementedException()
         };
     }
 
@@ -63,18 +92,6 @@ public readonly struct Army : IAdditionOperators<Army, Army, Army>, ISubtraction
             Circle = Convert.ToInt16(a.Circle * b.Circle),
             Line = Convert.ToInt16(a.Line * b.Line),
             Point = Convert.ToInt16(a.Point * b.Point)
-        };
-    }
-
-    public static Army operator *(Army army, Structure structures)
-    {
-        return new Army()
-        {
-            Triangle = structures[army.Triangle],
-            Square = structures[army.Square],
-            Circle = structures[army.Circle],
-            Line = structures[army.Line],
-            Point = structures[army.Point]
         };
     }
 

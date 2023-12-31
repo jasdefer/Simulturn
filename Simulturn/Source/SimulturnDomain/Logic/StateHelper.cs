@@ -1,4 +1,5 @@
 ﻿using SimulturnDomain.DataStructures;
+using SimulturnDomain.Enums;
 using SimulturnDomain.Model;
 using SimulturnDomain.Settings;
 using SimulturnDomain.ValueTypes;
@@ -35,20 +36,101 @@ public static class StateHelper
             foreach (var player in game.TurnDictionary.PlayerIds)
             {
                 Order order = game.TurnDictionary.GetOrder(player, turn);
-                AddTrainings(trainings[player], order.Trainings, game.GameSettings.ArmySettings.TrainingDuration);
-                AddTrainings(constructions[player], order.Constructions, game.GameSettings.StructureSettings.ConstructionDuration);
+                short income = GetIncome(armies[player], game.GameSettings.ArmySettings.Income, matterPerHexagon);
+                short trainingCost = GetTrainingCost(game.GameSettings.ArmySettings.Cost, order.Trainings);
+                short constructionCost = GetConstructionCost(game.GameSettings.StructureSettings.Cost, order.Constructions);
+                matters[player] += Convert.ToInt16(income - trainingCost - constructionCost);
+                AddTrainings(turn, trainings[player], order.Trainings, game.GameSettings.ArmySettings.TrainingDuration);
+                AddConstructions(turn, constructions[player], order.Constructions, game.GameSettings.StructureSettings.ConstructionDuration);
                 MoveArmies(armies[player], order.Moves);
                 CompleteTrainings(armies[player], trainings[player][turn], turn);
                 CompleteConstructions(structures[player], constructions[player][turn], turn);
-                short income = ComputeIncome(armies[player], game.GameSettings.ArmySettings.Income, matterPerHexagon);
-                short trainingCost = GetTrainingCost(game.GameSettings.ArmySettings.Cost, order.Trainings);
-                short constructionCost = GetConstructionCost(game.GameSettings.StructureSettings.Cost, order.Constructions);
-                matters[player] += income - trainingCost - constructionCost;
             }
             ImmutableDictionary<Coordinates, ImmutableDictionary<string, Army>> fights = GetFights(armies);
             result[turn] = BuildStates(matters, armies, structures, trainings, constructions, fights, matterPerHexagon);
         }
         return new TurnMap<State>(result);
+    }
+
+    private static void AddConstructions(ushort turn,
+        Dictionary<ushort, Dictionary<Coordinates, Structure>> constructions,
+        ImmutableDictionary<Coordinates, Structure> orderConstructions,
+        Structure constructionDuration)
+    {
+        var buildings = Enum.GetValues(typeof(Building));
+        foreach (var orderTraining in orderConstructions)
+        {
+            foreach (Building building in buildings)
+            {
+                if (orderTraining.Value[building] > 0)
+                {
+                    ushort completionTurn = Convert.ToUInt16(turn + constructionDuration[building]);
+                    if (!constructions.ContainsKey(completionTurn))
+                    {
+                        constructions.Add(completionTurn, new Dictionary<Coordinates, Structure>());
+                    }
+                }
+            }
+        }
+    }
+
+    private static void AddTrainings(ushort turn, Dictionary<ushort, Dictionary<Coordinates, Army>> trainings,
+        ImmutableDictionary<Coordinates, Army> orderTrainings,
+        Army trainingDuration)
+    {
+        var units = Enum.GetValues(typeof(Unit));
+        foreach (KeyValuePair<Coordinates, Army> orderTraining in orderTrainings)
+        {
+            foreach (Unit unit in units)
+            {
+                if (orderTraining.Value[unit] > 0)
+                {
+                    ushort completionTurn = Convert.ToUInt16(turn + trainingDuration[unit]);
+                    if (!trainings.ContainsKey(completionTurn))
+                    {
+                        trainings.Add(completionTurn, new Dictionary<Coordinates, Army>());
+                    }
+                    if (!trainings[completionTurn].ContainsKey(orderTraining.Key))
+                    {
+                        trainings[completionTurn].Add(orderTraining.Key, new Army());
+                    }
+                    trainings[completionTurn][orderTraining.Key] = trainings[completionTurn][orderTraining.Key].Add(unit, orderTraining.Value[unit]);
+                }
+            }
+        }
+    }
+
+    private static short GetConstructionCost(Structure cost, ImmutableDictionary<Coordinates, Structure> constructions)
+    {
+        short constructionCosts = 0;
+        foreach (var construction in constructions.Values)
+        {
+            constructionCosts += (construction * cost).Sum();
+        }
+        return constructionCosts;
+    }
+
+    private static short GetTrainingCost(Army cost, ImmutableDictionary<Coordinates, Army> trainings)
+    {
+        short trainingCost = 0;
+        foreach (var training in trainings.Values)
+        {
+            trainingCost += (training * cost).Sum();
+        }
+        return trainingCost;
+    }
+
+    private static short GetIncome(Dictionary<Coordinates, Army> armies, Army incomeSettings, Dictionary<Coordinates, ushort> matterPerHexagon)
+    {
+        short income = 0;
+        foreach (var coordinate in armies.Keys)
+        {
+            short incomeAtHex = (armies[coordinate] * incomeSettings).Sum();
+            incomeAtHex = Math.Min(incomeAtHex, Convert.ToInt16(matterPerHexagon[coordinate]));
+            matterPerHexagon[coordinate] -= Convert.ToUInt16(incomeAtHex);
+            income += incomeAtHex;
+        }
+        return income;
     }
 
     private static void SetupStartArmiesAndStructures(HexMap<HexagonSettings> hexagonSettingsPerCoordinates,

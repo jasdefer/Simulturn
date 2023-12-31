@@ -1,5 +1,5 @@
 ﻿namespace SimulturnDomain.Enums;
-public enum StructureId
+public enum Building
 {
     Root,
     Cube,
