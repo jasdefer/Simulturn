@@ -65,6 +65,21 @@ public readonly struct Structure : IAdditionOperators<Structure, Structure, Stru
             };
         }
     }
+
+    public Structure Add(Building unit, short count)
+    {
+        return unit switch
+        {
+            Building.Root => new Structure(Convert.ToInt16(Root + count), Cube, Pyramid, Sphere, Plane, Axis),
+            Building.Cube => new Structure(Root, Convert.ToInt16(Cube + count), Pyramid, Sphere, Plane, Axis),
+            Building.Pyramid => new Structure(Root, Cube, Convert.ToInt16(Pyramid + count), Sphere, Plane, Axis),
+            Building.Sphere => new Structure(Root, Cube, Pyramid, Convert.ToInt16(Sphere + count), Plane, Axis),
+            Building.Plane => new Structure(Root, Cube, Pyramid, Sphere, Convert.ToInt16(Plane + count), Axis),
+            Building.Axis => new Structure(Root, Cube, Pyramid, Sphere, Plane, Convert.ToInt16(Axis + count)),
+            _ => throw new NotImplementedException()
+        };
+    }
+
     public static Structure operator *(Structure a, Structure b)
     {
         return new Structure()

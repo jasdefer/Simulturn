@@ -58,17 +58,23 @@ public static class StateHelper
         Structure constructionDuration)
     {
         var buildings = Enum.GetValues(typeof(Building));
-        foreach (var orderTraining in orderConstructions)
+        foreach (KeyValuePair<Coordinates, Structure> orderConstruction in orderConstructions)
         {
             foreach (Building building in buildings)
             {
-                if (orderTraining.Value[building] > 0)
+                if (orderConstruction.Value[building] > 0)
                 {
                     ushort completionTurn = Convert.ToUInt16(turn + constructionDuration[building]);
                     if (!constructions.ContainsKey(completionTurn))
                     {
                         constructions.Add(completionTurn, new Dictionary<Coordinates, Structure>());
                     }
+                    if (!constructions[completionTurn].ContainsKey(orderConstruction.Key))
+                    {
+                        constructions[completionTurn].Add(orderConstruction.Key, new Structure());
+                    }
+                    Structure newStructure = constructions[completionTurn][orderConstruction.Key].Add(building, orderConstruction.Value[building]);
+                    constructions[completionTurn][orderConstruction.Key] = newStructure;
                 }
             }
         }
@@ -94,7 +100,8 @@ public static class StateHelper
                     {
                         trainings[completionTurn].Add(orderTraining.Key, new Army());
                     }
-                    trainings[completionTurn][orderTraining.Key] = trainings[completionTurn][orderTraining.Key].Add(unit, orderTraining.Value[unit]);
+                    Army newArmy = trainings[completionTurn][orderTraining.Key].Add(unit, orderTraining.Value[unit]);
+                    trainings[completionTurn][orderTraining.Key] = newArmy;
                 }
             }
         }
