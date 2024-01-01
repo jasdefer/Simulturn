@@ -4,6 +4,7 @@ using System.Numerics;
 namespace SimulturnDomain.ValueTypes;
 public readonly struct Army : IAdditionOperators<Army, Army, Army>, ISubtractionOperators<Army, Army, Army>
 {
+    public static readonly Army Empty = new Army();
     public Army(short triangle = 0, short square = 0, short circle = 0, short line = 0, short point = 0)
     {
         Triangle = triangle;
@@ -95,6 +96,42 @@ public readonly struct Army : IAdditionOperators<Army, Army, Army>, ISubtraction
         };
     }
 
+    public static bool operator <(Army a, Army b)
+    {
+        return a.Triangle < b.Triangle &&
+            a.Square < b.Square &&
+            a.Circle < b.Circle &&
+            a.Line < b.Line &&
+            a.Point < b.Point;
+    }
+
+    public static bool operator >(Army a, Army b)
+    {
+        return a.Triangle > b.Triangle &&
+            a.Square > b.Square &&
+            a.Circle > b.Circle &&
+            a.Line > b.Line &&
+            a.Point > b.Point;
+    }
+
+    public static bool operator <=(Army a, Army b)
+    {
+        return a.Triangle <= b.Triangle &&
+            a.Square <= b.Square &&
+            a.Circle <= b.Circle &&
+            a.Line <= b.Line &&
+            a.Point <= b.Point;
+    }
+
+    public static bool operator >=(Army a, Army b)
+    {
+        return a.Triangle >= b.Triangle &&
+            a.Square >= b.Square &&
+            a.Circle >= b.Circle &&
+            a.Line >= b.Line &&
+            a.Point >= b.Point;
+    }
+
     public Army Max(Army max)
     {
         return new Army()
@@ -121,12 +158,11 @@ public readonly struct Army : IAdditionOperators<Army, Army, Army>, ISubtraction
         return Convert.ToInt16(Triangle + Square + Circle + Line + Point);
     }
 
-    public ushort GetStrengthOver(Army army, double exponent)
+    public ushort GetStrengthOver(Army opponent, double exponent)
     {
-        var strength = (ushort)(Math.Max(0, Triangle - army.Square) +
-            Math.Max(0, Square - army.Circle) +
-            Math.Max(0, Circle - army.Triangle));
-        strength = (ushort)Math.Pow(strength, exponent);
+        var strength = (ushort)(Math.Pow(Math.Max(0, Triangle - opponent.Square), exponent) +
+            Math.Pow(Math.Max(0, Square - opponent.Circle), exponent) +
+            Math.Pow(Math.Max(0, Circle - opponent.Triangle), exponent));
         return strength;
     }
 

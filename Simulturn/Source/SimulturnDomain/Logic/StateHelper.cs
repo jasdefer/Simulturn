@@ -47,9 +47,102 @@ public static class StateHelper
                 CompleteConstructions(structures[player], constructions[player][turn]);
             }
             ImmutableDictionary<Coordinates, ImmutableDictionary<string, Army>> fights = GetFights(armies);
+            KillUnitsAndDestroyBuildings(fights, armies, structures, game.GameSettings.FightExponent, game.GameSettings.ArmySettings.StructureDamage, game.GameSettings.StructureSettings.Armor);
             result[turn] = BuildStates(matters, armies, structures, trainings, constructions, fights, matterPerHexagon);
         }
         return new TurnMap<State>(result);
+    }
+
+    private static (Army arm1Losses, Army arm2Losses) Fight(Army army1, Army army2, double fightExponent)
+    {
+        var army1Strength = army1.GetStrengthOver(army2, fightExponent);
+        var army2Strength = army2.GetStrengthOver(army1, fightExponent);
+        Army arm1Losses;
+        Army arm2Losses;
+        if (army1Strength > army2Strength)
+        {
+            var fraction = army2Strength / army1Strength;
+            arm1Losses = army1.MultiplyAndRoundUp(1 - fraction);
+            arm2Losses = army2;
+        }
+        else
+        {
+            var fraction = army1Strength / army2Strength;
+            arm2Losses = army2.MultiplyAndRoundUp(1 - fraction);
+            arm1Losses = army1;
+        }
+
+        return (arm1Losses, arm2Losses);
+    }
+
+    public static Structure Destroy(Army army, Structure structure, Army damage, Structure armor)
+    {
+        var totalDamage = (army * damage).Sum();
+        var buildings = Enum.GetValues<Building>().OrderBy(x => armor[x]).ToArray();
+        Structure losses = new Structure();
+        int index = 0;
+        while (totalDamage > 0)
+        {
+            Building building = buildings[index];
+            short count = Convert.ToInt16(Math.Floor(totalDamage / (double)structure[building]));
+            if (count <= 0)
+            {
+                totalDamage = 0;
+            }
+            else
+            {
+                totalDamage -= Convert.ToInt16(count * structure[building]);
+            }
+            losses = losses.Add(building, count);
+        }
+        return losses;
+    }
+
+    private static void KillUnitsAndDestroyBuildings(ImmutableDictionary<Coordinates, ImmutableDictionary<string, Army>> fights,
+        Dictionary<string, Dictionary<Coordinates, Army>> armies,
+        Dictionary<string, Dictionary<Coordinates, Structure>> structures,
+        double fightExponent,
+        Army damage,
+        Structure armor)
+    {
+        foreach (var coordinates in fights.Keys)
+        {
+            var players = fights[coordinates].Keys.ToArray();
+            var playerCount = players.Length;
+            Army[] losses = new Army[playerCount];
+            for (int i = 0; i < playerCount - 1; i++)
+            {
+                string player1 = players[i];
+                var army1 = fights[coordinates][player1];
+                for (int j = i + 1; j < playerCount; j++)
+                {
+                    string player2 = players[j];
+                    if (fights[coordinates].ContainsKey(player2))
+                    {
+                        var army2 = fights[coordinates][player2];
+                        (var army1Losses, var army2Losses) = Fight(army1, army2, fightExponent);
+                        losses[i] += army1Losses;
+                        losses[j] += army2Losses;
+                    }
+                }
+                Army remainingArmy = armies[player1][coordinates] - losses[i];
+                remainingArmy = remainingArmy.Max(Army.Empty);
+                armies[players[i]][coordinates] = remainingArmy;
+                if (losses[i] < army1)
+                {
+                    var losers = fights[coordinates].Keys.Where(x => x != player1 && structures[x][coordinates].Any());
+                    foreach (var player in losers)
+                    {
+                        structures[player][coordinates] -= Destroy(remainingArmy, structures[player][coordinates], damage, armor);
+                    }
+                }
+            }
+        }
+    }
+
+    private static State BuildStates(Dictionary<string, short> matters, Dictionary<string, Dictionary<Coordinates, Army>> armies, Dictionary<string, Dictionary<Coordinates, Structure>> structures, Dictionary<string, Dictionary<ushort, Dictionary<Coordinates, Army>>> trainings, Dictionary<string, Dictionary<ushort, Dictionary<Coordinates, Structure>>> constructions, ImmutableDictionary<Coordinates, ImmutableDictionary<string, Army>> fights, Dictionary<Coordinates, ushort> matterPerHexagon)
+    {
+        throw new NotImplementedException();
     }
 
     private static ImmutableDictionary<Coordinates, ImmutableDictionary<string, Army>> GetFights(Dictionary<string, Dictionary<Coordinates, Army>> armiesPerPlayer)

@@ -149,4 +149,14 @@ public readonly struct Structure : IAdditionOperators<Structure, Structure, Stru
     {
         return Convert.ToInt16(Root + Cube + Pyramid + Sphere + Plane + Axis);
     }
+
+    public bool Any()
+    {
+        return Root > 0 ||
+            Cube > 0 ||
+            Pyramid > 0 ||
+            Sphere > 0 ||
+            Plane > 0 ||
+            Axis > 0;
+    }
 }
