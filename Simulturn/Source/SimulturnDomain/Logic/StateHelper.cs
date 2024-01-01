@@ -43,13 +43,39 @@ public static class StateHelper
                 AddTrainings(turn, trainings[player], order.Trainings, game.GameSettings.ArmySettings.TrainingDuration);
                 AddConstructions(turn, constructions[player], order.Constructions, game.GameSettings.StructureSettings.ConstructionDuration);
                 MoveArmies(armies[player], order.Moves);
-                CompleteTrainings(armies[player], trainings[player][turn], turn);
-                CompleteConstructions(structures[player], constructions[player][turn], turn);
+                CompleteTrainings(armies[player], trainings[player][turn]);
+                CompleteConstructions(structures[player], constructions[player][turn]);
             }
             ImmutableDictionary<Coordinates, ImmutableDictionary<string, Army>> fights = GetFights(armies);
             result[turn] = BuildStates(matters, armies, structures, trainings, constructions, fights, matterPerHexagon);
         }
         return new TurnMap<State>(result);
+    }
+
+    private static void CompleteConstructions(Dictionary<Coordinates, Structure> structures, Dictionary<Coordinates, Structure> constructions)
+    {
+        foreach (var construction in constructions)
+        {
+            structures[construction.Key] += construction.Value;
+        }
+    }
+
+    private static void CompleteTrainings(Dictionary<Coordinates, Army> armies, Dictionary<Coordinates, Army> trainings)
+    {
+        foreach (var training in trainings)
+        {
+            armies[training.Key] += training.Value;
+        }
+    }
+
+    private static void MoveArmies(Dictionary<Coordinates, Army> armies, IImmutableSet<Move> moves)
+    {
+        foreach (var move in moves)
+        {
+            armies[move.Origin] -= move.Army;
+            Coordinates destination = move.Origin.GetNeighbor(move.Direction);
+            armies[destination] += move.Army;
+        }
     }
 
     private static void AddConstructions(ushort turn,
