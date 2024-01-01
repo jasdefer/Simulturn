@@ -52,6 +52,24 @@ public static class StateHelper
         return new TurnMap<State>(result);
     }
 
+    private static ImmutableDictionary<Coordinates, ImmutableDictionary<string, Army>> GetFights(Dictionary<string, Dictionary<Coordinates, Army>> armiesPerPlayer)
+    {
+        HashSet<Coordinates> coordinates = armiesPerPlayer.SelectMany(x => x.Value.Keys).ToHashSet();
+        Dictionary<Coordinates, ImmutableDictionary<string, Army>> fights = new Dictionary<Coordinates, ImmutableDictionary<string, Army>>();
+        foreach (var coordinae in coordinates)
+        {
+            KeyValuePair<string, Dictionary<Coordinates, Army>>[] fightingArmies = armiesPerPlayer
+                .Where(x => x.Value.ContainsKey(coordinae) && x.Value[coordinae].Sum() > 0)
+                .ToArray();
+            if (fightingArmies.Length > 1)
+            {
+                var fight = fightingArmies.ToImmutableDictionary(x => x.Key, x => x.Value[coordinae]);
+                fights.Add(coordinae, fight);
+            }
+        }
+        return fights.ToImmutableDictionary();
+    }
+
     private static void CompleteConstructions(Dictionary<Coordinates, Structure> structures, Dictionary<Coordinates, Structure> constructions)
     {
         foreach (var construction in constructions)
