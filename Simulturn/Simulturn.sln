@@ -9,6 +9,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{E7B11D7B-7
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimulturnDomain", "Source\SimulturnDomain\SimulturnDomain.csproj", "{EAAE234F-3716-4E92-8082-6560B663BCDE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimulturnDomain.UnitTests", "Test\SimulturnDomain.UnitTests\SimulturnDomain.UnitTests.csproj", "{5A3660F3-84CA-46E1-8720-DDDC81790028}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -19,12 +21,17 @@ Global
 		{EAAE234F-3716-4E92-8082-6560B663BCDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EAAE234F-3716-4E92-8082-6560B663BCDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EAAE234F-3716-4E92-8082-6560B663BCDE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5A3660F3-84CA-46E1-8720-DDDC81790028}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A3660F3-84CA-46E1-8720-DDDC81790028}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A3660F3-84CA-46E1-8720-DDDC81790028}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A3660F3-84CA-46E1-8720-DDDC81790028}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{EAAE234F-3716-4E92-8082-6560B663BCDE} = {0945FC82-2A75-475A-ACBF-EC2C0D286DB7}
+		{5A3660F3-84CA-46E1-8720-DDDC81790028} = {E7B11D7B-7DC0-4D4B-BDAC-CA1509502E4B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {38413902-B850-4973-AFC4-2F9A8D2015A4}
