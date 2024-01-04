@@ -140,9 +140,30 @@ public static class StateHelper
         }
     }
 
-    private static State BuildStates(Dictionary<string, short> matters, Dictionary<string, Dictionary<Coordinates, Army>> armies, Dictionary<string, Dictionary<Coordinates, Structure>> structures, Dictionary<string, Dictionary<ushort, Dictionary<Coordinates, Army>>> trainings, Dictionary<string, Dictionary<ushort, Dictionary<Coordinates, Structure>>> constructions, ImmutableDictionary<Coordinates, ImmutableDictionary<string, Army>> fights, Dictionary<Coordinates, ushort> matterPerHexagon)
+    private static State BuildStates(Dictionary<string, short> matters,
+                                     Dictionary<string, Dictionary<Coordinates, Army>> armies,
+                                     Dictionary<string, Dictionary<Coordinates, Structure>> structures,
+                                     Dictionary<string, Dictionary<ushort, Dictionary<Coordinates, Army>>> trainings,
+                                     Dictionary<string, Dictionary<ushort, Dictionary<Coordinates, Structure>>> constructions,
+                                     ImmutableDictionary<Coordinates, ImmutableDictionary<string, Army>> fights,
+                                     Dictionary<Coordinates, ushort> matterPerHexagon)
     {
-        throw new NotImplementedException();
+
+        var playerStates = new Dictionary<string, PlayerState>();
+        foreach (var player in matters.Keys)
+        {
+            PlayerState playerState = new PlayerState(matters[player],
+                new HexMap<Army>(armies[player]),
+                new HexMap<Structure>(structures[player]),
+                new TurnMap<HexMap<Army>>(trainings[player].ToDictionary(x => x.Key, x => new HexMap<Army>(x.Value))),
+                new TurnMap<HexMap<Structure>>(constructions[player].ToDictionary(x => x.Key, x => new HexMap<Structure>(x.Value))),
+                new HexMap<ImmutableDictionary<string, Army>>(fights.Where(x => x.Value.ContainsKey(player)).ToDictionary()));
+            playerStates[player] = playerState;
+        }
+        State state = new State(playerStates.ToImmutableDictionary(),
+            new HexMap<ushort>(matterPerHexagon),
+            new HexMap<ImmutableDictionary<string, Army>>(fights));
+        return state;
     }
 
     private static ImmutableDictionary<Coordinates, ImmutableDictionary<string, Army>> GetFights(Dictionary<string, Dictionary<Coordinates, Army>> armiesPerPlayer)

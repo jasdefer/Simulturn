@@ -5,7 +5,7 @@ public class HexMap<T>
 {
     private readonly Dictionary<Coordinates, T> _map;
 
-    public HexMap(Dictionary<Coordinates, T> initialMap)
+    public HexMap(IDictionary<Coordinates, T> initialMap)
     {
         _map = new Dictionary<Coordinates, T>(initialMap);
     }

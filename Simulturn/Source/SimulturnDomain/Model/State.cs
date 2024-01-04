@@ -4,7 +4,7 @@ using System.Collections.Immutable;
 
 namespace SimulturnDomain.Model;
 
-public record PlayerState(ushort Matter,
+public record PlayerState(short Matter,
     HexMap<Army> ArmyMap,
     HexMap<Structure> Structures,
     TurnMap<HexMap<Army>> TrainingMap,
@@ -12,5 +12,5 @@ public record PlayerState(ushort Matter,
     HexMap<ImmutableDictionary<string, Army>> Fights);
 
 public record State(ImmutableDictionary<string, PlayerState> PlayerStates,
-    HexMap<short> RemainingMatter,
+    HexMap<ushort> RemainingMatter,
     HexMap<ImmutableDictionary<string, Army>> Fights);

@@ -3,7 +3,7 @@ public class TurnMap<T>
 {
     private readonly Dictionary<ushort, T> _map;
 
-    public TurnMap(Dictionary<ushort, T> initialMap)
+    public TurnMap(IDictionary<ushort, T> initialMap)
     {
         _map = new Dictionary<ushort, T>(initialMap);
     }
