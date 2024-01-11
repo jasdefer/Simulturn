@@ -1,8 +1,9 @@
-﻿using SimulturnDomain.ValueTypes;
+﻿using SimulturnDomain.DataStructures;
+using SimulturnDomain.ValueTypes;
 using System.Collections.Immutable;
 
 namespace SimulturnDomain.Model;
 public record Order(
-    ImmutableDictionary<Coordinates, Army> Trainings,
-    ImmutableDictionary<Coordinates, Structure> Constructions,
+    HexMap<Army> Trainings,
+    HexMap<Structure> Constructions,
     IImmutableSet<Move> Moves);

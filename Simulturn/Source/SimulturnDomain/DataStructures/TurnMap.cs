@@ -2,6 +2,7 @@
 public class TurnMap<T>
 {
     private readonly Dictionary<ushort, T> _map;
+    private static readonly Dictionary<ushort, T> _empty = new Dictionary<ushort, T>();
 
     public TurnMap(IDictionary<ushort, T> initialMap)
     {
@@ -12,4 +13,11 @@ public class TurnMap<T>
 
     public IEnumerable<ushort> Keys => _map.Keys;
     public IEnumerable<T> Values => _map.Values;
+
+    public bool ContainsKey(ushort turn) => _map.ContainsKey(turn);
+
+    public static TurnMap<T> Empty()
+    {
+        return new TurnMap<T>(_empty);
+    }
 }

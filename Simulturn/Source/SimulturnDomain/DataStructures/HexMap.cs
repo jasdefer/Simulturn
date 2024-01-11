@@ -4,6 +4,7 @@ namespace SimulturnDomain.DataStructures;
 public class HexMap<T>
 {
     private readonly Dictionary<Coordinates, T> _map;
+    private static readonly Dictionary<Coordinates, T> _empty = new Dictionary<Coordinates, T>();
 
     public HexMap(IDictionary<Coordinates, T> initialMap)
     {
@@ -14,4 +15,9 @@ public class HexMap<T>
 
     public IEnumerable<Coordinates> Keys => _map.Keys;
     public IEnumerable<T> Values => _map.Values;
+
+    public static HexMap<T> Empty()
+    {
+        return new HexMap<T>(_empty);
+    }
 }
