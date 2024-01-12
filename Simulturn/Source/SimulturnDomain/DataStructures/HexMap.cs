@@ -21,6 +21,8 @@ public class HexMap<T>
         return new Dictionary<Coordinates, T>(_map);
     }
 
+    public bool ContainsKey(Coordinates coordinates) => _map.ContainsKey(coordinates);
+
     public static HexMap<T> Empty()
     {
         return new HexMap<T>(_empty);

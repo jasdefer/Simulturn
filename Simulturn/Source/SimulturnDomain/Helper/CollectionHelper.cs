@@ -6,7 +6,7 @@ public static class CollectionHelper
         var sum = 0;
         foreach (var item in collection)
         {
-            sum+= item;
+            sum += item;
         }
         return Convert.ToInt16(sum);
     }

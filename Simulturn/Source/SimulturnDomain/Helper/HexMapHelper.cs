@@ -7,7 +7,7 @@ public static class HexMapHelper
     public static Army Sum(this HexMap<Army> armyMap)
     {
         var sum = new Army();
-        foreach (var army in armyMap.Values) 
+        foreach (var army in armyMap.Values)
         {
             sum += army;
         }
