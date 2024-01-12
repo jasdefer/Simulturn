@@ -16,6 +16,11 @@ public class HexMap<T>
     public IEnumerable<Coordinates> Keys => _map.Keys;
     public IEnumerable<T> Values => _map.Values;
 
+    public Dictionary<Coordinates, T> ToDictionary()
+    {
+        return new Dictionary<Coordinates, T>(_map);
+    }
+
     public static HexMap<T> Empty()
     {
         return new HexMap<T>(_empty);

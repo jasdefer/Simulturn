@@ -19,7 +19,7 @@ public record GameSettings(
         var upkeepLevels = new UpkeepLevel[]
         {
             new UpkeepLevel(50, 0.2),
-            new UpkeepLevel(80, 0.5)
+            new UpkeepLevel(30, 0.5)
         }.ToImmutableArray();
         Army points = new Army(0, 0, 0, 0, 5);
         var hexagonSettings = new Dictionary<Coordinates, HexagonSettings>()

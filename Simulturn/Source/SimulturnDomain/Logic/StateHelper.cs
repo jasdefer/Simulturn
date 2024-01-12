@@ -8,7 +8,7 @@ using System.Collections.Immutable;
 namespace SimulturnDomain.Logic;
 public static class StateHelper
 {
-    public State GetInitialState(GameSettings gameSettings, IEnumerable<string> players)
+    public static State GetInitialState(GameSettings gameSettings, IEnumerable<string> players)
     {
 
         Coordinates[] startCoordinates = gameSettings.HexagonSettingsPerCoordinates.Keys
@@ -42,8 +42,8 @@ public static class StateHelper
         {
             Order order = orders[player];
             PlayerState playerState = state.PlayerStates[player];
-            HexMap<short> revenue = GetRevenue(playerState.ArmyMap, gameSettings.ArmySettings.Income, state.RemainingMatter);
-            short income = GetIncome(revenue, gameSettings.UpkeepLevels);
+            HexMap<ushort> revenue = GetRevenue(playerState.ArmyMap, gameSettings.ArmySettings.Income, state.RemainingMatter);
+            ushort income = IncomeHelper.GetIncome(revenue, playerState.ArmyMap, gameSettings.ArmySettings.RequiredSpace, gameSettings.UpkeepLevels);
             remainingMatter = RemoveMatter(remainingMatter, revenue);
             short trainingCost = GetTrainingCost(gameSettings.ArmySettings.Cost, order.Trainings);
             short constructionCost = GetConstructionCost(gameSettings.StructureSettings.Cost, order.Constructions);
@@ -75,55 +75,14 @@ public static class StateHelper
         return newState;
     }
 
-    /// <summary>
-    /// Compute the current state of the game based on all orders by each player.
-    /// </summary>
-    public static TurnMap<State> GetStatesPerPlayer(Game game)
+    private static HexMap<ushort> RemoveMatter(HexMap<ushort> remainingMatter, HexMap<ushort> revenue)
     {
-        ushort turns = game.TurnDictionary.NumberOfTurns;
-        var armyMap = game.GameSettings.Coordinates.ToDictionary(x => x, x => new Army());
-        var structureMap = game.GameSettings.Coordinates.ToDictionary(x => x, x => new Structure());
-
-        Dictionary<string, short> matters = game.TurnDictionary.PlayerIds.ToDictionary(x => x, x => game.GameSettings.StartMatter);
-        Dictionary<string, Dictionary<Coordinates, Army>> armies = game.TurnDictionary.PlayerIds.ToDictionary(x => x, x => armyMap.ToDictionary());
-        Dictionary<string, Dictionary<Coordinates, Structure>> structures = game.TurnDictionary.PlayerIds.ToDictionary(x => x, x => structureMap.ToDictionary());
-        Dictionary<string, Dictionary<ushort, Dictionary<Coordinates, Army>>> trainings = game.TurnDictionary.PlayerIds.ToDictionary(x => x, x => new Dictionary<ushort, Dictionary<Coordinates, Army>>());
-        Dictionary<string, Dictionary<ushort, Dictionary<Coordinates, Structure>>> constructions = game.TurnDictionary.PlayerIds.ToDictionary(x => x, x => new Dictionary<ushort, Dictionary<Coordinates, Structure>>());
-        Dictionary<Coordinates, ushort> matterPerHexagon = game.GameSettings.HexagonSettingsPerCoordinates.Keys.ToDictionary(x => x, x => game.GameSettings.HexagonSettingsPerCoordinates[x].Matter);
-
-        SetupStartArmiesAndStructures(game.GameSettings.HexagonSettingsPerCoordinates,
-                                      game.GameSettings.ArmySettings.StartUnits,
-                                      game.GameSettings.StructureSettings.StartStructures,
-                                      armies,
-                                      structures);
-
-        Dictionary<ushort, State> result = new Dictionary<ushort, State>();
-        for (ushort turn = 0; turn < turns; turn++)
+        var result = remainingMatter.ToDictionary();
+        foreach (var coordinates in revenue.Keys)
         {
-            foreach (var player in game.TurnDictionary.PlayerIds)
-            {
-                Order order = game.TurnDictionary.GetOrder(player, turn);
-                short income = GetIncome(armies[player], game.GameSettings.ArmySettings.Income, matterPerHexagon);
-                short trainingCost = GetTrainingCost(game.GameSettings.ArmySettings.Cost, order.Trainings);
-                short constructionCost = GetConstructionCost(game.GameSettings.StructureSettings.Cost, order.Constructions);
-                matters[player] += Convert.ToInt16(income - trainingCost - constructionCost);
-                AddTrainings(turn, trainings[player], order.Trainings, game.GameSettings.ArmySettings.TrainingDuration);
-                AddConstructions(turn, constructions[player], order.Constructions, game.GameSettings.StructureSettings.ConstructionDuration);
-                MoveArmies(armies[player], order.Moves);
-                if (trainings[player].ContainsKey(turn))
-                {
-                    CompleteTrainings(armies[player], trainings[player][turn]);
-                }
-                if (constructions[player].ContainsKey(turn))
-                {
-                    CompleteConstructions(structures[player], constructions[player][turn]);
-                }
-            }
-            ImmutableDictionary<Coordinates, ImmutableDictionary<string, Army>> fights = GetFights(armies);
-            KillUnitsAndDestroyBuildings(fights, armies, structures, game.GameSettings.FightExponent, game.GameSettings.ArmySettings.StructureDamage, game.GameSettings.StructureSettings.Armor);
-            result[turn] = BuildStates(matters, armies, structures, trainings, constructions, fights, matterPerHexagon);
+            result[coordinates] -= revenue[coordinates];
         }
-        return new TurnMap<State>(result);
+        return new HexMap<ushort>(result);
     }
 
     private static (Army arm1Losses, Army arm2Losses) Fight(Army army1, Army army2, double fightExponent)
@@ -211,32 +170,6 @@ public static class StateHelper
                 }
             }
         }
-    }
-
-    private static State BuildStates(Dictionary<string, short> matters,
-                                     Dictionary<string, Dictionary<Coordinates, Army>> armies,
-                                     Dictionary<string, Dictionary<Coordinates, Structure>> structures,
-                                     Dictionary<string, Dictionary<ushort, Dictionary<Coordinates, Army>>> trainings,
-                                     Dictionary<string, Dictionary<ushort, Dictionary<Coordinates, Structure>>> constructions,
-                                     ImmutableDictionary<Coordinates, ImmutableDictionary<string, Army>> fights,
-                                     Dictionary<Coordinates, ushort> matterPerHexagon)
-    {
-
-        var playerStates = new Dictionary<string, PlayerState>();
-        foreach (var player in matters.Keys)
-        {
-            PlayerState playerState = new PlayerState(matters[player],
-                new HexMap<Army>(armies[player]),
-                new HexMap<Structure>(structures[player]),
-                new TurnMap<HexMap<Army>>(trainings[player].ToDictionary(x => x.Key, x => new HexMap<Army>(x.Value))),
-                new TurnMap<HexMap<Structure>>(constructions[player].ToDictionary(x => x.Key, x => new HexMap<Structure>(x.Value))),
-                new HexMap<ImmutableDictionary<string, Army>>(fights.Where(x => x.Value.ContainsKey(player)).ToDictionary()));
-            playerStates[player] = playerState;
-        }
-        State state = new State(playerStates.ToImmutableDictionary(),
-            new HexMap<ushort>(matterPerHexagon),
-            new HexMap<ImmutableDictionary<string, Army>>(fights));
-        return state;
     }
 
     private static ImmutableDictionary<Coordinates, ImmutableDictionary<string, Army>> GetFights(Dictionary<string, Dictionary<Coordinates, Army>> armiesPerPlayer)
@@ -359,16 +292,16 @@ public static class StateHelper
         return trainingCost;
     }
 
-    private static HexMap<short> GetRevenue(HexMap<Army> armyMap, Army incomeSettings, HexMap<ushort> remainingMatter)
+    private static HexMap<ushort> GetRevenue(HexMap<Army> armyMap, Army incomeSettings, HexMap<ushort> remainingMatter)
     {
-        Dictionary<Coordinates, short> revenue = new();
+        Dictionary<Coordinates, ushort> revenue = new();
         foreach (var coordinate in armyMap.Keys)
         {
-            short incomeAtHex = (armyMap[coordinate] * incomeSettings).Sum();
-            incomeAtHex = Math.Min(incomeAtHex, Convert.ToInt16(remainingMatter[coordinate]));
+            ushort incomeAtHex = Convert.ToUInt16((armyMap[coordinate] * incomeSettings).Sum());
+            incomeAtHex = Math.Min(incomeAtHex, Convert.ToUInt16(remainingMatter[coordinate]));
             revenue[coordinate] = incomeAtHex;
         }
-        return new HexMap<short>(revenue);
+        return new HexMap<ushort>(revenue);
     }
 
     private static void SetupStartArmiesAndStructures(HexMap<HexagonSettings> hexagonSettingsPerCoordinates,
