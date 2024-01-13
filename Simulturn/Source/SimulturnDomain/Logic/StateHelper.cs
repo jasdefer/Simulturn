@@ -10,7 +10,6 @@ public static class StateHelper
 {
     public static State GetInitialState(GameSettings gameSettings, IEnumerable<string> players)
     {
-
         Coordinates[] startCoordinates = gameSettings.HexagonSettingsPerCoordinates.Keys
             .Where(x => gameSettings.HexagonSettingsPerCoordinates[x].IsStartHexagon)
             .ToArray();
@@ -22,15 +21,12 @@ public static class StateHelper
             Coordinates coordinates = startCoordinates[playerIndex++];
             HexMap<Army> armies = new(new Dictionary<Coordinates, Army>() { { coordinates, gameSettings.ArmySettings.StartUnits } });
             HexMap<Structure> structures = new(new Dictionary<Coordinates, Structure>() { { coordinates, gameSettings.StructureSettings.StartStructures } });
-            PlayerState playerState = new PlayerState(matter, armies, structures, TurnMap<HexMap<Army>>.Empty(), TurnMap<HexMap<Structure>>.Empty());
+            PlayerState playerState = new PlayerState(matter, armies, structures, TurnMap<HexMap<Army>>.Empty(), TurnMap<HexMap<Structure>>.Empty(), HexMap<Fight>.Empty());
             playerStates[player] = playerState;
         }
-
         HexMap<ushort> remainingMatter = new(gameSettings.HexagonSettingsPerCoordinates.Keys.ToDictionary(x => x, x => gameSettings.HexagonSettingsPerCoordinates[x].Matter));
-        HexMap<PlayerMap<Fight>> fights = HexMap<PlayerMap<Fight>>.Empty();
-
         PlayerMap<PlayerState> stateMap = new(playerStates);
-        State state = new(stateMap, remainingMatter, fights);
+        State state = new(stateMap, remainingMatter);
         return state;
     }
 
@@ -60,19 +56,87 @@ public static class StateHelper
             {
                 structureMap = CompleteConstructions(structureMap, constructions[turn]);
             }
-            PlayerState preFightState = new PlayerState(matter, armyMap, structureMap, trainings, constructions);
+            PlayerState preFightState = new PlayerState(matter, armyMap, structureMap, trainings, constructions, HexMap<Fight>.Empty());
             playerStates[player] = preFightState;
         }
 
-        HexMap<PlayerMap<Fight>> fights = GetFights(gameSettings.FightExponent, playerStates.ToDictionary(x => x.Key, x => x.Value.ArmyMap));
-        foreach (var player in orders.Keys)
+        HexMap<PlayerMap<Army>> fightingArmies = GetFightingArmies(playerStates.ToDictionary(x => x.Key, x => x.Value.ArmyMap));
+        PlayerMap<HexMap<Fight>> fights = GetFights(gameSettings.FightExponent, fightingArmies);
+        foreach (var player in fights.Keys)
         {
-            HexMap<Army> newArmies = GetArmies(playerStates[player].ArmyMap, fights);
-            playerStates[player] = playerStates[player] with { ArmyMap = newArmies };
+            HexMap<Army> newArmies = RemoveLosses(playerStates[player].ArmyMap, fights[player]);
+            HexMap<Structure> newStructures = RemoveDestruction(player, gameSettings.ArmySettings.StructureDamage, gameSettings.StructureSettings.Armor, playerStates[player].StructureMap, fights);
+            playerStates[player] = playerStates[player] with { ArmyMap = newArmies, Fights = fights[player] };
         }
         PlayerMap<PlayerState> playerStateMap = new(playerStates);
-        State newState = new(playerStateMap, remainingMatter, fights);
+        State newState = new(playerStateMap, remainingMatter);
         return newState;
+    }
+
+    private static HexMap<Structure> RemoveDestruction(string player, Army structureDamage, Structure armor, HexMap<Structure> structureMap, PlayerMap<HexMap<Fight>> fights)
+    {
+        if (!fights.ContainsKey(player))
+        {
+            return structureMap;
+        }
+
+        Dictionary<Coordinates, Structure> result = structureMap.ToDictionary();
+
+        foreach (var opponent in fights.Keys.Where(x => x != player && fights.ContainsKey(x)))
+        {
+            foreach (var coordinates in structureMap.Keys)
+            {
+                if (fights[player].ContainsKey(coordinates) &&
+                    fights[opponent].ContainsKey(coordinates) &&
+                    fights[opponent][coordinates].Surviver.Any())
+                {
+                    result[coordinates] -= FightHelper.Destroy(fights[opponent][coordinates].Surviver, result[coordinates], structureDamage, armor);
+                }
+            }
+        }
+        return new HexMap<Structure>(result);
+    }
+
+    private static HexMap<Army> RemoveLosses(HexMap<Army> armyMap, HexMap<Fight> fightMap)
+    {
+        var result = armyMap.ToDictionary();
+        foreach (var coordinates in fightMap.Keys)
+        {
+            result[coordinates] -= fightMap[coordinates].Losses;
+            if (!result[coordinates].Any())
+            {
+                result.Remove(coordinates);
+            }
+        }
+        return new HexMap<Army>(result);
+    }
+
+    private static PlayerMap<HexMap<Fight>> GetFights(double fightExponent, HexMap<PlayerMap<Army>> fightingArmies)
+    {
+        Dictionary<string, Dictionary<Coordinates, Fight>> fights = fightingArmies.Values
+            .SelectMany(x => x.Keys)
+            .Distinct()
+            .ToDictionary(x => x, x => new Dictionary<Coordinates, Fight>());
+        foreach (var coordinates in fightingArmies.Keys)
+        {
+            string[] players = fightingArmies[coordinates].Keys.ToArray();
+            for (int i = 0; i < players.Length - 1; i++)
+            {
+                string player1 = players[i];
+                Army army1 = fightingArmies[coordinates][player1];
+                for (int j = i + 1; j < players.Length; j++)
+                {
+                    string player2 = players[j];
+                    Army army2 = fightingArmies[coordinates][player2];
+                    (Army losses1, Army losses2) = FightHelper.Fight(fightExponent, army1, army2);
+                    Fight fight1 = new Fight(army1, losses1);
+                    Fight fight2 = new Fight(army2, losses2);
+                    fights[player1].Add(coordinates, fight1);
+                    fights[player2].Add(coordinates, fight2);
+                }
+            }
+        }
+        return new PlayerMap<HexMap<Fight>>(fights.ToDictionary(x => x.Key, x => new HexMap<Fight>(x.Value)));
     }
 
     private static HexMap<ushort> RemoveMatter(HexMap<ushort> remainingMatter, HexMap<ushort> revenue)
@@ -85,97 +149,10 @@ public static class StateHelper
         return new HexMap<ushort>(result);
     }
 
-    private static (Army arm1Losses, Army arm2Losses) Fight(Army army1, Army army2, double fightExponent)
-    {
-        var army1Strength = army1.GetStrengthOver(army2, fightExponent);
-        var army2Strength = army2.GetStrengthOver(army1, fightExponent);
-        Army arm1Losses;
-        Army arm2Losses;
-        if (army1Strength > army2Strength)
-        {
-            var fraction = army2Strength / army1Strength;
-            arm1Losses = army1.MultiplyAndRoundUp(1 - fraction);
-            arm2Losses = army2;
-        }
-        else
-        {
-            var fraction = army1Strength / army2Strength;
-            arm2Losses = army2.MultiplyAndRoundUp(1 - fraction);
-            arm1Losses = army1;
-        }
-
-        return (arm1Losses, arm2Losses);
-    }
-
-    public static Structure Destroy(Army army, Structure structure, Army damage, Structure armor)
-    {
-        var totalDamage = (army * damage).Sum();
-        var buildings = Enum.GetValues<Building>().OrderBy(x => armor[x]).ToArray();
-        Structure losses = new Structure();
-        int index = 0;
-        while (totalDamage > 0)
-        {
-            Building building = buildings[index];
-            short count = Convert.ToInt16(Math.Floor(totalDamage / (double)structure[building]));
-            if (count <= 0)
-            {
-                totalDamage = 0;
-            }
-            else
-            {
-                totalDamage -= Convert.ToInt16(count * structure[building]);
-            }
-            losses = losses.Add(building, count);
-        }
-        return losses;
-    }
-
-    private static void KillUnitsAndDestroyBuildings(ImmutableDictionary<Coordinates, ImmutableDictionary<string, Army>> fights,
-        Dictionary<string, Dictionary<Coordinates, Army>> armies,
-        Dictionary<string, Dictionary<Coordinates, Structure>> structures,
-        double fightExponent,
-        Army damage,
-        Structure armor)
-    {
-        foreach (var coordinates in fights.Keys)
-        {
-            var players = fights[coordinates].Keys.ToArray();
-            var playerCount = players.Length;
-            Army[] losses = new Army[playerCount];
-            for (int i = 0; i < playerCount - 1; i++)
-            {
-                string player1 = players[i];
-                var army1 = fights[coordinates][player1];
-                for (int j = i + 1; j < playerCount; j++)
-                {
-                    string player2 = players[j];
-                    if (fights[coordinates].ContainsKey(player2))
-                    {
-                        var army2 = fights[coordinates][player2];
-                        (var army1Losses, var army2Losses) = Fight(army1, army2, fightExponent);
-                        losses[i] += army1Losses;
-                        losses[j] += army2Losses;
-                    }
-                }
-                Army remainingArmy = armies[player1][coordinates] - losses[i];
-                remainingArmy = remainingArmy.Max(Army.Empty);
-                armies[players[i]][coordinates] = remainingArmy;
-                if (losses[i] < army1)
-                {
-                    var losers = fights[coordinates].Keys.Where(x => x != player1 && structures[x][coordinates].Any());
-                    foreach (var player in losers)
-                    {
-                        structures[player][coordinates] -= Destroy(remainingArmy, structures[player][coordinates], damage, armor);
-                    }
-                }
-            }
-        }
-    }
-
-    private static HexMap<PlayerMap<Fight>> GetFights(double fightExponent, Dictionary<string, HexMap<Army>> armiesPerPlayer)
+    private static HexMap<PlayerMap<Army>> GetFightingArmies(Dictionary<string, HexMap<Army>> armiesPerPlayer)
     {
         HashSet<Coordinates> coordinates = armiesPerPlayer.SelectMany(x => x.Value.Keys).ToHashSet();
-        Dictionary<Coordinates, ImmutableDictionary<string, Fight>> fights = new();
+        Dictionary<Coordinates, Dictionary<string, Army>> fights = new();
         foreach (var coordinate in coordinates)
         {
             Dictionary<string, Army> fightingArmies = armiesPerPlayer
@@ -183,11 +160,10 @@ public static class StateHelper
                 .ToDictionary(x => x.Key, x => x.Value[coordinate]);
             if (fightingArmies.Count > 1)
             {
-                var fight = fightingArmies.ToImmutableDictionary(x => x.Key, x => x.Value[coordinae]);
-                fights.Add(coordinae, fight);
+                fights.Add(coordinate, fightingArmies);
             }
         }
-        return new HexMap<PlayerMap<Fight>>(fights.ToDictionary(x => x.Key, x => new PlayerMap<Fight>(x.Value)));
+        return new HexMap<PlayerMap<Army>>(fights.ToDictionary(x => x.Key, x => new PlayerMap<Army>(x.Value)));
     }
 
     private static HexMap<Structure> CompleteConstructions(HexMap<Structure> structures, HexMap<Structure> constructions)
