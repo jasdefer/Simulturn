@@ -38,7 +38,7 @@ public static class StateHelper
         {
             Order order = orders[player];
             PlayerState playerState = state.PlayerStates[player];
-            HexMap<ushort> revenue = GetRevenue(playerState.ArmyMap, gameSettings.ArmySettings.Income, state.RemainingMatter);
+            HexMap<ushort> revenue = IncomeHelper.GetRevenue(playerState.ArmyMap, gameSettings.ArmySettings.Income, state.RemainingMatter);
             ushort income = IncomeHelper.GetIncome(revenue, playerState.ArmyMap, gameSettings.ArmySettings.RequiredSpace, gameSettings.UpkeepLevels);
             remainingMatter = RemoveMatter(remainingMatter, revenue);
             short trainingCost = GetTrainingCost(gameSettings.ArmySettings.Cost, order.Trainings);
@@ -73,7 +73,7 @@ public static class StateHelper
         return newState;
     }
 
-    private static HexMap<Structure> RemoveDestruction(string player, Army structureDamage, Structure armor, HexMap<Structure> structureMap, PlayerMap<HexMap<Fight>> fights)
+    public static HexMap<Structure> RemoveDestruction(string player, Army structureDamage, Structure armor, HexMap<Structure> structureMap, PlayerMap<HexMap<Fight>> fights)
     {
         if (!fights.ContainsKey(player))
         {
@@ -97,7 +97,7 @@ public static class StateHelper
         return new HexMap<Structure>(result);
     }
 
-    private static HexMap<Army> RemoveLosses(HexMap<Army> armyMap, HexMap<Fight> fightMap)
+    public static HexMap<Army> RemoveLosses(HexMap<Army> armyMap, HexMap<Fight> fightMap)
     {
         var result = armyMap.ToDictionary();
         foreach (var coordinates in fightMap.Keys)
@@ -111,7 +111,7 @@ public static class StateHelper
         return new HexMap<Army>(result);
     }
 
-    private static PlayerMap<HexMap<Fight>> GetFights(double fightExponent, HexMap<PlayerMap<Army>> fightingArmies)
+    public static PlayerMap<HexMap<Fight>> GetFights(double fightExponent, HexMap<PlayerMap<Army>> fightingArmies)
     {
         Dictionary<string, Dictionary<Coordinates, Fight>> fights = fightingArmies.Values
             .SelectMany(x => x.Keys)
@@ -139,7 +139,7 @@ public static class StateHelper
         return new PlayerMap<HexMap<Fight>>(fights.ToDictionary(x => x.Key, x => new HexMap<Fight>(x.Value)));
     }
 
-    private static HexMap<ushort> RemoveMatter(HexMap<ushort> remainingMatter, HexMap<ushort> revenue)
+    public static HexMap<ushort> RemoveMatter(HexMap<ushort> remainingMatter, HexMap<ushort> revenue)
     {
         var result = remainingMatter.ToDictionary();
         foreach (var coordinates in revenue.Keys)
@@ -149,7 +149,7 @@ public static class StateHelper
         return new HexMap<ushort>(result);
     }
 
-    private static HexMap<PlayerMap<Army>> GetFightingArmies(Dictionary<string, HexMap<Army>> armiesPerPlayer)
+    public static HexMap<PlayerMap<Army>> GetFightingArmies(Dictionary<string, HexMap<Army>> armiesPerPlayer)
     {
         HashSet<Coordinates> coordinates = armiesPerPlayer.SelectMany(x => x.Value.Keys).ToHashSet();
         Dictionary<Coordinates, Dictionary<string, Army>> fights = new();
@@ -166,7 +166,7 @@ public static class StateHelper
         return new HexMap<PlayerMap<Army>>(fights.ToDictionary(x => x.Key, x => new PlayerMap<Army>(x.Value)));
     }
 
-    private static HexMap<Structure> CompleteConstructions(HexMap<Structure> structures, HexMap<Structure> constructions)
+    public static HexMap<Structure> CompleteConstructions(HexMap<Structure> structures, HexMap<Structure> constructions)
     {
         var result = structures.ToDictionary();
         foreach (var coordinates in constructions.Keys)
@@ -176,7 +176,7 @@ public static class StateHelper
         return new HexMap<Structure>(result);
     }
 
-    private static HexMap<Army> CompleteTrainings(HexMap<Army> armies, HexMap<Army> completedTrainings)
+    public static HexMap<Army> CompleteTrainings(HexMap<Army> armies, HexMap<Army> completedTrainings)
     {
         var result = armies.ToDictionary();
         foreach (var coordinates in completedTrainings.Keys)
@@ -186,7 +186,7 @@ public static class StateHelper
         return new HexMap<Army>(result);
     }
 
-    private static HexMap<Army> MoveArmies(HexMap<Army> armyMap, IImmutableSet<Move> moves)
+    public static HexMap<Army> MoveArmies(HexMap<Army> armyMap, IImmutableSet<Move> moves)
     {
         var result = armyMap.ToDictionary();
         foreach (var move in moves)
@@ -198,7 +198,7 @@ public static class StateHelper
         return new HexMap<Army>(result);
     }
 
-    private static TurnMap<HexMap<Structure>> AddConstructions(ushort turn,
+    public static TurnMap<HexMap<Structure>> AddConstructions(ushort turn,
        TurnMap<HexMap<Structure>> constructions,
         HexMap<Structure> orderConstructions,
         Structure constructionDuration)
@@ -229,7 +229,7 @@ public static class StateHelper
         return new TurnMap<HexMap<Structure>>(result.ToDictionary(x => x.Key, x => new HexMap<Structure>(x.Value)));
     }
 
-    private static TurnMap<HexMap<Army>> AddTrainings(ushort turn,
+    public static TurnMap<HexMap<Army>> AddTrainings(ushort turn,
         TurnMap<HexMap<Army>> trainings,
         HexMap<Army> orderTrainings,
         Army trainingDuration)
@@ -260,7 +260,7 @@ public static class StateHelper
         return new TurnMap<HexMap<Army>>(result.ToDictionary(x => x.Key, x => new HexMap<Army>(x.Value)));
     }
 
-    private static short GetConstructionCost(Structure cost, HexMap<Structure> constructions)
+    public static short GetConstructionCost(Structure cost, HexMap<Structure> constructions)
     {
         short constructionCosts = 0;
         foreach (var construction in constructions.Values)
@@ -270,7 +270,7 @@ public static class StateHelper
         return constructionCosts;
     }
 
-    private static short GetTrainingCost(Army cost, HexMap<Army> trainings)
+    public static short GetTrainingCost(Army cost, HexMap<Army> trainings)
     {
         short trainingCost = 0;
         foreach (var training in trainings.Values)
@@ -278,42 +278,5 @@ public static class StateHelper
             trainingCost += (training * cost).Sum();
         }
         return trainingCost;
-    }
-
-    private static HexMap<ushort> GetRevenue(HexMap<Army> armyMap, Army incomeSettings, HexMap<ushort> remainingMatter)
-    {
-        Dictionary<Coordinates, ushort> revenue = new();
-        foreach (var coordinate in armyMap.Keys)
-        {
-            ushort incomeAtHex = Convert.ToUInt16((armyMap[coordinate] * incomeSettings).Sum());
-            incomeAtHex = Math.Min(incomeAtHex, Convert.ToUInt16(remainingMatter[coordinate]));
-            revenue[coordinate] = incomeAtHex;
-        }
-        return new HexMap<ushort>(revenue);
-    }
-
-    private static void SetupStartArmiesAndStructures(HexMap<HexagonSettings> hexagonSettingsPerCoordinates,
-        Army startAmy,
-        Structure startStructure,
-        Dictionary<string, Dictionary<Coordinates, Army>> armies,
-        Dictionary<string, Dictionary<Coordinates, Structure>> structures)
-    {
-        int playerIndex = 0;
-        string[] playerIds = armies.Keys.ToArray();
-        foreach (var coordinates in hexagonSettingsPerCoordinates.Keys)
-        {
-            if (hexagonSettingsPerCoordinates[coordinates].IsStartHexagon)
-            {
-                string player = playerIds[playerIndex];
-                armies[player][coordinates] = startAmy;
-                structures[player][coordinates] = startStructure;
-                playerIndex++;
-                if (playerIndex >= playerIds.Length)
-                {
-                    return;
-                }
-            }
-        }
-        throw new Exception("The number of players exceed the possible starting hexagons.");
     }
 }

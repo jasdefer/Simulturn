@@ -36,4 +36,16 @@ public static class IncomeHelper
         var income = totalRevenue * (1 - upkeep);
         return Convert.ToUInt16(Math.Round(income));
     }
+
+    public static HexMap<ushort> GetRevenue(HexMap<Army> armyMap, Army incomeSettings, HexMap<ushort> remainingMatter)
+    {
+        Dictionary<Coordinates, ushort> revenue = new();
+        foreach (var coordinate in armyMap.Keys)
+        {
+            ushort incomeAtHex = Convert.ToUInt16((armyMap[coordinate] * incomeSettings).Sum());
+            incomeAtHex = Math.Min(incomeAtHex, Convert.ToUInt16(remainingMatter[coordinate]));
+            revenue[coordinate] = incomeAtHex;
+        }
+        return new HexMap<ushort>(revenue);
+    }
 }
