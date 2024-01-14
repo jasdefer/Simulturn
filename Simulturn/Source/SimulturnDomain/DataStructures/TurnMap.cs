@@ -20,4 +20,12 @@ public class TurnMap<T>
     {
         return new TurnMap<T>(_empty);
     }
+
+    public IEnumerable<T> GetValuesAfter(ushort turn)
+    {
+        foreach (T item in _map.Where(x => x.Key >= turn).Select(x => x.Value))
+        {
+            yield return item;
+        }
+    }
 }

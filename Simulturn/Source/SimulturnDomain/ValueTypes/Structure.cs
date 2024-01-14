@@ -132,6 +132,46 @@ public readonly struct Structure : IAdditionOperators<Structure, Structure, Stru
         };
     }
 
+    public bool EachBuildingIsSmallerOrEqualThan(Structure other)
+    {
+        return Root <= other.Root &&
+            Cube <= other.Cube &&
+            Pyramid <= other.Pyramid &&
+            Sphere <= other.Sphere &&
+            Plane <= other.Plane &&
+            Axis <= other.Axis;
+    }
+
+    public bool AnyBuildingIsSmallerThan(Structure other)
+    {
+        return Root < other.Root ||
+            Cube < other.Cube ||
+            Pyramid < other.Pyramid ||
+            Sphere < other.Sphere ||
+            Plane < other.Plane ||
+            Axis < other.Axis;
+    }
+
+    public bool EachBuildingIsGreaterOrEqualThan(Structure other)
+    {
+        return Root >= other.Root &&
+            Cube >= other.Cube &&
+            Pyramid >= other.Pyramid &&
+            Sphere >= other.Sphere &&
+            Plane >= other.Plane &&
+            Axis >= other.Axis;
+    }
+
+    public bool AnyBuildingIsGreaterThan(Structure other)
+    {
+        return Root > other.Root ||
+            Cube > other.Cube ||
+            Pyramid > other.Pyramid ||
+            Sphere > other.Sphere ||
+            Plane > other.Plane ||
+            Axis > other.Axis;
+    }
+
     public static Structure Combine(Structure a, Structure b, Func<short, short, short> func)
     {
         return new Structure()
