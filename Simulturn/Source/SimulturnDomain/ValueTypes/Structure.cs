@@ -199,4 +199,17 @@ public readonly struct Structure : IAdditionOperators<Structure, Structure, Stru
             Plane > 0 ||
             Axis > 0;
     }
+
+    public static Structure FromBuildings(IReadOnlyDictionary<Building, short> buildings)
+    {
+        return new Structure()
+        {
+            Root = buildings.ContainsKey(Building.Root) ? buildings[Building.Root] : (short)0,
+            Cube = buildings.ContainsKey(Building.Cube) ? buildings[Building.Cube] : (short)0,
+            Pyramid = buildings.ContainsKey(Building.Pyramid) ? buildings[Building.Pyramid] : (short)0,
+            Sphere = buildings.ContainsKey(Building.Sphere) ? buildings[Building.Sphere] : (short)0,
+            Plane = buildings.ContainsKey(Building.Plane) ? buildings[Building.Plane] : (short)0,
+            Axis = buildings.ContainsKey(Building.Axis) ? buildings[Building.Axis] : (short)0,
+        };
+    }
 }

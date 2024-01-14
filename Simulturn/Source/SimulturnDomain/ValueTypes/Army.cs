@@ -144,6 +144,42 @@ public readonly struct Army : IAdditionOperators<Army, Army, Army>, ISubtraction
         };
     }
 
+    public bool EachUnitIsSmallerOrEqualThan(Army other)
+    {
+        return Triangle <= other.Triangle &&
+            Square <= other.Square &&
+            Circle <= other.Circle&&
+            Line <= other.Line &&
+            Point <= other.Point;
+    }
+
+    public bool AnyUnitIsSmallerThan(Army other)
+    {
+        return Triangle < other.Triangle ||
+            Square < other.Square ||
+            Circle < other.Circle ||
+            Line < other.Line ||
+            Point < other.Point;
+    }
+
+    public bool EachUnitIsGreaterOrEqualThan(Army other)
+    {
+        return Triangle >= other.Triangle &&
+            Square >= other.Square &&
+            Circle >= other.Circle &&
+            Line >= other.Line &&
+            Point >= other.Point;
+    }
+
+    public bool AnyUnitIsGreaterThan(Army other)
+    {
+        return Triangle > other.Triangle ||
+            Square > other.Square ||
+            Circle > other.Circle ||
+            Line > other.Line ||
+            Point > other.Point;
+    }
+
     public bool Any()
     {
         return Point > 0 ||

@@ -1,4 +1,5 @@
 ﻿using SimulturnDomain.DataStructures;
+using SimulturnDomain.Enums;
 using SimulturnDomain.ValueTypes;
 using System.Collections.Immutable;
 
@@ -10,6 +11,7 @@ public record GameSettings(
     StructureSettings StructureSettings,
     ImmutableArray<UpkeepLevel> UpkeepLevels,
     HexMap<HexagonSettings> HexagonSettingsPerCoordinates,
+    ImmutableDictionary<Unit, Building> UnitTrainableBuilding,
     int Seed = 1)
 {
     public IEnumerable<Coordinates> Coordinates => HexagonSettingsPerCoordinates.Keys;
@@ -44,12 +46,22 @@ public record GameSettings(
             { new Coordinates(+2,-1), new HexagonSettings(1000, points, true, false) },
             { new Coordinates(+2,+0), new HexagonSettings(1000, points, true, false) },
         };
+        var unitTrainableBuilding = new Dictionary<Unit, Building>()
+        {
+            {Unit.Point, Building.Root },
+            {Unit.Square, Building.Cube },
+            {Unit.Circle, Building.Sphere },
+            {Unit.Triangle, Building.Pyramid },
+            {Unit.Line, Building.Plane },
+
+        };
         return new GameSettings(2,
             500,
             ArmySettings.Default(),
             StructureSettings.Default(),
             upkeepLevels,
             new HexMap<HexagonSettings>(hexagonSettings),
+            unitTrainableBuilding.ToImmutableDictionary(),
             seed);
     }
 };
