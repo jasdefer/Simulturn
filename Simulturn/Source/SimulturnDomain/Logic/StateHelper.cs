@@ -32,7 +32,7 @@ public static class StateHelper
 
     public static State GetState(ushort turn, State state, IReadOnlyDictionary<string, Order> orders, GameSettings gameSettings)
     {
-        Dictionary<string, PlayerState> playerStates = new();
+        Dictionary<string, PlayerState> playerStates = [];
         HexMap<ushort> remainingMatter = state.RemainingMatter;
         foreach (var player in orders.Keys)
         {
@@ -152,7 +152,7 @@ public static class StateHelper
     public static HexMap<PlayerMap<Army>> GetFightingArmies(Dictionary<string, HexMap<Army>> armiesPerPlayer)
     {
         HashSet<Coordinates> coordinates = armiesPerPlayer.SelectMany(x => x.Value.Keys).ToHashSet();
-        Dictionary<Coordinates, Dictionary<string, Army>> fights = new();
+        Dictionary<Coordinates, Dictionary<string, Army>> fights = [];
         foreach (var coordinate in coordinates)
         {
             Dictionary<string, Army> fightingArmies = armiesPerPlayer
@@ -204,7 +204,7 @@ public static class StateHelper
         Structure constructionDuration)
     {
         var buildings = Enum.GetValues(typeof(Building));
-        Dictionary<ushort, Dictionary<Coordinates, Structure>> result = new();
+        Dictionary<ushort, Dictionary<Coordinates, Structure>> result = [];
         foreach (Coordinates coordinates in orderConstructions.Keys)
         {
             foreach (Building building in buildings)
@@ -214,7 +214,7 @@ public static class StateHelper
                     ushort completionTurn = Convert.ToUInt16(turn + constructionDuration[building]);
                     if (!constructions.ContainsKey(completionTurn))
                     {
-                        result.Add(completionTurn, new Dictionary<Coordinates, Structure>());
+                        result.Add(completionTurn, []);
                     }
                     if (!result[completionTurn].ContainsKey(coordinates))
                     {
@@ -234,7 +234,7 @@ public static class StateHelper
         HexMap<Army> orderTrainings,
         Army trainingDuration)
     {
-        Dictionary<ushort, Dictionary<Coordinates, Army>> result = new Dictionary<ushort, Dictionary<Coordinates, Army>>();
+        Dictionary<ushort, Dictionary<Coordinates, Army>> result = [];
         var units = Enum.GetValues(typeof(Unit));
         foreach (Coordinates coordinates in orderTrainings.Keys)
         {
@@ -245,7 +245,7 @@ public static class StateHelper
                     ushort completionTurn = Convert.ToUInt16(turn + trainingDuration[unit]);
                     if (!trainings.ContainsKey(completionTurn))
                     {
-                        result.Add(completionTurn, new Dictionary<Coordinates, Army>());
+                        result.Add(completionTurn, []);
                     }
                     if (!result[completionTurn].ContainsKey(coordinates))
                     {

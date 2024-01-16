@@ -4,7 +4,7 @@ namespace SimulturnDomain.DataStructures;
 public class HexMap<T>
 {
     private readonly Dictionary<Coordinates, T> _map;
-    private static readonly Dictionary<Coordinates, T> _empty = new Dictionary<Coordinates, T>();
+    private static readonly Dictionary<Coordinates, T> _empty = [];
 
     public HexMap(IDictionary<Coordinates, T> initialMap)
     {
@@ -20,8 +20,6 @@ public class HexMap<T>
     {
         return new Dictionary<Coordinates, T>(_map);
     }
-
-    public bool ContainsKey(Coordinates coordinates) => _map.ContainsKey(coordinates);
 
     public static HexMap<T> Empty()
     {

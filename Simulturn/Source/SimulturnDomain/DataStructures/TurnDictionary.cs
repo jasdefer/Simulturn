@@ -4,7 +4,7 @@ using System.Collections.Immutable;
 namespace SimulturnDomain.DataStructures;
 public class TurnDictionary
 {
-    private readonly Dictionary<string, List<Order>> _ordersPerPlayer = new Dictionary<string, List<Order>>();
+    private readonly Dictionary<string, List<Order>> _ordersPerPlayer = [];
     public TurnDictionary(IEnumerable<string> playerIds)
     {
         PlayerIds = playerIds.ToImmutableHashSet();

@@ -8,7 +8,7 @@ public class IncomeHelperTests
     [InlineData(0)]
     [InlineData(10)]
     [InlineData(49)]
-    public void GetIncome_NoUpkeep(short space)
+    public void GetIncome_NoUpkeep(ushort space)
     {
         var upkeepLevels = new UpkeepLevel[]
         {
@@ -25,7 +25,7 @@ public class IncomeHelperTests
     [InlineData(50)]
     [InlineData(60)]
     [InlineData(79)]
-    public void GetIncome_LowUpkeep(short space)
+    public void GetIncome_LowUpkeep(ushort space)
     {
         var upkeepLevels = new UpkeepLevel[]
         {
@@ -42,7 +42,7 @@ public class IncomeHelperTests
     [InlineData(80)]
     [InlineData(90)]
     [InlineData(1000)]
-    public void GetIncome_HighUpkeep(short space)
+    public void GetIncome_HighUpkeep(ushort space)
     {
         var upkeepLevels = new UpkeepLevel[]
         {

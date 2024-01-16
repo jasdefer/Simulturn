@@ -2,7 +2,7 @@
 public class TurnMap<T>
 {
     private readonly Dictionary<ushort, T> _map;
-    private static readonly Dictionary<ushort, T> _empty = new Dictionary<ushort, T>();
+    private static readonly Dictionary<ushort, T> _empty = [];
 
     public TurnMap(IDictionary<ushort, T> initialMap)
     {
@@ -19,13 +19,5 @@ public class TurnMap<T>
     public static TurnMap<T> Empty()
     {
         return new TurnMap<T>(_empty);
-    }
-
-    public IEnumerable<T> GetValuesAfter(ushort turn)
-    {
-        foreach (T item in _map.Where(x => x.Key >= turn).Select(x => x.Value))
-        {
-            yield return item;
-        }
     }
 }

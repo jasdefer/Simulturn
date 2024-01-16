@@ -67,9 +67,8 @@ public static class ValidationHelper
 
     private static Structure GetRequiredStructures(IDictionary<Unit, Building> unitTrainableBuilding, Army trainings)
     {
-        Structure structure = new Structure();
         Unit[] units = Enum.GetValues<Unit>();
-        Dictionary<Building, short> buildings = new();
+        Dictionary<Building, short> buildings = [];
         foreach (var unit in units)
         {
             buildings[unitTrainableBuilding[unit]] = trainings[unit];

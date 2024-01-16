@@ -39,7 +39,7 @@ public static class IncomeHelper
 
     public static HexMap<ushort> GetRevenue(HexMap<Army> armyMap, Army incomeSettings, HexMap<ushort> remainingMatter)
     {
-        Dictionary<Coordinates, ushort> revenue = new();
+        Dictionary<Coordinates, ushort> revenue = [];
         foreach (var coordinate in armyMap.Keys)
         {
             ushort incomeAtHex = Convert.ToUInt16((armyMap[coordinate] * incomeSettings).Sum());
