@@ -35,9 +35,13 @@ public static class FightHelper
         Army arm2Losses;
         if (army1Strength > army2Strength)
         {
-            var fraction = army2Strength / army1Strength;
-            arm1Losses = army1.MultiplyAndRoundUp(1 - fraction);
+            var fraction = army2Strength / (double)(army2Strength + army1Strength);
+            arm1Losses = army1.MultiplyAndRoundUp(fraction);
             arm2Losses = army2;
+        }
+        else if(army1Strength == 0)
+        {
+            return (army1, army2);
         }
         else
         {

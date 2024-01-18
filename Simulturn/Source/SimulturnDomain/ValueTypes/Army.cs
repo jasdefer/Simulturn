@@ -182,11 +182,11 @@ public readonly struct Army : IAdditionOperators<Army, Army, Army>, ISubtraction
 
     public bool Any()
     {
-        return Point > 0 ||
-            Line > 0 ||
-            Circle > 0 ||
+        return Triangle > 0||
             Square > 0 ||
-            Triangle > 0;
+            Circle > 0 ||
+            Line > 0 ||
+            Point > 0;
     }
 
     public short Sum()
@@ -194,11 +194,11 @@ public readonly struct Army : IAdditionOperators<Army, Army, Army>, ISubtraction
         return Convert.ToInt16(Triangle + Square + Circle + Line + Point);
     }
 
-    public ushort GetStrengthOver(Army opponent, double exponent)
+    public double GetStrengthOver(Army opponent, double exponent)
     {
-        var strength = (ushort)(Math.Pow(Math.Max(0, Triangle - opponent.Square), exponent) +
+        var strength = Math.Pow(Math.Max(0, Triangle - opponent.Square), exponent) +
             Math.Pow(Math.Max(0, Square - opponent.Circle), exponent) +
-            Math.Pow(Math.Max(0, Circle - opponent.Triangle), exponent));
+            Math.Pow(Math.Max(0, Circle - opponent.Triangle), exponent);
         return strength;
     }
 
@@ -206,11 +206,16 @@ public readonly struct Army : IAdditionOperators<Army, Army, Army>, ISubtraction
     {
         return new Army()
         {
-            Circle = (short)Math.Ceiling(fraction * Circle),
             Triangle = (short)Math.Ceiling(fraction * Triangle),
             Square = (short)Math.Ceiling(fraction * Square),
+            Circle = (short)Math.Ceiling(fraction * Circle),
             Line = (short)Math.Ceiling(fraction * Line),
             Point = (short)Math.Ceiling(fraction * Point),
         };
+    }
+
+    public override string ToString()
+    {
+        return $"{Triangle},{Square},{Circle},{Line},{Point}";
     }
 }

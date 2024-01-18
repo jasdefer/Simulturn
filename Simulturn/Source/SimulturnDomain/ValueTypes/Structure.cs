@@ -212,4 +212,9 @@ public readonly struct Structure : IAdditionOperators<Structure, Structure, Stru
             Axis = buildings.ContainsKey(Building.Axis) ? buildings[Building.Axis] : (short)0,
         };
     }
+
+    public override string ToString()
+    {
+        return $"{Root},{Cube},{Pyramid},{Sphere},{Plane},{Axis}";
+    }
 }
