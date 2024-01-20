@@ -14,7 +14,6 @@ public readonly struct Army : IAdditionOperators<Army, Army, Army>, ISubtraction
         Point = point;
     }
     public short Point { get; init; }
-
     public short Triangle { get; init; }
     public short Square { get; init; }
     public short Circle { get; init; }
@@ -196,7 +195,8 @@ public readonly struct Army : IAdditionOperators<Army, Army, Army>, ISubtraction
 
     public double GetStrengthOver(Army opponent, double exponent)
     {
-        var strength = Math.Pow(Math.Max(0, Triangle - opponent.Square), exponent) +
+        var strength = 
+            Math.Pow(Math.Max(0, Triangle - opponent.Square), exponent) +
             Math.Pow(Math.Max(0, Square - opponent.Circle), exponent) +
             Math.Pow(Math.Max(0, Circle - opponent.Triangle), exponent);
         return strength;
