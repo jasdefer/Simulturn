@@ -4,12 +4,13 @@ using System.Numerics;
 namespace SimulturnDomain.ValueTypes;
 public readonly struct Structure : IAdditionOperators<Structure, Structure, Structure>, ISubtractionOperators<Structure, Structure, Structure>
 {
-    public Structure(short root,
-        short cube,
-        short pyramid,
-        short sphere,
-        short plane,
-        short axis)
+    public static readonly Structure Empty = new Structure();
+    public Structure(short root = 0,
+        short cube = 0,
+        short pyramid = 0,
+        short sphere = 0,
+        short plane = 0,
+        short axis = 0)
     {
         Root = root;
         Cube = cube;

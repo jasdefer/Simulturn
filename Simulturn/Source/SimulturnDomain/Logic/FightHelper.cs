@@ -13,16 +13,17 @@ public static class FightHelper
         while (totalDamage > 0)
         {
             Building building = buildings[index];
-            short count = Convert.ToInt16(Math.Floor(totalDamage / (double)structure[building]));
+            short count = Convert.ToInt16(Math.Min(structure[building], Math.Floor(totalDamage / (double)armor[building])));
             if (count <= 0)
             {
                 totalDamage = 0;
             }
             else
             {
-                totalDamage -= Convert.ToInt16(count * structure[building]);
+                totalDamage -= Convert.ToInt16(count * armor[building]);
             }
             losses = losses.Add(building, count);
+            index++;
         }
         return losses;
     }

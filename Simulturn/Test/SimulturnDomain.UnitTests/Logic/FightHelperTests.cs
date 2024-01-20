@@ -4,6 +4,7 @@ using SimulturnDomain.ValueTypes;
 namespace SimulturnDomain.UnitTests.Logic;
 public class FightHelperTests
 {
+    #region Fight
     [Fact]
     public void EmptyArmies_NoEngagement_NoLosses()
     {
@@ -103,4 +104,84 @@ public class FightHelperTests
         army1Losses.Should().Be(army1);
         army2Losses.Should().Be(Army.Empty);
     }
+    #endregion
+
+    #region Destroy
+    [Fact]
+    public void EmptyArmy_FullyFortifiedStructure_MinimalDamage_NoDestruction()
+    {
+        Army army = new Army();
+        Structure structure = new Structure(10, 10, 10, 10, 10, 10);
+        Army damage = new Army(1, 1, 1);
+        Structure armor = new Structure(1, 2, 3, 4, 5, 6);
+        Structure destruction = FightHelper.Destroy(army, structure, damage, armor);
+        destruction.Any().Should().BeFalse();
+    }
+
+    [Fact]
+    public void SingleUnitArmy_FullyFortifiedStructure_LowDamageHighArmor_NoDestruction()
+    {
+        Army army = new Army(1);
+        Structure structure = new Structure(10, 10, 10, 10, 10, 10);
+        Army damage = new Army(1, 1, 1);
+        Structure armor = new Structure(2, 3, 4, 5, 6, 7);
+        Structure destruction = FightHelper.Destroy(army, structure, damage, armor);
+        destruction.Any().Should().BeFalse();
+    }
+
+    [Fact]
+    public void SingleUnitArmy_FullyFortifiedStructure_EqualDamageArmor_MinorDestruction()
+    {
+        Army army = new Army(1);
+        Structure structure = new Structure(10, 10, 10, 10, 10, 10);
+        Army damage = new Army(1, 1, 1);
+        Structure armor = new Structure(1, 2, 3, 4, 5, 6);
+        Structure destruction = FightHelper.Destroy(army, structure, damage, armor);
+        destruction.Should().Be(new Structure(1));
+    }
+
+    [Fact]
+    public void SingleUnitArmy_FullyFortifiedStructure_IncreasedDamageMinorArmor_SpecificDestruction()
+    {
+        Army army = new Army(1);
+        Structure structure = new Structure(10, 10, 10, 10, 10, 10);
+        Army damage = new Army(2, 1, 1);
+        Structure armor = new Structure(1, 2, 3, 4, 5, 6);
+        Structure destruction = FightHelper.Destroy(army, structure, damage, armor);
+        destruction.Should().Be(new Structure(2));
+    }
+
+    [Fact]
+    public void SingleUnitArmy_MinimalFortification_IncreasedDamageMinorArmor_MinorDestruction()
+    {
+        Army army = new Army(1);
+        Structure structure = new Structure(1, 1, 1, 1, 1, 1);
+        Army damage = new Army(2, 1, 1);
+        Structure armor = new Structure(1, 2, 3, 4, 5, 6);
+        Structure destruction = FightHelper.Destroy(army, structure, damage, armor);
+        destruction.Should().Be(new Structure(1));
+    }
+
+    [Fact]
+    public void SingleUnitArmy_MinimalFortification_HighDamageMinorArmor_ModerateDestruction()
+    {
+        Army army = new Army(1);
+        Structure structure = new Structure(1, 1, 1, 1, 1, 1);
+        Army damage = new Army(3, 1, 1);
+        Structure armor = new Structure(1, 2, 3, 4, 5, 6);
+        Structure destruction = FightHelper.Destroy(army, structure, damage, armor);
+        destruction.Should().Be(new Structure(1, 1));
+    }
+
+    [Fact]
+    public void BalancedArmy_ModeratelyFortifiedStructure_HighDamageLowArmor_SignificantDestruction()
+    {
+        Army army = new Army(1, 1, 1);
+        Structure structure = new Structure(5, 5, 5, 5, 5, 5);
+        Army damage = new Army(10, 10, 10);
+        Structure armor = new Structure(1, 2, 3, 4, 5, 6);
+        Structure destruction = FightHelper.Destroy(army, structure, damage, armor);
+        destruction.Should().Be(new Structure(5, 5, 5));
+    }
+    #endregion
 }
