@@ -48,8 +48,8 @@ public class FightHelperTests
     [Fact]
     public void TenCirclesVsTenTriangles_CompleteDominance_TotalVictory()
     {
-        Army army1 = new Army(10,0,0);
-        Army army2 = new Army(0,0,10);
+        Army army1 = new Army(10, 0, 0);
+        Army army2 = new Army(0, 0, 10);
         (Army army1Losses, Army army2Losses) = FightHelper.Fight(2, army1, army2);
         army1Losses.Should().Be(Army.Empty);
         army2Losses.Should().Be(army2);

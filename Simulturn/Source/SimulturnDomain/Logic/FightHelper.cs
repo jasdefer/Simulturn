@@ -40,7 +40,7 @@ public static class FightHelper
             arm1Losses = army1.MultiplyAndRoundUp(fraction);
             arm2Losses = army2;
         }
-        else if(army1Strength == 0 && army2Strength == 0)
+        else if (army1Strength == 0 && army2Strength == 0)
         {
             return (Army.Empty, Army.Empty);
         }

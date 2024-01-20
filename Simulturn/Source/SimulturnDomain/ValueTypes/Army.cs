@@ -147,7 +147,7 @@ public readonly struct Army : IAdditionOperators<Army, Army, Army>, ISubtraction
     {
         return Triangle <= other.Triangle &&
             Square <= other.Square &&
-            Circle <= other.Circle&&
+            Circle <= other.Circle &&
             Line <= other.Line &&
             Point <= other.Point;
     }
@@ -181,7 +181,7 @@ public readonly struct Army : IAdditionOperators<Army, Army, Army>, ISubtraction
 
     public bool Any()
     {
-        return Triangle > 0||
+        return Triangle > 0 ||
             Square > 0 ||
             Circle > 0 ||
             Line > 0 ||
@@ -195,7 +195,7 @@ public readonly struct Army : IAdditionOperators<Army, Army, Army>, ISubtraction
 
     public double GetStrengthOver(Army opponent, double exponent)
     {
-        var strength = 
+        var strength =
             Math.Pow(Math.Max(0, Triangle - opponent.Square), exponent) +
             Math.Pow(Math.Max(0, Square - opponent.Circle), exponent) +
             Math.Pow(Math.Max(0, Circle - opponent.Triangle), exponent);

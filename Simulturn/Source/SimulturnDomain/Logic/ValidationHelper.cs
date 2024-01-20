@@ -48,14 +48,14 @@ public static class ValidationHelper
                                                          coordinates,
                                                          order.Constructions[coordinates],
                                                          playerState.ConstructionMap);
-            if(constructionCount> playerState.ArmyMap[coordinates].Point)
+            if (constructionCount > playerState.ArmyMap[coordinates].Point)
             {
                 return false;
             }
         }
 
         // Validate movements
-        foreach(var group in order.Moves.GroupBy(x => x.Origin))
+        foreach (var group in order.Moves.GroupBy(x => x.Origin))
         {
             var movingArmies = new Army();
             foreach (var army in group.Select(x => x.Army))
@@ -86,7 +86,7 @@ public static class ValidationHelper
     public static Structure GetRequiredStructures(ushort currentTurn, IDictionary<Unit, Building> unitTrainableBuilding, Coordinates coordinates, Army newTraining, TurnMap<HexMap<Army>> trainingMap)
     {
         var trainings = newTraining;
-        foreach (var turn in trainingMap.Keys.Where(x => x>= currentTurn))
+        foreach (var turn in trainingMap.Keys.Where(x => x >= currentTurn))
         {
             if (trainingMap[turn].ContainsKey(coordinates))
             {

@@ -1,4 +1,6 @@
-﻿using System.Numerics;
+﻿using SimulturnDomain.DataStructures;
+using SimulturnDomain.ValueTypes;
+using System.Numerics;
 
 namespace SimulturnDomain.Helper;
 public static class DictionaryHelper
@@ -46,5 +48,15 @@ public static class DictionaryHelper
         {
             a.AddOrSubtract(keyValuePair.Key, keyValuePair.Value);
         }
+    }
+
+    public static HexMap<T> ToHexMap<T>(this IDictionary<Coordinates, T> dict)
+    {
+        return new HexMap<T>(dict);
+    }
+
+    public static TurnMap<T> ToTurnMap<T>(this IDictionary<ushort, T> dict)
+    {
+        return new TurnMap<T>(dict);
     }
 }
