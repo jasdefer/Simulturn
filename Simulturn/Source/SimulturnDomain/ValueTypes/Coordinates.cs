@@ -52,4 +52,9 @@ public readonly struct Coordinates : IEquatable<Coordinates>
             _ => throw new ArgumentException("Invalid hex direction")
         };
     }
+
+    public override string ToString()
+    {
+        return $"({X},{Y},{Z})";
+    }
 }

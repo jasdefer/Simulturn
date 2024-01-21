@@ -1,7 +1,9 @@
-﻿using SimulturnDomain.Helper;
+﻿using SimulturnDomain.Enums;
+using SimulturnDomain.Helper;
 using SimulturnDomain.Logic;
 using SimulturnDomain.Model;
 using SimulturnDomain.ValueTypes;
+using System.Collections.Immutable;
 
 namespace SimulturnDomain.UnitTests.Logic;
 public class StateHelperTest
@@ -139,5 +141,53 @@ public class StateHelperTest
         newStructures[_coordinates[0]].Should().Be(new Structure(6));
         newStructures[_coordinates[1]].Should().Be(new Structure(2));
         newStructures[_coordinates[2]].Should().Be(new Structure(9));
+    }
+
+    [Fact]
+    public void CompleteTrainings()
+    {
+        var armies = new Dictionary<Coordinates, Army>()
+        {
+            { _coordinates[0], new Army(1) },
+            { _coordinates[1], new Army(2) }
+        };
+
+        var trainings = new Dictionary<Coordinates, Army>()
+        {
+            { _coordinates[0], new Army(5) },
+            { _coordinates[2], new Army(9) }
+        };
+        var newArmies = StateHelper.CompleteTrainings(armies.ToHexMap(), trainings.ToHexMap());
+        newArmies.Keys.Should().HaveCount(3);
+        newArmies[_coordinates[0]].Should().Be(new Army(6));
+        newArmies[_coordinates[1]].Should().Be(new Army(2));
+        newArmies[_coordinates[2]].Should().Be(new Army(9));
+    }
+
+    [Fact]
+    public void MoveArmies()
+    {
+        var armies = new Dictionary<Coordinates, Army>()
+        {
+            { _coordinates[0], new Army(5) },
+            { _coordinates[0].GetNeighbor(HexDirection.NorthEast), new Army(9) },
+            { _coordinates[0].GetNeighbor(HexDirection.SouthWest), new Army(15) },
+        };
+        IImmutableSet<Move> moves =
+        [
+            new Move(_coordinates[0], HexDirection.NorthEast, new Army(1)),
+            new Move(_coordinates[0].GetNeighbor(HexDirection.SouthWest), HexDirection.SouthWest, new Army(15)),
+        ];
+        var newArmies = StateHelper.MoveArmies(armies.ToHexMap(), moves);
+        newArmies.Keys.Should().HaveCount(3);
+        newArmies[_coordinates[0]].Should().Be(new Army(4));
+        newArmies[_coordinates[0].GetNeighbor(HexDirection.NorthEast)].Should().Be(new Army(10));
+        newArmies[_coordinates[0].GetNeighbor(HexDirection.SouthWest).GetNeighbor(HexDirection.SouthWest)].Should().Be(new Army(15));
+    }
+
+    [Fact]
+    public void AddConstructions()
+    {
+        //  StateHelper.AddConstructions(4, )
     }
 }

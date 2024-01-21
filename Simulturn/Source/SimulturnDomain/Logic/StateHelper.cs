@@ -169,8 +169,12 @@ public static class StateHelper
         foreach (var move in moves)
         {
             result[move.Origin] -= move.Army;
+            if (!result[move.Origin].Any())
+            {
+                result.Remove(move.Origin);
+            }
             Coordinates destination = move.Origin.GetNeighbor(move.Direction);
-            result[destination] += move.Army;
+            result.AddOrAdd(destination, move.Army);
         }
         return new HexMap<Army>(result);
     }
