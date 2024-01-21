@@ -1,4 +1,5 @@
-﻿using SimulturnDomain.Logic;
+﻿using SimulturnDomain.Helper;
+using SimulturnDomain.Logic;
 using SimulturnDomain.ValueTypes;
 
 namespace SimulturnDomain.UnitTests.Logic;
@@ -184,4 +185,47 @@ public class FightHelperTests
         destruction.Should().Be(new Structure(5, 5, 5));
     }
     #endregion
+
+    [Fact]
+    public void GetFights()
+    {
+        var coordinates = new Coordinates[]
+        {
+            new Coordinates(0,0),
+            new Coordinates(0, 1),
+            new Coordinates(0, 2)
+        };
+        var armyMap = new Dictionary<Coordinates, IDictionary<string, Army>>()
+        {
+            {
+                coordinates[0], new Dictionary<string, Army>()
+                {
+                    { "Player01", new Army(1) },
+                    { "Player02", new Army(2) },
+                }
+            },
+            {
+                coordinates[1], new Dictionary<string, Army>()
+                {
+                    { "Player01", new Army(4) },
+                    { "Player02", new Army(2) },
+                }
+            },
+            {
+                coordinates[2], new Dictionary<string, Army>()
+                {
+                    { "Player01", new Army(4) },
+                }
+            },
+        };
+        var fights = FightHelper.GetFights(2, armyMap.ToHexPlayerMap());
+        fights.ContainsKey("Player01");
+        fights["Player01"].Keys.Count().Should().Be(2);
+        fights["Player01"].Keys.Should().Contain(coordinates[0]);
+        fights["Player01"].Keys.Should().Contain(coordinates[1]);
+        fights.ContainsKey("Player02");
+        fights["Player02"].Keys.Count().Should().Be(2);
+        fights["Player02"].Keys.Should().Contain(coordinates[0]);
+        fights["Player02"].Keys.Should().Contain(coordinates[1]);
+    }
 }

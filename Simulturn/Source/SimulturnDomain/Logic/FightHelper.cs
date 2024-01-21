@@ -1,4 +1,6 @@
-﻿using SimulturnDomain.Enums;
+﻿using SimulturnDomain.DataStructures;
+using SimulturnDomain.Enums;
+using SimulturnDomain.Model;
 using SimulturnDomain.ValueTypes;
 
 namespace SimulturnDomain.Logic;
@@ -52,5 +54,33 @@ public static class FightHelper
         }
 
         return (arm1Losses, arm2Losses);
+    }
+
+    public static PlayerMap<HexMap<Fight>> GetFights(double fightExponent, HexMap<PlayerMap<Army>> fightingArmies)
+    {
+        Dictionary<string, Dictionary<Coordinates, Fight>> fights = fightingArmies.Values
+            .SelectMany(x => x.Keys)
+            .Distinct()
+            .ToDictionary(x => x, x => new Dictionary<Coordinates, Fight>());
+        foreach (var coordinates in fightingArmies.Keys)
+        {
+            string[] players = fightingArmies[coordinates].Keys.ToArray();
+            for (int i = 0; i < players.Length - 1; i++)
+            {
+                string player1 = players[i];
+                Army army1 = fightingArmies[coordinates][player1];
+                for (int j = i + 1; j < players.Length; j++)
+                {
+                    string player2 = players[j];
+                    Army army2 = fightingArmies[coordinates][player2];
+                    (Army losses1, Army losses2) = FightHelper.Fight(fightExponent, army1, army2);
+                    Fight fight1 = new Fight(army1, losses1);
+                    Fight fight2 = new Fight(army2, losses2);
+                    fights[player1].Add(coordinates, fight1);
+                    fights[player2].Add(coordinates, fight2);
+                }
+            }
+        }
+        return new PlayerMap<HexMap<Fight>>(fights.ToDictionary(x => x.Key, x => new HexMap<Fight>(x.Value)));
     }
 }
