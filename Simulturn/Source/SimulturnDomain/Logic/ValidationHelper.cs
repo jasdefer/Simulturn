@@ -95,7 +95,6 @@ public static class ValidationHelper
         }
         Structure structure = GetRequiredStructures(unitTrainableBuilding, trainings);
         return structure;
-
     }
 
     public static Structure GetRequiredStructures(IDictionary<Unit, Building> unitTrainableBuilding, Army trainings)

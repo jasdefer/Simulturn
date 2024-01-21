@@ -60,7 +60,7 @@ public static class DictionaryHelper
         return new TurnMap<T>(dict);
     }
 
-    public static TurnMap<HexMap<T>> ToTurnHexMap<T>(this IDictionary<ushort,IDictionary<Coordinates, T>> dict)
+    public static TurnMap<HexMap<T>> ToTurnHexMap<T>(this IDictionary<ushort, IDictionary<Coordinates, T>> dict)
     {
         return new TurnMap<HexMap<T>>(dict.ToDictionary(x => x.Key, x => new HexMap<T>(x.Value)));
     }

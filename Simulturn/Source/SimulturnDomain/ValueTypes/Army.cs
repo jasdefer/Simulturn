@@ -13,11 +13,12 @@ public readonly struct Army : IAdditionOperators<Army, Army, Army>, ISubtraction
         Line = line;
         Point = point;
     }
-    public short Point { get; init; }
+
     public short Triangle { get; init; }
     public short Square { get; init; }
     public short Circle { get; init; }
     public short Line { get; init; }
+    public short Point { get; init; }
 
     public short this[Unit unit] => GetUnitCount(unit);
 
