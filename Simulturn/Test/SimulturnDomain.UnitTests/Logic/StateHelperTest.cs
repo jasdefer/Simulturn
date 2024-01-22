@@ -234,14 +234,26 @@ public class StateHelperTest
     [Fact]
     public void GetConstructionCost()
     {
-        Structure structure = new Structure(1, 2);
+        Structure structureCost = new Structure(1, 2);
         var constructions = new Dictionary<Coordinates, Structure>()
         {
             { _coordinates[0], new Structure(1,2 ) },
             { _coordinates[1], new Structure(5,6) }
         };
-        var cost = StateHelper.GetConstructionCost(structure, constructions.ToHexMap());
-        cost.
+        var cost = StateHelper.GetConstructionCost(structureCost, constructions.ToHexMap());
+        cost.Should().Be(22);
+    }
 
+    [Fact]
+    public void GetTrainingCost()
+    {
+        Army armyCost = new Army(1, 2);
+        var trainings = new Dictionary<Coordinates, Army>()
+        {
+            { _coordinates[0], new Army(1,2 ) },
+            { _coordinates[1], new Army(5,6) }
+        };
+        var cost = StateHelper.GetTrainingCost(armyCost, trainings.ToHexMap());
+        cost.Should().Be(22);
     }
 }
