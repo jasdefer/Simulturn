@@ -1,4 +1,5 @@
-﻿using SimulturnDomain.Enums;
+﻿using SimulturnDomain.DataStructures;
+using SimulturnDomain.Enums;
 using SimulturnDomain.Helper;
 using SimulturnDomain.Logic;
 using SimulturnDomain.Model;
@@ -262,8 +263,9 @@ public class StateHelperTest
     public void GetInitialStateTest()
     {
         GameSettings settings = GameSettings.Default();
+        
         var initialState = StateHelper.GetInitialState(settings, _players);
-
+        
         foreach (var player in _players)
         {
             initialState.PlayerStates[player].StructureMap.Keys.Should().HaveCount(1);
@@ -292,5 +294,6 @@ public class StateHelperTest
             orders.Add(player, order);
         }
         var newState = StateHelper.GetState(1, initialState, orders, settings);
+        Printer.Print("Test.svg", newState.RemainingMatter);
     }
 }
