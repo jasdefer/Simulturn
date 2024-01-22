@@ -2,6 +2,7 @@
 using SimulturnDomain.Helper;
 using SimulturnDomain.Logic;
 using SimulturnDomain.Model;
+using SimulturnDomain.Settings;
 using SimulturnDomain.ValueTypes;
 using System.Collections.Immutable;
 
@@ -255,5 +256,41 @@ public class StateHelperTest
         };
         var cost = StateHelper.GetTrainingCost(armyCost, trainings.ToHexMap());
         cost.Should().Be(22);
+    }
+
+    [Fact]
+    public void GetInitialStateTest()
+    {
+        GameSettings settings = GameSettings.Default();
+        var initialState = StateHelper.GetInitialState(settings, _players);
+
+        foreach (var player in _players)
+        {
+            initialState.PlayerStates[player].StructureMap.Keys.Should().HaveCount(1);
+            initialState.PlayerStates[player].StructureMap.Values.Single().Should().Be(settings.StructureSettings.StartStructures);
+            initialState.PlayerStates[player].ArmyMap.Keys.Should().HaveCount(1);
+            initialState.PlayerStates[player].ArmyMap.Values.Single().Should().Be(settings.ArmySettings.StartUnits);
+        }
+
+        foreach (var hexagon in settings.HexagonSettingsPerCoordinates.Keys)
+        {
+            initialState.RemainingMatter[hexagon].Should().Be(settings.HexagonSettingsPerCoordinates[hexagon].Matter);
+        }
+    }
+
+    [Fact]
+    public void GetState_WithTrainingAndConstruction()
+    {
+        GameSettings settings = GameSettings.Default();
+        var initialState = StateHelper.GetInitialState(settings, _players);
+        var orders = new Dictionary<string, Order>();
+        foreach (var player in _players)
+        {
+            Order order = new Order(initialState.PlayerStates[player].ArmyMap,
+                initialState.PlayerStates[player].StructureMap,
+                []);
+            orders.Add(player, order);
+        }
+        var newState = StateHelper.GetState(1, initialState, orders, settings);
     }
 }

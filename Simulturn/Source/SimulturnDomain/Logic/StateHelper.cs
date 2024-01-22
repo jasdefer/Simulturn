@@ -35,7 +35,7 @@ public static class StateHelper
     {
         Dictionary<string, PlayerState> playerStates = [];
         HexMap<ushort> remainingMatter = state.RemainingMatter;
-        foreach (var player in orders.Keys)
+        foreach (var player in state.PlayerStates.Keys)
         {
             Order order = orders[player];
             PlayerState playerState = state.PlayerStates[player];
