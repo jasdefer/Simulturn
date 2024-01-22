@@ -185,7 +185,7 @@ public static class StateHelper
         Structure constructionDuration)
     {
         var buildings = Enum.GetValues(typeof(Building));
-        Dictionary<ushort, Dictionary<Coordinates, Structure>> result = [];
+        Dictionary<ushort, Dictionary<Coordinates, Structure>> result = constructions.Keys.ToDictionary(x => x, x => constructions[x].ToDictionary());
         foreach (Coordinates coordinates in orderConstructions.Keys)
         {
             foreach (Building building in buildings)
@@ -193,7 +193,7 @@ public static class StateHelper
                 if (orderConstructions[coordinates][building] > 0)
                 {
                     ushort completionTurn = Convert.ToUInt16(turn + constructionDuration[building]);
-                    if (!constructions.ContainsKey(completionTurn))
+                    if (!result.ContainsKey(completionTurn))
                     {
                         result.Add(completionTurn, []);
                     }
@@ -201,7 +201,7 @@ public static class StateHelper
                     {
                         result[completionTurn].Add(coordinates, new Structure());
                     }
-                    Structure newStructure = constructions[completionTurn][coordinates].Add(building, orderConstructions[coordinates][building]);
+                    Structure newStructure = result[completionTurn][coordinates].Add(building, orderConstructions[coordinates][building]);
                     result[completionTurn][coordinates] = newStructure;
                 }
             }
@@ -215,7 +215,7 @@ public static class StateHelper
         HexMap<Army> orderTrainings,
         Army trainingDuration)
     {
-        Dictionary<ushort, Dictionary<Coordinates, Army>> result = [];
+        Dictionary<ushort, Dictionary<Coordinates, Army>> result = trainings.Keys.ToDictionary(x => x, x => trainings[x].ToDictionary()); ;
         var units = Enum.GetValues(typeof(Unit));
         foreach (Coordinates coordinates in orderTrainings.Keys)
         {
@@ -224,7 +224,7 @@ public static class StateHelper
                 if (orderTrainings[coordinates][unit] > 0)
                 {
                     ushort completionTurn = Convert.ToUInt16(turn + trainingDuration[unit]);
-                    if (!trainings.ContainsKey(completionTurn))
+                    if (!result.ContainsKey(completionTurn))
                     {
                         result.Add(completionTurn, []);
                     }
@@ -232,7 +232,7 @@ public static class StateHelper
                     {
                         result[completionTurn].Add(coordinates, new Army());
                     }
-                    Army newArmy = trainings[completionTurn][coordinates].Add(unit, orderTrainings[coordinates][unit]);
+                    Army newArmy = result[completionTurn][coordinates].Add(unit, orderTrainings[coordinates][unit]);
                     result[completionTurn][coordinates] = newArmy;
                 }
             }

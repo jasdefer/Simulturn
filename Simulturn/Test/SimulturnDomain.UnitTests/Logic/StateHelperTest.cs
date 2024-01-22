@@ -188,6 +188,60 @@ public class StateHelperTest
     [Fact]
     public void AddConstructions()
     {
-        //  StateHelper.AddConstructions(4, )
+        var duration = new Structure(1, 10, 1, 1, 1, 1);
+        var order = new Dictionary<Coordinates, Structure>()
+        {
+            { _coordinates[0], new Structure(1, 1) },
+            { _coordinates[2], new Structure(99) },
+        };
+        var constructions = new Dictionary<ushort, IDictionary<Coordinates, Structure>>()
+        {
+            { 1, new Dictionary<Coordinates, Structure>(){ { _coordinates[0], new Structure(3) } } },
+            { 2, new Dictionary<Coordinates, Structure>(){ { _coordinates[0], new Structure(5) } } },
+            { 3, new Dictionary<Coordinates, Structure>(){ { _coordinates[0], new Structure(3) }, { _coordinates[1], new Structure(11) } } },
+        };
+        var newConstructions = StateHelper.AddConstructions(2, constructions.ToTurnHexMap(), order.ToHexMap(), duration);
+        newConstructions.Keys.Should().HaveCount(4);
+        newConstructions[3][_coordinates[0]].Should().Be(new Structure(4));
+        newConstructions[3][_coordinates[1]].Should().Be(new Structure(11));
+        newConstructions[3][_coordinates[2]].Should().Be(new Structure(99));
+        newConstructions[12][_coordinates[0]].Should().Be(new Structure(0, 1));
+    }
+
+    [Fact]
+    public void AddTrainings()
+    {
+        var duration = new Army(1, 10, 1, 1, 1);
+        var order = new Dictionary<Coordinates, Army>()
+        {
+            { _coordinates[0], new Army(1, 1) },
+            { _coordinates[2], new Army(99) },
+        };
+        var trainings = new Dictionary<ushort, IDictionary<Coordinates, Army>>()
+        {
+            { 1, new Dictionary<Coordinates, Army>(){ { _coordinates[0], new Army(3) } } },
+            { 2, new Dictionary<Coordinates, Army>(){ { _coordinates[0], new Army(5) } } },
+            { 3, new Dictionary<Coordinates, Army>(){ { _coordinates[0], new Army(3) }, { _coordinates[1], new Army(11) } } },
+        };
+        var newTrainings = StateHelper.AddTrainings(2, trainings.ToTurnHexMap(), order.ToHexMap(), duration);
+        newTrainings.Keys.Should().HaveCount(4);
+        newTrainings[3][_coordinates[0]].Should().Be(new Army(4));
+        newTrainings[3][_coordinates[1]].Should().Be(new Army(11));
+        newTrainings[3][_coordinates[2]].Should().Be(new Army(99));
+        newTrainings[12][_coordinates[0]].Should().Be(new Army(0, 1));
+    }
+
+    [Fact]
+    public void GetConstructionCost()
+    {
+        Structure structure = new Structure(1, 2);
+        var constructions = new Dictionary<Coordinates, Structure>()
+        {
+            { _coordinates[0], new Structure(1,2 ) },
+            { _coordinates[1], new Structure(5,6) }
+        };
+        var cost = StateHelper.GetConstructionCost(structure, constructions.ToHexMap());
+        cost.
+
     }
 }
