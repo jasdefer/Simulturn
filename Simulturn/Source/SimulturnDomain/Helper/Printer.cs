@@ -5,7 +5,12 @@ using System.Text;
 namespace SimulturnDomain.Helper;
 public static class Printer
 {
-    public static void Print(string filePath, HexMap<ushort> map, double radius = 100)
+    public static void Print<T>(string filePath, HexMap<T> map, double radius = 100)
+    {
+        Print(filePath, map.ToHexMap<string>((T t) => t!.ToString()!), radius);
+    }
+
+    public static void Print(string filePath, HexMap<string> map, double radius = 100)
     {
         using var writer = new StreamWriter(filePath, false);
         var minX = map.Keys.Min(x => MapX(x.X, x.Y, radius)) - radius;
@@ -14,18 +19,18 @@ public static class Printer
         var maxY = map.Keys.Max(x => MapY(x.Y, radius)) + radius;
         writer.WriteLine($"<svg xmlns='http://www.w3.org/2000/svg' viewBox='{0} {0} {maxX - minX} {maxY - minY}'>");
         writer.WriteLine("<style>");
-        writer.WriteLine("  .hexagon { fill: none; stroke: black; stroke-width: 1; }");
-        writer.WriteLine("  .resource { font-family: Verdana; font-size: 20px; fill: black; text-anchor: middle; alignment-baseline: central; }");
+        writer.WriteLine("  .hexagon { fill: none; stroke: #424242; stroke-width: 1; }");
+        writer.WriteLine("  .resource { font-family: Verdana; font-size: 20px; fill: #424242; text-anchor: middle; alignment-baseline: central; }");
         writer.WriteLine("</style>");
         foreach (var coordinates in map.Keys)
         {
             string hexagonPath = DrawHexagon(coordinates, 100, minX, minY);
             writer.WriteLine($"<path d='{hexagonPath}' class='hexagon'/>");
-            writer.WriteLine($"<text x='{MapX(coordinates.X, coordinates.Y, radius) - minX}' y='{MapY(coordinates.Y, radius) - minY}' class='resource'>{map[coordinates]}</text>");
+            writer.WriteLine($"<text x='{MapX(coordinates.X, coordinates.Y, radius) - minX}' y='{MapY(coordinates.Y, radius) - minY}' class='resource'>({coordinates.X},{coordinates.Y},{coordinates.Z}): {map[coordinates]}</text>");
         }
         writer.WriteLine("</svg>");
     }
-        
+
     public static double MapX(short x, short y, double radius)
     {
         double hexWidth = Math.Sqrt(3) * radius;

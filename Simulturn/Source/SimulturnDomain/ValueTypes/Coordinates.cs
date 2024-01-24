@@ -53,6 +53,19 @@ public readonly struct Coordinates : IEquatable<Coordinates>
         };
     }
 
+    public IReadOnlyCollection<Coordinates> GetNeighbors()
+    {
+        return
+        [
+            GetNeighbor(HexDirection.NorthEast),
+            GetNeighbor(HexDirection.East),
+            GetNeighbor(HexDirection.SouthEast),
+            GetNeighbor(HexDirection.SouthWest),
+            GetNeighbor(HexDirection.West),
+            GetNeighbor(HexDirection.NorthWest)
+        ];
+    }
+
     public override string ToString()
     {
         return $"({X},{Y},{Z})";

@@ -27,4 +27,9 @@ public class HexMap<T>
     {
         return new HexMap<T>(_empty);
     }
+
+    public HexMap<U> ToHexMap<U>(Func<T, U> conversion)
+    {
+        return new HexMap<U>(_map.ToDictionary(x => x.Key, x => conversion(x.Value)));
+    }
 }

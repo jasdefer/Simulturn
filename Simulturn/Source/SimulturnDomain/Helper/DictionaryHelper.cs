@@ -75,6 +75,11 @@ public static class DictionaryHelper
         return new HexMap<PlayerMap<T>>(dict.ToDictionary(x => x.Key, x => new PlayerMap<T>(x.Value)));
     }
 
+    public static HexMap<PlayerMap<T>> ToHexPlayerMap<T>(this IDictionary<Coordinates, Dictionary<string, T>> dict)
+    {
+        return new HexMap<PlayerMap<T>>(dict.ToDictionary(x => x.Key, x => new PlayerMap<T>(x.Value)));
+    }
+
     public static PlayerMap<HexMap<T>> ToPlayerHexMap<T>(this IDictionary<string, IDictionary<Coordinates, T>> dict)
     {
         return new PlayerMap<HexMap<T>>(dict.ToDictionary(x => x.Key, x => new HexMap<T>(x.Value)));
