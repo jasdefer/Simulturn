@@ -285,6 +285,7 @@ public class StateHelperTest
         GameSettings settings = GameSettings.Default();
         var initialState = StateHelper.GetInitialState(settings, _players);
         var orders = new Dictionary<string, Order>();
+        Printer.Print("Turn0.svg", initialState);
         foreach (var player in _players)
         {
             Order order = new Order(initialState.PlayerStates[player].ArmyMap,
@@ -297,5 +298,6 @@ public class StateHelperTest
         {
             newState.PlayerStates[player].TrainingMap.Values.Should().NotBeEmpty();
         }
+        Printer.Print("Turn1.svg", newState);
     }
 }
