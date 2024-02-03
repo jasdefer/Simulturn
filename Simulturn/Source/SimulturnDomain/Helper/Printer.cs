@@ -28,15 +28,15 @@ public static class Printer
             var yCenter = MapY(coordinate.Y, radius) - minY;
             writer.WriteLine(GetText(xCenter, yCenter, $"({coordinate.X},{coordinate.Y},{coordinate.Z}) M: {state.RemainingMatter[coordinate]}"));
             var armyPlayer = state.PlayerStates.Keys.Where(x => state.PlayerStates[x].ArmyMap.ContainsKey(coordinate)).SingleOrDefault();
-            if(armyPlayer is not null)
+            if (armyPlayer is not null)
             {
-                writer.WriteLine(GetText(xCenter, yCenter - radius/4, $"A {armyPlayer}: {state.PlayerStates[armyPlayer].ArmyMap[coordinate]}"));
+                writer.WriteLine(GetText(xCenter, yCenter - radius / 4, $"A {armyPlayer}: {state.PlayerStates[armyPlayer].ArmyMap[coordinate]}"));
             }
 
             var constructionPlayer = state.PlayerStates.Keys.Where(x => state.PlayerStates[x].StructureMap.ContainsKey(coordinate)).SingleOrDefault();
             if (constructionPlayer is not null)
             {
-                writer.WriteLine(GetText(xCenter, yCenter + radius/4, $"S {constructionPlayer}: {state.PlayerStates[constructionPlayer].StructureMap[coordinate]}"));
+                writer.WriteLine(GetText(xCenter, yCenter + radius / 4, $"S {constructionPlayer}: {state.PlayerStates[constructionPlayer].StructureMap[coordinate]}"));
             }
         }
         writer.WriteLine("</svg>");
