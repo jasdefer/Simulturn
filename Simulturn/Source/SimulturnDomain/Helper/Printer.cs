@@ -2,6 +2,7 @@
 using SimulturnDomain.Model;
 using SimulturnDomain.ValueTypes;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Text;
 
 namespace SimulturnDomain.Helper;
@@ -31,6 +32,7 @@ public static class Printer
             if (armyPlayer is not null)
             {
                 writer.WriteLine(GetText(xCenter, yCenter - radius / 4, $"A {armyPlayer}: {state.PlayerStates[armyPlayer].ArmyMap[coordinate]}"));
+                var jo = state.PlayerStates[armyPlayer].ConstructionMap.Where(x => x.Key > turn && x.Value.ContainsKey(coordinate)).Select(x => x.Value[coordinate]).Sum();
             }
 
             var constructionPlayer = state.PlayerStates.Keys.Where(x => state.PlayerStates[x].StructureMap.ContainsKey(coordinate)).SingleOrDefault();

@@ -1,5 +1,7 @@
-﻿namespace SimulturnDomain.DataStructures;
-public class TurnMap<T>
+﻿using System.Collections;
+
+namespace SimulturnDomain.DataStructures;
+public class TurnMap<T> : IEnumerable<KeyValuePair<ushort, T>>
 {
     private readonly Dictionary<ushort, T> _map;
     private static readonly Dictionary<ushort, T> _empty = [];
@@ -19,5 +21,15 @@ public class TurnMap<T>
     public static TurnMap<T> Empty()
     {
         return new TurnMap<T>(_empty);
+    }
+
+    public IEnumerator<KeyValuePair<ushort, T>> GetEnumerator()
+    {
+        return _map.GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return _map.GetEnumerator();
     }
 }
