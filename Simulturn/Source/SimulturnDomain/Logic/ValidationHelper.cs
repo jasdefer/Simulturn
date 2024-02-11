@@ -7,7 +7,7 @@ using SimulturnDomain.ValueTypes;
 namespace SimulturnDomain.Logic;
 public static class ValidationHelper
 {
-    public static bool IsValid(ushort turn, GameSettings gameSettings, PlayerState playerState, Order order)
+    public static bool IsValid(GameSettings gameSettings, PlayerState playerState, Order order)
     {
         // Validate matter
         ushort requiredMatter = GetRequiredMatter(order.Trainings,
@@ -30,8 +30,7 @@ public static class ValidationHelper
         // Validate structure for trainings
         foreach (var coordinates in order.Trainings.Keys)
         {
-            Structure requiredStructures = GetRequiredStructures(turn,
-                                                                 gameSettings.UnitTrainableBuilding,
+            Structure requiredStructures = GetRequiredStructures(gameSettings.UnitTrainableBuilding,
                                                                  coordinates,
                                                                  order.Trainings[coordinates],
                                                                  playerState.TrainingMap);
@@ -44,8 +43,7 @@ public static class ValidationHelper
         // Validate points for constructions
         foreach (var coordinates in order.Constructions.Keys)
         {
-            var constructionCount = GetConstructionCount(turn,
-                                                         coordinates,
+            var constructionCount = GetConstructionCount(coordinates,
                                                          order.Constructions[coordinates],
                                                          playerState.ConstructionMap);
             if (constructionCount > playerState.ArmyMap[coordinates].Point)
@@ -73,24 +71,27 @@ public static class ValidationHelper
         return true;
     }
 
-    public static short GetConstructionCount(ushort currentTurn, Coordinates coordinates, Structure order, TurnMap<HexMap<Structure>> constructionMap)
+    public static short GetConstructionCount(Coordinates coordinates, Structure order, TurnMap<HexMap<Structure>> constructionMap)
     {
         var constructionCount = order.Sum();
-        foreach (var turn in constructionMap.Keys.Where(x => x >= currentTurn))
+        foreach (var constructions in constructionMap.Values)
         {
-            constructionCount += constructionMap[turn][coordinates].Sum();
+            if (constructions.ContainsKey(coordinates))
+            {
+                constructionCount += constructions[coordinates].Sum();
+            }
         }
         return constructionCount;
     }
 
-    public static Structure GetRequiredStructures(ushort currentTurn, IDictionary<Unit, Building> unitTrainableBuilding, Coordinates coordinates, Army newTraining, TurnMap<HexMap<Army>> trainingMap)
+    public static Structure GetRequiredStructures(IDictionary<Unit, Building> unitTrainableBuilding, Coordinates coordinates, Army newTraining, TurnMap<HexMap<Army>> trainingMaps)
     {
         var trainings = newTraining;
-        foreach (var turn in trainingMap.Keys.Where(x => x >= currentTurn))
+        foreach (var trainingMap in trainingMaps.Values)
         {
-            if (trainingMap[turn].ContainsKey(coordinates))
+            if (trainingMap.ContainsKey(coordinates))
             {
-                trainings += trainingMap[turn][coordinates];
+                trainings += trainingMap[coordinates];
             }
         }
         Structure structure = GetRequiredStructures(unitTrainableBuilding, trainings);

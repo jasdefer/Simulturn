@@ -1,7 +1,8 @@
 ﻿using SimulturnDomain.ValueTypes;
+using System.Collections;
 
 namespace SimulturnDomain.DataStructures;
-public class HexMap<T>
+public class HexMap<T> :  IEnumerable<KeyValuePair<Coordinates, T>>
 {
     private readonly Dictionary<Coordinates, T> _map;
     private static readonly Dictionary<Coordinates, T> _empty = [];
@@ -31,5 +32,15 @@ public class HexMap<T>
     public HexMap<U> ToHexMap<U>(Func<T, U> conversion)
     {
         return new HexMap<U>(_map.ToDictionary(x => x.Key, x => conversion(x.Value)));
+    }
+
+    public IEnumerator<KeyValuePair<Coordinates, T>> GetEnumerator()
+    {
+        return _map.GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return _map.GetEnumerator();
     }
 }
