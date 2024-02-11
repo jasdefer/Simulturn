@@ -1,4 +1,5 @@
-﻿using SimulturnDomain.Enums;
+﻿using SimulturnDomain.DataStructures;
+using SimulturnDomain.Enums;
 using SimulturnDomain.Helper;
 using SimulturnDomain.Logic;
 using SimulturnDomain.Model;
@@ -293,11 +294,36 @@ public class StateHelperTest
                 []);
             orders.Add(player, order);
         }
+
         var newState = StateHelper.GetState(1, initialState, orders, settings);
         foreach (var player in _players)
         {
             newState.PlayerStates[player].TrainingMap.Values.Should().NotBeEmpty();
         }
         Printer.Print("Turn1.svg", newState, 1);
+    }
+
+    [Fact]
+    public void GetState_Print()
+    {
+        GameSettings settings = GameSettings.Default();
+        var oldState = StateHelper.GetInitialState(settings, _players);
+        var orders = new Dictionary<string, Order>();
+        Printer.Print("Turn0.svg", oldState, 0);
+        foreach (var player in _players)
+        {
+            Order order = new Order(oldState.PlayerStates[player].ArmyMap,
+                oldState.PlayerStates[player].StructureMap,
+                []);
+            orders.Add(player, order);
+        }
+        State newState = oldState;
+        for (ushort i = 1; i < 10; i++)
+        {
+            newState = StateHelper.GetState(i, oldState, orders, settings);
+            orders = orders.ToDictionary(x => x.Key, x => new Order(HexMap<Army>.Empty(), HexMap<Structure>.Empty(), []));
+            Printer.Print($"Turn{i}.svg", newState, i);
+            oldState = newState;
+        }
     }
 }

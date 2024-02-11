@@ -32,13 +32,16 @@ public static class Printer
             if (armyPlayer is not null)
             {
                 writer.WriteLine(GetText(xCenter, yCenter - radius / 4, $"A {armyPlayer}: {state.PlayerStates[armyPlayer].ArmyMap[coordinate]}"));
-                var jo = state.PlayerStates[armyPlayer].ConstructionMap.Where(x => x.Key > turn && x.Value.ContainsKey(coordinate)).Select(x => x.Value[coordinate]).Sum();
+                IEnumerable<Structure> constructions = state.PlayerStates[armyPlayer].ConstructionMap.Where(x => x.Key > turn).Select(x => x.Value).Where(x => x.ContainsKey(coordinate)).SelectMany(x => x.Values);
+                writer.WriteLine(GetText(xCenter, yCenter - radius / 2, $"C: {CollectionHelper.Sum(constructions)}"));
             }
 
             var constructionPlayer = state.PlayerStates.Keys.Where(x => state.PlayerStates[x].StructureMap.ContainsKey(coordinate)).SingleOrDefault();
             if (constructionPlayer is not null)
             {
                 writer.WriteLine(GetText(xCenter, yCenter + radius / 4, $"S {constructionPlayer}: {state.PlayerStates[constructionPlayer].StructureMap[coordinate]}"));
+                IEnumerable<Army> trainings = state.PlayerStates[constructionPlayer].TrainingMap.Where(x => x.Key > turn).Select(x => x.Value).Where(x => x.ContainsKey(coordinate)).SelectMany(x => x.Values);
+                writer.WriteLine(GetText(xCenter, yCenter + radius / 2, $"T: {CollectionHelper.Sum(trainings)}"));
             }
         }
         writer.WriteLine("</svg>");
@@ -48,7 +51,6 @@ public static class Printer
     {
         return $"<text x='{x}' y='{y}' class='hexagontext'>{content}</text>)";
     }
-
 
     public static void Print<T>(string filePath, HexMap<T> map, double radius = 100)
     {
