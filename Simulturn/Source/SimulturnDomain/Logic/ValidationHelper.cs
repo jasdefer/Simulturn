@@ -20,7 +20,7 @@ public static class ValidationHelper
         }
 
         // Validate Space
-        ushort requiredSpace = GetRequiredSpace(gameSettings.ArmySettings.RequiredSpace, playerState.ArmyMap, order.Trainings);
+        ushort requiredSpace = GetRequiredSpace(gameSettings.ArmySettings.RequiredSpace, playerState.ArmyMap, playerState.TrainingMap, order.Trainings);
         ushort availableSpace = GetAvailableSpace(gameSettings.StructureSettings.ProvidedSpace, playerState.StructureMap);
         if (requiredSpace > availableSpace)
         {
@@ -118,7 +118,7 @@ public static class ValidationHelper
         return space;
     }
 
-    public static ushort GetRequiredSpace(Army requiredSpace, HexMap<Army> armyMap, HexMap<Army> trainings)
+    public static ushort GetRequiredSpace(Army requiredSpace, HexMap<Army> armyMap, TurnMap<HexMap<Army>> turnTrainingMap, HexMap<Army> trainings)
     {
         ushort space = 0;
         foreach (var army in armyMap.Values)
@@ -128,6 +128,13 @@ public static class ValidationHelper
         foreach (var army in trainings.Values)
         {
             space += Convert.ToUInt16((requiredSpace * army).Sum());
+        }
+        foreach (var trainingMap in turnTrainingMap.Values)
+        {
+            foreach (var army in trainingMap.Values)
+            {
+                space += Convert.ToUInt16((requiredSpace * army).Sum());
+            }
         }
         return space;
     }
