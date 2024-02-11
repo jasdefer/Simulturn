@@ -307,7 +307,7 @@ public class StateHelperTest
         GameSettings settings = GameSettings.Default();
         var oldState = StateHelper.GetInitialState(settings, _players);
         var orders = new Dictionary<string, Order>();
-        Printer.Print("Turn0.svg", oldState, 0);
+        Printer.Print("Turn0.svg", oldState);
         foreach (var player in _players)
         {
             Order order = new Order(oldState.PlayerStates[player].ArmyMap,
@@ -320,7 +320,7 @@ public class StateHelperTest
         {
             newState = StateHelper.GetNextState(oldState, orders, settings);
             orders = orders.ToDictionary(x => x.Key, x => new Order(HexMap<Army>.Empty(), HexMap<Structure>.Empty(), []));
-            Printer.Print($"Turn{i}.svg", newState, i);
+            Printer.Print($"Turn{i}.svg", newState);
             oldState = newState;
         }
     }
