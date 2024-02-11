@@ -6,8 +6,7 @@ using SimulturnDomain.ValueTypes;
 namespace SimulturnDomain.Ai;
 public interface IAi
 {
-    Order GetOrder(ushort turn,
-                   PlayerState playerState,
+    Order GetOrder(PlayerState playerState,
                    GameSettings gameSettings,
                    TurnMap<HexMap<PlayerMap<Fight>>> fightTurnPlayerMap,
                    TurnMap<HexMap<PlayerMap<Army>>> armyTurnHexPlayerMap,

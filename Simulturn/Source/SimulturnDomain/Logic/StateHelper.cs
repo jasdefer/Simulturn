@@ -31,7 +31,7 @@ public static class StateHelper
         return state;
     }
 
-    public static State GetState(ushort turn, State state, IReadOnlyDictionary<string, Order> orders, GameSettings gameSettings)
+    public static State GetNextState(State state, IReadOnlyDictionary<string, Order> orders, GameSettings gameSettings)
     {
         Dictionary<string, PlayerState> playerStates = [];
         HexMap<ushort> remainingMatter = state.RemainingMatter;
@@ -45,18 +45,18 @@ public static class StateHelper
             short trainingCost = GetTrainingCost(gameSettings.ArmySettings.Cost, order.Trainings);
             short constructionCost = GetConstructionCost(gameSettings.StructureSettings.Cost, order.Constructions);
             short matter = Convert.ToInt16(playerState.Matter + income - trainingCost - constructionCost);
-            TurnMap<HexMap<Army>> trainings = AddTrainings(turn, playerState.TrainingMap, order.Trainings, gameSettings.ArmySettings.TrainingDuration);
-            TurnMap<HexMap<Structure>> constructions = AddConstructions(turn, playerState.ConstructionMap, order.Constructions, gameSettings.StructureSettings.ConstructionDuration);
             HexMap<Army> armyMap = MoveArmies(playerState.ArmyMap, order.Moves);
-            if (trainings.ContainsKey(turn))
+            if (playerState.TrainingMap.ContainsKey(0))
             {
-                armyMap = CompleteTrainings(armyMap, trainings[turn]);
+                armyMap = CompleteTrainings(armyMap, playerState.TrainingMap[0]);
             }
-            HexMap<Structure> structureMap = playerState.StructureMap;
-            if (constructions.ContainsKey(turn))
+            var structureMap = playerState.StructureMap;
+            if (playerState.ConstructionMap.ContainsKey(0))
             {
-                structureMap = CompleteConstructions(structureMap, constructions[turn]);
+                structureMap = CompleteConstructions(structureMap, playerState.ConstructionMap[0]);
             }
+            TurnMap<HexMap<Army>> trainings = AddTrainings(playerState.TrainingMap, order.Trainings, gameSettings.ArmySettings.TrainingDuration);
+            TurnMap<HexMap<Structure>> constructions = AddConstructions(playerState.ConstructionMap, order.Constructions, gameSettings.StructureSettings.ConstructionDuration);
             PlayerState preFightState = new PlayerState(matter, armyMap, structureMap, trainings, constructions, HexMap<Fight>.Empty());
             playerStates[player] = preFightState;
         }
@@ -179,20 +179,25 @@ public static class StateHelper
         return new HexMap<Army>(result);
     }
 
-    public static TurnMap<HexMap<Structure>> AddConstructions(ushort turn,
+    public static TurnMap<HexMap<Structure>> AddConstructions(
        TurnMap<HexMap<Structure>> constructions,
         HexMap<Structure> orderConstructions,
         Structure constructionDuration)
     {
         var buildings = Enum.GetValues(typeof(Building));
-        Dictionary<ushort, Dictionary<Coordinates, Structure>> result = constructions.Keys.ToDictionary(x => x, x => constructions[x].ToDictionary());
+        Dictionary<ushort, Dictionary<Coordinates, Structure>> result = constructions
+            .Where(x => x.Key > 0)
+            .ToDictionary(
+                x => Convert.ToUInt16(x.Key - 1),
+                x => x.Value.Keys.ToDictionary(y => y, y => x.Value[y])
+            );
         foreach (Coordinates coordinates in orderConstructions.Keys)
         {
             foreach (Building building in buildings)
             {
                 if (orderConstructions[coordinates][building] > 0)
                 {
-                    ushort completionTurn = Convert.ToUInt16(turn + constructionDuration[building]);
+                    ushort completionTurn = Convert.ToUInt16(constructionDuration[building] - 1);
                     if (!result.ContainsKey(completionTurn))
                     {
                         result.Add(completionTurn, []);
@@ -210,12 +215,17 @@ public static class StateHelper
         return new TurnMap<HexMap<Structure>>(result.ToDictionary(x => x.Key, x => new HexMap<Structure>(x.Value)));
     }
 
-    public static TurnMap<HexMap<Army>> AddTrainings(ushort turn,
+    public static TurnMap<HexMap<Army>> AddTrainings(
         TurnMap<HexMap<Army>> trainings,
         HexMap<Army> orderTrainings,
         Army trainingDuration)
     {
-        Dictionary<ushort, Dictionary<Coordinates, Army>> result = trainings.Keys.ToDictionary(x => x, x => trainings[x].ToDictionary()); ;
+        Dictionary<ushort, Dictionary<Coordinates, Army>> result = trainings
+            .Where(x => x.Key > 0)
+            .ToDictionary(
+                x => Convert.ToUInt16(x.Key - 1),
+                x => x.Value.Keys.ToDictionary(y => y, y => x.Value[y])
+            );
         var units = Enum.GetValues(typeof(Unit));
         foreach (Coordinates coordinates in orderTrainings.Keys)
         {
@@ -223,7 +233,7 @@ public static class StateHelper
             {
                 if (orderTrainings[coordinates][unit] > 0)
                 {
-                    ushort completionTurn = Convert.ToUInt16(turn + trainingDuration[unit]);
+                    ushort completionTurn = Convert.ToUInt16(trainingDuration[unit] - 1);
                     if (!result.ContainsKey(completionTurn))
                     {
                         result.Add(completionTurn, []);

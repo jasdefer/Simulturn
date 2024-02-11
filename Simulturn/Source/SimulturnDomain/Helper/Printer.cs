@@ -2,13 +2,12 @@
 using SimulturnDomain.Model;
 using SimulturnDomain.ValueTypes;
 using System.Collections.Immutable;
-using System.Linq;
 using System.Text;
 
 namespace SimulturnDomain.Helper;
 public static class Printer
 {
-    public static void Print(string filePath, State state, ushort turn, double radius = 150)
+    public static void Print(string filePath, State state, double radius = 150)
     {
         var coordinates = state.RemainingMatter.Keys.ToImmutableHashSet();
         using var writer = new StreamWriter(filePath, false);
@@ -32,7 +31,7 @@ public static class Printer
             if (armyPlayer is not null)
             {
                 writer.WriteLine(GetText(xCenter, yCenter - radius / 4, $"A {armyPlayer}: {state.PlayerStates[armyPlayer].ArmyMap[coordinate]}"));
-                IEnumerable<Structure> constructions = state.PlayerStates[armyPlayer].ConstructionMap.Where(x => x.Key > turn).Select(x => x.Value).Where(x => x.ContainsKey(coordinate)).SelectMany(x => x.Values);
+                IEnumerable<Structure> constructions = state.PlayerStates[armyPlayer].ConstructionMap.Select(x => x.Value).Where(x => x.ContainsKey(coordinate)).SelectMany(x => x.Values);
                 writer.WriteLine(GetText(xCenter, yCenter - radius / 2, $"C: {CollectionHelper.Sum(constructions)}"));
             }
 
@@ -40,7 +39,7 @@ public static class Printer
             if (constructionPlayer is not null)
             {
                 writer.WriteLine(GetText(xCenter, yCenter + radius / 4, $"S {constructionPlayer}: {state.PlayerStates[constructionPlayer].StructureMap[coordinate]}"));
-                IEnumerable<Army> trainings = state.PlayerStates[constructionPlayer].TrainingMap.Where(x => x.Key > turn).Select(x => x.Value).Where(x => x.ContainsKey(coordinate)).SelectMany(x => x.Values);
+                IEnumerable<Army> trainings = state.PlayerStates[constructionPlayer].TrainingMap.Select(x => x.Value).Where(x => x.ContainsKey(coordinate)).SelectMany(x => x.Values);
                 writer.WriteLine(GetText(xCenter, yCenter + radius / 2, $"T: {CollectionHelper.Sum(trainings)}"));
             }
         }

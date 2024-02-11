@@ -198,16 +198,15 @@ public class StateHelperTest
         };
         var constructions = new Dictionary<ushort, IDictionary<Coordinates, Structure>>()
         {
-            { 1, new Dictionary<Coordinates, Structure>(){ { _coordinates[0], new Structure(3) } } },
-            { 2, new Dictionary<Coordinates, Structure>(){ { _coordinates[0], new Structure(5) } } },
-            { 3, new Dictionary<Coordinates, Structure>(){ { _coordinates[0], new Structure(3) }, { _coordinates[1], new Structure(11) } } },
+            { 0, new Dictionary<Coordinates, Structure>(){ { _coordinates[0], new Structure(5) } } },
+            { 1, new Dictionary<Coordinates, Structure>(){ { _coordinates[0], new Structure(3) }, { _coordinates[1], new Structure(11) } } },
         };
-        var newConstructions = StateHelper.AddConstructions(2, constructions.ToTurnHexMap(), order.ToHexMap(), duration);
-        newConstructions.Keys.Should().HaveCount(4);
-        newConstructions[3][_coordinates[0]].Should().Be(new Structure(4));
-        newConstructions[3][_coordinates[1]].Should().Be(new Structure(11));
-        newConstructions[3][_coordinates[2]].Should().Be(new Structure(99));
-        newConstructions[12][_coordinates[0]].Should().Be(new Structure(0, 1));
+        var newConstructions = StateHelper.AddConstructions(constructions.ToTurnHexMap(), order.ToHexMap(), duration);
+        newConstructions.Keys.Should().HaveCount(2);
+        newConstructions[0][_coordinates[0]].Should().Be(new Structure(4));
+        newConstructions[0][_coordinates[1]].Should().Be(new Structure(11));
+        newConstructions[0][_coordinates[2]].Should().Be(new Structure(99));
+        newConstructions[9][_coordinates[0]].Should().Be(new Structure(0, 1));
     }
 
     [Fact]
@@ -221,16 +220,15 @@ public class StateHelperTest
         };
         var trainings = new Dictionary<ushort, IDictionary<Coordinates, Army>>()
         {
-            { 1, new Dictionary<Coordinates, Army>(){ { _coordinates[0], new Army(3) } } },
-            { 2, new Dictionary<Coordinates, Army>(){ { _coordinates[0], new Army(5) } } },
-            { 3, new Dictionary<Coordinates, Army>(){ { _coordinates[0], new Army(3) }, { _coordinates[1], new Army(11) } } },
+            { 0, new Dictionary<Coordinates, Army>(){ { _coordinates[0], new Army(5) } } },
+            { 1, new Dictionary<Coordinates, Army>(){ { _coordinates[0], new Army(3) }, { _coordinates[1], new Army(11) } } },
         };
-        var newTrainings = StateHelper.AddTrainings(2, trainings.ToTurnHexMap(), order.ToHexMap(), duration);
-        newTrainings.Keys.Should().HaveCount(4);
-        newTrainings[3][_coordinates[0]].Should().Be(new Army(4));
-        newTrainings[3][_coordinates[1]].Should().Be(new Army(11));
-        newTrainings[3][_coordinates[2]].Should().Be(new Army(99));
-        newTrainings[12][_coordinates[0]].Should().Be(new Army(0, 1));
+        var newTrainings = StateHelper.AddTrainings(trainings.ToTurnHexMap(), order.ToHexMap(), duration);
+        newTrainings.Keys.Should().HaveCount(2);
+        newTrainings[0][_coordinates[0]].Should().Be(new Army(4));
+        newTrainings[0][_coordinates[1]].Should().Be(new Army(11));
+        newTrainings[0][_coordinates[2]].Should().Be(new Army(99));
+        newTrainings[9][_coordinates[0]].Should().Be(new Army(0, 1));
     }
 
     [Fact]
@@ -295,7 +293,7 @@ public class StateHelperTest
             orders.Add(player, order);
         }
 
-        var newState = StateHelper.GetState(1, initialState, orders, settings);
+        var newState = StateHelper.GetNextState(initialState, orders, settings);
         foreach (var player in _players)
         {
             newState.PlayerStates[player].TrainingMap.Values.Should().NotBeEmpty();
@@ -320,7 +318,7 @@ public class StateHelperTest
         State newState = oldState;
         for (ushort i = 1; i < 10; i++)
         {
-            newState = StateHelper.GetState(i, oldState, orders, settings);
+            newState = StateHelper.GetNextState(oldState, orders, settings);
             orders = orders.ToDictionary(x => x.Key, x => new Order(HexMap<Army>.Empty(), HexMap<Structure>.Empty(), []));
             Printer.Print($"Turn{i}.svg", newState, i);
             oldState = newState;

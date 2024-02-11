@@ -25,7 +25,7 @@ public static class CollectionHelper
 
     public static Structure Sum(IEnumerable<Structure> structures)
     {
-        Structure sum = new ();
+        Structure sum = new();
         foreach (var structure in structures)
         {
             sum += structure;
@@ -35,7 +35,7 @@ public static class CollectionHelper
 
     public static Army Sum(IEnumerable<Army> armies)
     {
-        Army sum = new ();
+        Army sum = new();
         foreach (var army in armies)
         {
             sum += army;
