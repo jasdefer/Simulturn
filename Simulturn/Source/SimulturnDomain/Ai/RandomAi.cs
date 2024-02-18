@@ -1,12 +1,11 @@
 ﻿using SimulturnDomain.DataStructures;
 using SimulturnDomain.Enums;
+using SimulturnDomain.Helper;
 using SimulturnDomain.Logic;
 using SimulturnDomain.Model;
-using SimulturnDomain.Helper;
 using SimulturnDomain.Settings;
 using SimulturnDomain.ValueTypes;
 using System.Collections.Immutable;
-using System.Linq;
 
 namespace SimulturnDomain.Ai;
 public class RandomAi : IAi
@@ -22,21 +21,52 @@ public class RandomAi : IAi
         GameSettings gameSettings)
     {
         Dictionary<Coordinates, Structure> constructions = GetConstructions(gameSettings, playerState);
-        Dictionary<Coordinates, Army> trainings = GetTrainings(playerState, gameSettings);
-        Move[] moves = GetMoves(gameSettings, playerState.ArmyMap);
+        short remainingMatter = Convert.ToInt16(playerState.Matter - constructions.Sum(x => (x.Value * gameSettings.StructureSettings.Cost).Sum()));
+        Dictionary<Coordinates, Army> trainings = GetTrainings(remainingMatter, playerState, gameSettings);
+        List<Move> moves = GetMoves(gameSettings, playerState.ArmyMap);
 
         return new Order(new HexMap<Army>(trainings), new HexMap<Structure>(constructions), moves.ToImmutableHashSet());
     }
 
-    private Move[] GetMoves(GameSettings gameSettings, HexMap<Army> armyMap)
+    private List<Move> GetMoves(GameSettings gameSettings, HexMap<Army> armyMap)
     {
-        Move[] moves = [];
+        List<Move> moves = [];
+        foreach (var kvp in armyMap.Where(x => x.Value.Sum() > 3))
+        {
+            var destination = HexDirections.All
+                    .OrderBy(x => _random.NextDouble())
+                    .Where(x => gameSettings.Coordinates.Contains(kvp.Key.GetNeighbor(x)))
+                    .First();
+            Move move = new(kvp.Key, destination, kvp.Value);
+            moves.Add(move);
+        }
         return moves;
     }
 
-    private Dictionary<Coordinates, Army> GetTrainings(PlayerState playerState, GameSettings gameSettings)
+    private Dictionary<Coordinates, Army> GetTrainings(short remainingMatter, PlayerState playerState, GameSettings gameSettings)
     {
         Dictionary<Coordinates, Army> armies = [];
+        foreach (var coordinates in playerState.StructureMap.
+            Where(x => x.Value.Root > 0).Select(x => x.Key))
+        {
+            var current = playerState.ArmyMap.ToDictionary().GetOrDefault(coordinates);
+            current += CollectionHelper.Sum(playerState.TrainingMap.Select(x => x.Value.ToDictionary().GetOrDefault(coordinates)));
+
+            if (current.AnyUnitIsSmallerThan(gameSettings.HexagonSettingsPerCoordinates[coordinates].MaxNumberOfUnitsGeneratingIncome))
+            {
+                Dictionary<Unit, short> newUnits = [];
+                var target = gameSettings.HexagonSettingsPerCoordinates[coordinates].MaxNumberOfUnitsGeneratingIncome - current;
+                foreach (var unit in Units.All.Where(x => target[x] > 0))
+                {
+                    var count = Math.Min(target[unit], gameSettings.ArmySettings.Cost[unit] / remainingMatter);
+                    var productionCapability = playerState.StructureMap[coordinates][gameSettings.UnitTrainableBuilding[unit]];
+                    productionCapability -= Convert.ToInt16(playerState.TrainingMap.Sum(x => x.Value[coordinates][unit]));
+                    count = Math.Min(count, productionCapability);
+                    newUnits[unit] = Convert.ToInt16(count);
+                    remainingMatter -= Convert.ToInt16(gameSettings.ArmySettings.Cost[unit] * count);
+                }
+            }
+        }
         return armies;
     }
 
@@ -52,22 +82,53 @@ public class RandomAi : IAi
             constructions.Add(spaceBringingConstructions);
             remainingMatter -= (CollectionHelper.Sum(spaceBringingConstructions.Values) * gameSettings.StructureSettings.Cost).Sum();
         }
-        var trainingBuildingConstructions = GetTrainingBuildingConstructions(remainingMatter, gameSettings, playerState.StructureMap);
+        var trainingBuildingConstructions = GetTrainingBuildingConstructions(remainingMatter, gameSettings, playerState.StructureMap, playerState.ConstructionMap);
+        constructions.Add(trainingBuildingConstructions);
+        remainingMatter -= (CollectionHelper.Sum(trainingBuildingConstructions.Values) * gameSettings.StructureSettings.Cost).Sum();
+
+        var expansions = GetExpansionConstructions(remainingMatter, gameSettings, playerState);
+        constructions.Add(expansions);
+        remainingMatter -= (CollectionHelper.Sum(expansions.Values) * gameSettings.StructureSettings.Cost).Sum();
 
         return constructions;
     }
 
-    private object GetTrainingBuildingConstructions(short remainingMatter, GameSettings gameSettings, HexMap<Structure> structureMap)
+    private Dictionary<Coordinates, Structure> GetExpansionConstructions(short remainingMatter, GameSettings gameSettings, PlayerState playerState)
     {
-        foreach (var kvp in structureMap.Where(x => x.Value.Root > 0))
+        Dictionary<Coordinates, Structure> result = [];
+        foreach (var coordinates in playerState.ArmyMap.Where(x => x.Value.Point > 0).Select(x => x.Key))
         {
-            var target = new Structure(0, 0, 3, 3, 3, 0);
-            target -= kvp.Value;
-            while (target.Any())
+            if (playerState.StructureMap[coordinates].Root == 0 &&
+                playerState.ConstructionMap.All(x => x.Value[coordinates].Root == 0) &&
+                remainingMatter >= gameSettings.StructureSettings.Cost.Root)
             {
-
+                result.Add(coordinates, new Structure(1));
             }
         }
+        return result;
+    }
+
+    private Dictionary<Coordinates, Structure> GetTrainingBuildingConstructions(short remainingMatter, GameSettings gameSettings, HexMap<Structure> structureMap, TurnMap<HexMap<Structure>> constructions)
+    {
+        Building[] buildings = [Building.Cube, Building.Pyramid, Building.Sphere];
+        Dictionary<Coordinates, Structure> newConstructions = [];
+        foreach (var kvp in structureMap.Where(x => x.Value.Root > 0))
+        {
+            var target = new Structure(0, 3, 3, 3, 0, 0);
+            target -= kvp.Value;
+            target -= CollectionHelper.Sum(constructions.Select(x => x.Value[kvp.Key]));
+            buildings = buildings.OrderBy(x => _random.NextDouble()).ToArray();
+            Dictionary<Building, short> result = [];
+            foreach (var building in buildings)
+            {
+                var count = remainingMatter / gameSettings.StructureSettings.Cost[building];
+                count = Math.Min(count, target[building]);
+                result.Add(building, Convert.ToInt16(count));
+                remainingMatter -= Convert.ToInt16(count * gameSettings.StructureSettings.Cost[building]);
+            }
+            newConstructions.Add(kvp.Key, Structure.FromBuildings(result));
+        }
+        return newConstructions;
     }
 
     private Dictionary<Coordinates, Structure> OrderSpaceBringingConstructions(short matter,
@@ -79,13 +140,13 @@ public class RandomAi : IAi
     {
         Building[] buildings = Enum.GetValues<Building>();
         var building = buildings.MaxBy(x => providedSpace[x] / (double)cost[x]);
-        if(matter < cost[building])
+        if (matter < cost[building])
         {
             return [];
         }
         var constructionCount = Math.Min(1, (int)(0.2 * matter / cost[building]));
         constructionCount -= constructionMap.Values.Sum(x => x.Values.Select(y => y[building]).Sum());
-        if(constructionCount < 1)
+        if (constructionCount < 1)
         {
             return [];
         }

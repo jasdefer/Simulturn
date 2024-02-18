@@ -19,6 +19,15 @@ public static class DictionaryHelper
         }
     }
 
+    public static TValue GetOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key) where TValue : new()
+    {
+        if (dict.TryGetValue(key, out TValue? value))
+        {
+            return value;
+        }
+        return new TValue();
+    }
+
     public static void AddOrSubtract<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, TValue value)
         where TValue : struct, ISubtractionOperators<TValue, TValue, TValue>
         where TKey : notnull

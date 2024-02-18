@@ -2,7 +2,7 @@
 using System.Collections;
 
 namespace SimulturnDomain.DataStructures;
-public class HexMap<T> :  IEnumerable<KeyValuePair<Coordinates, T>>
+public class HexMap<T> : IEnumerable<KeyValuePair<Coordinates, T>>
 {
     private readonly Dictionary<Coordinates, T> _map;
     private static readonly Dictionary<Coordinates, T> _empty = [];
