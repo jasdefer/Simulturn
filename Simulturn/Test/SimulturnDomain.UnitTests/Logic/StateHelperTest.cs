@@ -307,9 +307,9 @@ public class StateHelperTest
     {
         GameSettings settings = GameSettings.Default();
         var state = StateHelper.GetInitialState(settings, _players);
-        
+
         var ai = new RandomAi(new Random(1));
-        for (int i = 0; i < 20; i++)
+        for (int i = 0; i < 40; i++)
         {
             Printer.Print($"Turn{i:D2}.svg", state);
             var orders = new Dictionary<string, Order>();

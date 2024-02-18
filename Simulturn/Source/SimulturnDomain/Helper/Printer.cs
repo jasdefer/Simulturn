@@ -42,6 +42,10 @@ public static class Printer
                 IEnumerable<Army> trainings = state.PlayerStates[constructionPlayer].TrainingMap.Select(x => x.Value).Where(x => x.ContainsKey(coordinate)).SelectMany(x => x.Values);
                 writer.WriteLine(GetText(xCenter, yCenter + radius / 2, $"T: {CollectionHelper.Sum(trainings)}"));
             }
+            if (state.PlayerStates.Values.Any(x => x.Fights.ContainsKey(coordinate)))
+            {
+                writer.WriteLine(GetText(xCenter + radius, yCenter, "F"));
+            }
         }
         writer.WriteLine("</svg>");
     }

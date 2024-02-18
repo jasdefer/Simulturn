@@ -45,6 +45,9 @@ public class RandomAi : IAi
 
     private Dictionary<Coordinates, Army> GetTrainings(short remainingMatter, PlayerState playerState, GameSettings gameSettings)
     {
+        var remainingSpace = ValidationHelper.GetAvailableSpace(gameSettings.StructureSettings.ProvidedSpace, playerState.StructureMap)
+            - ValidationHelper.GetRequiredSpace(gameSettings.ArmySettings.RequiredSpace, playerState.ArmyMap, playerState.TrainingMap, HexMap<Army>.Empty());
+
         Dictionary<Coordinates, Army> armies = [];
         foreach (var coordinates in playerState.StructureMap.
             Where(x => x.Value.Root > 0).Select(x => x.Key))
@@ -66,10 +69,12 @@ public class RandomAi : IAi
                     var productionCapability = playerState.StructureMap[coordinates][gameSettings.UnitTrainableBuilding[unit]];
                     productionCapability -= Convert.ToInt16(playerState.TrainingMap.Sum(x => x.Value[coordinates][unit]));
                     count = Math.Min(count, productionCapability);
+                    count = Math.Min(count, gameSettings.ArmySettings.RequiredSpace[unit] / remainingSpace);
                     if (count > 0)
                     {
                         newUnits[unit] = Convert.ToInt16(count);
                         remainingMatter -= Convert.ToInt16(gameSettings.ArmySettings.Cost[unit] * count);
+                        remainingSpace -= count * gameSettings.ArmySettings.RequiredSpace[unit];
                     }
                 }
                 if (newUnits.Any())
@@ -81,7 +86,7 @@ public class RandomAi : IAi
 
         Unit[] units = new[] { Unit.Circle, Unit.Square, Unit.Triangle }.OrderBy(x => _random.NextDouble()).ToArray();
         foreach (var kvp in playerState.StructureMap
-            .Where(x => x.Value.Pyramid>0 || x.Value.Sphere >0 || x.Value.Cube >0))
+            .Where(x => x.Value.Pyramid > 0 || x.Value.Sphere > 0 || x.Value.Cube > 0))
         {
             Dictionary<Unit, short> newUnits = [];
             if (remainingMatter <= 0)
@@ -93,10 +98,12 @@ public class RandomAi : IAi
                 var count = remainingMatter / gameSettings.ArmySettings.Cost[unit];
                 count = Math.Min(count, kvp.Value[gameSettings.UnitTrainableBuilding[unit]]);
                 count -= playerState.TrainingMap.Where(x => x.Value.ContainsKey(kvp.Key)).Sum(x => x.Value[kvp.Key][unit]);
+                count = Math.Min(count, remainingSpace / gameSettings.ArmySettings.RequiredSpace[unit]);
                 if (count > 0)
                 {
                     newUnits.Add(unit, Convert.ToInt16(count));
                     remainingMatter -= Convert.ToInt16(count * gameSettings.ArmySettings.Cost[unit]);
+                    remainingSpace -= count * gameSettings.ArmySettings.RequiredSpace[unit];
                 }
             }
             if (newUnits.Any())
@@ -109,28 +116,36 @@ public class RandomAi : IAi
 
     private Dictionary<Coordinates, Structure> GetConstructions(GameSettings gameSettings, PlayerState playerState)
     {
+        Dictionary<Coordinates, short> remainigPoints = playerState.ArmyMap.Where(x => x.Value.Point > 0).ToDictionary(x => x.Key, x => x.Value.Point);
+        foreach (var constructionMap in playerState.ConstructionMap)
+        {
+            foreach (var kvp in constructionMap.Value.Where(x => remainigPoints.ContainsKey(x.Key)))
+            {
+                remainigPoints[kvp.Key] -= kvp.Value.Sum();
+            }
+        }
         Dictionary<Coordinates, Structure> constructions = [];
         var availableSpace = ValidationHelper.GetAvailableSpace(gameSettings.StructureSettings.ProvidedSpace, playerState.StructureMap);
         var requiredSpace = ValidationHelper.GetRequiredSpace(gameSettings.ArmySettings.RequiredSpace, playerState.ArmyMap, playerState.TrainingMap, HexMap<Army>.Empty());
         var remainingMatter = playerState.Matter;
-        if (availableSpace - requiredSpace < 5)
+        if (availableSpace - requiredSpace < gameSettings.StructureSettings.ProvidedSpace.Axis)
         {
-            var spaceBringingConstructions = OrderSpaceBringingConstructions(remainingMatter, playerState.ConstructionMap, playerState.ArmyMap, gameSettings.StructureSettings.ProvidedSpace, gameSettings.StructureSettings.Cost, gameSettings.StructureSettings.ConstructionDuration);
+            var spaceBringingConstructions = OrderSpaceBringingConstructions(remainingMatter, remainigPoints, playerState.ConstructionMap, playerState.ArmyMap, gameSettings.StructureSettings.ProvidedSpace, gameSettings.StructureSettings.Cost, gameSettings.StructureSettings.ConstructionDuration);
             constructions.Add(spaceBringingConstructions);
             remainingMatter -= (CollectionHelper.Sum(spaceBringingConstructions.Values) * gameSettings.StructureSettings.Cost).Sum();
         }
-        var trainingBuildingConstructions = GetTrainingBuildingConstructions(remainingMatter, gameSettings, playerState.StructureMap, playerState.ConstructionMap);
+        var trainingBuildingConstructions = GetTrainingBuildingConstructions(remainingMatter, remainigPoints, gameSettings, playerState.StructureMap, playerState.ConstructionMap);
         constructions.Add(trainingBuildingConstructions);
         remainingMatter -= (CollectionHelper.Sum(trainingBuildingConstructions.Values) * gameSettings.StructureSettings.Cost).Sum();
 
-        var expansions = GetExpansionConstructions(remainingMatter, gameSettings, playerState);
+        var expansions = GetExpansionConstructions(remainingMatter, remainigPoints, gameSettings, playerState);
         constructions.Add(expansions);
         remainingMatter -= (CollectionHelper.Sum(expansions.Values) * gameSettings.StructureSettings.Cost).Sum();
 
         return constructions;
     }
 
-    private Dictionary<Coordinates, Structure> GetExpansionConstructions(short remainingMatter, GameSettings gameSettings, PlayerState playerState)
+    private Dictionary<Coordinates, Structure> GetExpansionConstructions(short remainingMatter, Dictionary<Coordinates, short> remainigPoints, GameSettings gameSettings, PlayerState playerState)
     {
         Dictionary<Coordinates, Structure> result = [];
         foreach (var coordinates in playerState.ArmyMap.Where(x => x.Value.Point > 0).Select(x => x.Key))
@@ -138,15 +153,18 @@ public class RandomAi : IAi
             if (playerState.StructureMap.ContainsKey(coordinates) &&
                 playerState.StructureMap[coordinates].Root == 0 &&
                 playerState.ConstructionMap.All(x => x.Value.ContainsKey(coordinates) && x.Value[coordinates].Root == 0) &&
-                remainingMatter >= gameSettings.StructureSettings.Cost.Root)
+                remainingMatter >= gameSettings.StructureSettings.Cost.Root &&
+                remainigPoints.ContainsKey(coordinates) &&
+                remainigPoints[coordinates] > 0)
             {
                 result.Add(coordinates, new Structure(1));
+                remainigPoints[coordinates] -= 1;
             }
         }
         return result;
     }
 
-    private Dictionary<Coordinates, Structure> GetTrainingBuildingConstructions(short remainingMatter, GameSettings gameSettings, HexMap<Structure> structureMap, TurnMap<HexMap<Structure>> constructions)
+    private Dictionary<Coordinates, Structure> GetTrainingBuildingConstructions(short remainingMatter, Dictionary<Coordinates, short> remainingPoints, GameSettings gameSettings, HexMap<Structure> structureMap, TurnMap<HexMap<Structure>> constructions)
     {
         Building[] buildings = [Building.Cube, Building.Pyramid, Building.Sphere];
         Dictionary<Coordinates, Structure> newConstructions = [];
@@ -161,8 +179,16 @@ public class RandomAi : IAi
             {
                 var count = remainingMatter / gameSettings.StructureSettings.Cost[building];
                 count = Math.Min(count, target[building]);
-                result.Add(building, Convert.ToInt16(count));
-                remainingMatter -= Convert.ToInt16(count * gameSettings.StructureSettings.Cost[building]);
+                if (remainingPoints.ContainsKey(kvp.Key))
+                {
+                    count = Math.Min(count, remainingPoints[kvp.Key]);
+                }
+                if (count > 0)
+                {
+                    result.Add(building, Convert.ToInt16(count));
+                    remainingMatter -= Convert.ToInt16(count * gameSettings.StructureSettings.Cost[building]);
+                    remainingPoints[kvp.Key] -= Convert.ToInt16(count);
+                }
             }
             newConstructions.Add(kvp.Key, Structure.FromBuildings(result));
         }
@@ -170,6 +196,7 @@ public class RandomAi : IAi
     }
 
     private Dictionary<Coordinates, Structure> OrderSpaceBringingConstructions(short matter,
+                                                              Dictionary<Coordinates, short> remainigPoints,
                                                               TurnMap<HexMap<Structure>> constructionMap,
                                                               HexMap<Army> armyMap,
                                                               Structure providedSpace,
@@ -189,15 +216,17 @@ public class RandomAi : IAi
             return [];
         }
         Dictionary<Coordinates, Structure> constructions = [];
-        foreach (var armyMapItem in armyMap.OrderByDescending(x => x.Value.Point))
+        foreach (var coordinates in remainigPoints.OrderByDescending(x => x.Value).Select(x => x.Key).ToArray())
         {
-            var coordinates = armyMapItem.Key;
-            var count = armyMapItem.Value.Point - constructionMap.Sum(x => x.Value.ContainsKey(coordinates) ? x.Value[coordinates].Sum() : 0);
-            count = Math.Min(count, constructionCount);
-            Dictionary<Building, short> dict = new Dictionary<Building, short>() { { building, Convert.ToInt16(count) } };
-            Structure construction = Structure.FromBuildings(dict);
-            constructions.Add(coordinates, construction);
-            constructionCount -= count;
+            var count = Math.Min(remainigPoints[coordinates], constructionCount);
+            if (count > 0)
+            {
+                Dictionary<Building, short> dict = new Dictionary<Building, short>() { { building, Convert.ToInt16(count) } };
+                Structure construction = Structure.FromBuildings(dict);
+                constructions.Add(coordinates, construction);
+                constructionCount -= count;
+                remainigPoints[coordinates] -= Convert.ToInt16(count);
+            }
         }
         return constructions;
     }
