@@ -215,6 +215,18 @@ public readonly struct Army : IAdditionOperators<Army, Army, Army>, ISubtraction
         };
     }
 
+    public static Army FromUnits(IReadOnlyDictionary<Unit, short> units)
+    {
+        return new Army()
+        {
+            Triangle = units.ContainsKey(Unit.Triangle) ? units[Unit.Triangle] : (short)0,
+            Square = units.ContainsKey(Unit.Square) ? units[Unit.Square] : (short)0,
+            Circle = units.ContainsKey(Unit.Circle) ? units[Unit.Circle] : (short)0,
+            Line = units.ContainsKey(Unit.Line) ? units[Unit.Line] : (short)0,
+            Point = units.ContainsKey(Unit.Point) ? units[Unit.Point] : (short)0,
+        };
+    }
+
     public override string ToString()
     {
         return $"{Triangle},{Square},{Circle},{Line},{Point}";

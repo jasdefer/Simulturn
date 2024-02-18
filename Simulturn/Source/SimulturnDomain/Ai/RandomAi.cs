@@ -31,13 +31,13 @@ public class RandomAi : IAi
     private List<Move> GetMoves(GameSettings gameSettings, HexMap<Army> armyMap)
     {
         List<Move> moves = [];
-        foreach (var kvp in armyMap.Where(x => x.Value.Sum() > 3))
+        foreach (var kvp in armyMap.Where(x => x.Value.Sum() - x.Value.Point > 3))
         {
             var destination = HexDirections.All
                     .OrderBy(x => _random.NextDouble())
                     .Where(x => gameSettings.Coordinates.Contains(kvp.Key.GetNeighbor(x)))
                     .First();
-            Move move = new(kvp.Key, destination, kvp.Value);
+            Move move = new(kvp.Key, destination, kvp.Value - new Army(point: kvp.Value.Point));
             moves.Add(move);
         }
         return moves;
@@ -49,6 +49,10 @@ public class RandomAi : IAi
         foreach (var coordinates in playerState.StructureMap.
             Where(x => x.Value.Root > 0).Select(x => x.Key))
         {
+            if (remainingMatter <= 0)
+            {
+                break;
+            }
             var current = playerState.ArmyMap.ToDictionary().GetOrDefault(coordinates);
             current += CollectionHelper.Sum(playerState.TrainingMap.Select(x => x.Value.ToDictionary().GetOrDefault(coordinates)));
 
@@ -62,9 +66,42 @@ public class RandomAi : IAi
                     var productionCapability = playerState.StructureMap[coordinates][gameSettings.UnitTrainableBuilding[unit]];
                     productionCapability -= Convert.ToInt16(playerState.TrainingMap.Sum(x => x.Value[coordinates][unit]));
                     count = Math.Min(count, productionCapability);
-                    newUnits[unit] = Convert.ToInt16(count);
-                    remainingMatter -= Convert.ToInt16(gameSettings.ArmySettings.Cost[unit] * count);
+                    if (count > 0)
+                    {
+                        newUnits[unit] = Convert.ToInt16(count);
+                        remainingMatter -= Convert.ToInt16(gameSettings.ArmySettings.Cost[unit] * count);
+                    }
                 }
+                if (newUnits.Any())
+                {
+                    armies.Add(coordinates, Army.FromUnits(newUnits));
+                }
+            }
+        }
+
+        Unit[] units = new[] { Unit.Circle, Unit.Square, Unit.Triangle }.OrderBy(x => _random.NextDouble()).ToArray();
+        foreach (var kvp in playerState.StructureMap
+            .Where(x => x.Value.Pyramid>0 || x.Value.Sphere >0 || x.Value.Cube >0))
+        {
+            Dictionary<Unit, short> newUnits = [];
+            if (remainingMatter <= 0)
+            {
+                break;
+            }
+            foreach (var unit in units)
+            {
+                var count = remainingMatter / gameSettings.ArmySettings.Cost[unit];
+                count = Math.Min(count, kvp.Value[gameSettings.UnitTrainableBuilding[unit]]);
+                count -= playerState.TrainingMap.Where(x => x.Value.ContainsKey(kvp.Key)).Sum(x => x.Value[kvp.Key][unit]);
+                if (count > 0)
+                {
+                    newUnits.Add(unit, Convert.ToInt16(count));
+                    remainingMatter -= Convert.ToInt16(count * gameSettings.ArmySettings.Cost[unit]);
+                }
+            }
+            if (newUnits.Any())
+            {
+                armies.Add(kvp.Key, Army.FromUnits(newUnits));
             }
         }
         return armies;
@@ -98,8 +135,9 @@ public class RandomAi : IAi
         Dictionary<Coordinates, Structure> result = [];
         foreach (var coordinates in playerState.ArmyMap.Where(x => x.Value.Point > 0).Select(x => x.Key))
         {
-            if (playerState.StructureMap[coordinates].Root == 0 &&
-                playerState.ConstructionMap.All(x => x.Value[coordinates].Root == 0) &&
+            if (playerState.StructureMap.ContainsKey(coordinates) &&
+                playerState.StructureMap[coordinates].Root == 0 &&
+                playerState.ConstructionMap.All(x => x.Value.ContainsKey(coordinates) && x.Value[coordinates].Root == 0) &&
                 remainingMatter >= gameSettings.StructureSettings.Cost.Root)
             {
                 result.Add(coordinates, new Structure(1));

@@ -1,4 +1,5 @@
-﻿using SimulturnDomain.DataStructures;
+﻿using SimulturnDomain.Ai;
+using SimulturnDomain.DataStructures;
 using SimulturnDomain.Enums;
 using SimulturnDomain.Helper;
 using SimulturnDomain.Logic;
@@ -305,23 +306,54 @@ public class StateHelperTest
     public void GetState_Print()
     {
         GameSettings settings = GameSettings.Default();
-        var oldState = StateHelper.GetInitialState(settings, _players);
-        var orders = new Dictionary<string, Order>();
-        Printer.Print("Turn0.svg", oldState);
-        foreach (var player in _players)
+        var state = StateHelper.GetInitialState(settings, _players);
+        
+        var ai = new RandomAi(new Random(1));
+        for (int i = 0; i < 20; i++)
         {
-            Order order = new Order(oldState.PlayerStates[player].ArmyMap,
-                oldState.PlayerStates[player].StructureMap,
-                []);
-            orders.Add(player, order);
+            Printer.Print($"Turn{i:D2}.svg", state);
+            var orders = new Dictionary<string, Order>();
+            foreach (var player in _players)
+            {
+                var order = ai.GetOrder(state.PlayerStates[player], settings);
+                ValidationHelper.IsValid(settings, state.PlayerStates[player], order).Should().BeTrue($"i={i}, player={player}");
+                orders.Add(player, order);
+            }
+            state = StateHelper.GetNextState(state, orders, settings);
         }
-        State newState = oldState;
-        for (ushort i = 1; i < 10; i++)
+    }
+
+    [Fact]
+    public void GetState_Fights()
+    {
+        GameSettings settings = GameSettings.Default();
+        var origin = settings.HexagonSettingsPerCoordinates.First().Key;
+        var destination = origin.GetNeighbor(HexDirection.NorthEast);
+        Army army = new Army(3, 2, 1);
+        Dictionary<Coordinates, Army> player01 = new()
         {
-            newState = StateHelper.GetNextState(oldState, orders, settings);
-            orders = orders.ToDictionary(x => x.Key, x => new Order(HexMap<Army>.Empty(), HexMap<Structure>.Empty(), []));
-            Printer.Print($"Turn{i}.svg", newState);
-            oldState = newState;
-        }
+            [origin] = army
+        };
+        Dictionary<Coordinates, Army> player02 = new()
+        {
+            [destination] = army
+        };
+        Dictionary<string, PlayerState> playerStates = new()
+        {
+            [_players[0]] = new PlayerState(0, new HexMap<Army>(player01), HexMap<Structure>.Empty(), TurnMap<HexMap<Army>>.Empty(), TurnMap<HexMap<Structure>>.Empty(), HexMap<Fight>.Empty()),
+            [_players[1]] = new PlayerState(0, new HexMap<Army>(player02), HexMap<Structure>.Empty(), TurnMap<HexMap<Army>>.Empty(), TurnMap<HexMap<Structure>>.Empty(), HexMap<Fight>.Empty()),
+        };
+        Order order = new Order(HexMap<Army>.Empty(), HexMap<Structure>.Empty(), [new Move(origin, HexDirection.NorthEast, player01.Values.Single())]);
+        var oldState = new State(new PlayerMap<PlayerState>(playerStates), HexMap<ushort>.Empty());
+        Dictionary<string, Order> orders = new()
+        {
+            [_players[0]] = order,
+            [_players[1]] = new Order(HexMap<Army>.Empty(), HexMap<Structure>.Empty(), [])
+        };
+        var newState = StateHelper.GetNextState(oldState, orders, settings);
+        newState.PlayerStates[_players[0]].Fights.Should().HaveCount(1);
+        newState.PlayerStates[_players[1]].Fights.Should().HaveCount(1);
+        newState.PlayerStates[_players[0]].Fights.Single().Value.Should().Be(new Fight(army, army));
+        newState.PlayerStates[_players[1]].Fights.Single().Value.Should().Be(new Fight(army, army));
     }
 }

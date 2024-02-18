@@ -41,7 +41,7 @@ public class ValidationHelperTests
         var coordinates = new Coordinates(1, 2);
         var order = new Structure();
         var turnMap = new Dictionary<ushort, IDictionary<Coordinates, Structure>>();
-        var count = ValidationHelper.GetConstructionCount(3, coordinates, order, turnMap.ToTurnHexMap());
+        var count = ValidationHelper.GetConstructionCount(coordinates, order, turnMap.ToTurnHexMap());
         count.Should().Be(0);
     }
 
@@ -57,8 +57,8 @@ public class ValidationHelperTests
             {3, new Dictionary<Coordinates, Structure>(){ { coordinates, new Structure(4) } } },
             {4, new Dictionary<Coordinates, Structure>(){ { coordinates, new Structure(5) }, { new Coordinates(1, 2), new Structure(6) } } },
         };
-        var count = ValidationHelper.GetConstructionCount(3, coordinates, order, turnMap.ToTurnHexMap());
-        count.Should().Be(19);
+        var count = ValidationHelper.GetConstructionCount(coordinates, order, turnMap.ToTurnHexMap());
+        count.Should().Be(24);
     }
 
     [Fact]

@@ -43,8 +43,12 @@ public static class IncomeHelper
         foreach (var coordinate in armyMap.Keys)
         {
             ushort incomeAtHex = Convert.ToUInt16((armyMap[coordinate] * incomeSettings).Sum());
-            incomeAtHex = Math.Min(incomeAtHex, Convert.ToUInt16(remainingMatter[coordinate]));
-            revenue[coordinate] = incomeAtHex;
+            var matter = remainingMatter.ContainsKey(coordinate) ? remainingMatter[coordinate] : 0;
+            incomeAtHex = Math.Min(incomeAtHex, Convert.ToUInt16(matter));
+            if (incomeAtHex > 0)
+            {
+                revenue[coordinate] = incomeAtHex;
+            }
         }
         return new HexMap<ushort>(revenue);
     }
