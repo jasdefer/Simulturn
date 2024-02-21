@@ -309,17 +309,20 @@ public class StateHelperTest
         var state = StateHelper.GetInitialState(settings, _players);
 
         var ai = new RandomAi(new Random(1));
-        for (int i = 0; i < 40; i++)
+        int iteration = 0;
+        Printer.Print($"Turns/Turn{iteration:D4}.svg", state);
+        while (iteration < 100 || state.PlayerStates.Values.Any(x => x.StructureMap.Sum(y => y.Value.Sum()) <= 0))
         {
-            Printer.Print($"Turn{i:D2}.svg", state);
+            iteration++;
             var orders = new Dictionary<string, Order>();
             foreach (var player in _players)
             {
                 var order = ai.GetOrder(state.PlayerStates[player], settings);
-                ValidationHelper.IsValid(settings, state.PlayerStates[player], order).Should().BeTrue($"i={i}, player={player}");
+                ValidationHelper.IsValid(settings, state.PlayerStates[player], order).Should().BeTrue($"iteration={iteration}, player={player}");
                 orders.Add(player, order);
             }
             state = StateHelper.GetNextState(state, orders, settings);
+            Printer.Print($"Turns/Turn{iteration:D4}.svg", state);
         }
     }
 

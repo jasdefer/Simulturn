@@ -46,7 +46,7 @@ public static class ValidationHelper
             var constructionCount = GetConstructionCount(coordinates,
                                                          order.Constructions[coordinates],
                                                          playerState.ConstructionMap);
-            if (constructionCount > playerState.ArmyMap[coordinates].Point)
+            if (constructionCount > (playerState.ArmyMap.ContainsKey(coordinates) ? playerState.ArmyMap[coordinates].Point : 0))
             {
                 return false;
             }

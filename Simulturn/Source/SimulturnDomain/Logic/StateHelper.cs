@@ -67,6 +67,7 @@ public static class StateHelper
         {
             HexMap<Army> newArmies = RemoveLosses(playerStates[player].ArmyMap, fights[player]);
             HexMap<Structure> newStructures = RemoveDestruction(player, gameSettings.ArmySettings.StructureDamage, gameSettings.StructureSettings.Armor, playerStates[player].StructureMap, fights);
+            // ToDo: Remove constructions and trainings if the points are killed or buildings are destroyed
             playerStates[player] = playerStates[player] with { ArmyMap = newArmies, Fights = fights[player] };
         }
         PlayerMap<PlayerState> playerStateMap = new(playerStates);
