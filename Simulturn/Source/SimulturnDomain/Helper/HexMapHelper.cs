@@ -13,4 +13,14 @@ public static class HexMapHelper
         }
         return sum;
     }
+
+    public static HexMap<Structure> Subtract(this HexMap<Structure> current, HexMap<Structure> structure)
+    {
+        Dictionary<Coordinates, Structure> result = current.ToDictionary();
+        foreach (var coordinates in structure.Keys)
+        {
+            result[coordinates] -= structure[coordinates];
+        }
+        return new HexMap<Structure>(result);
+    }
 }

@@ -65,24 +65,58 @@ public static class StateHelper
         PlayerMap<HexMap<Fight>> fights = FightHelper.GetFights(gameSettings.FightExponent, fightingArmies);
         foreach (var player in fights.Keys)
         {
+            // To Do add losses and subract later, to now if points dies for constructoins
             HexMap<Army> newArmies = RemoveLosses(playerStates[player].ArmyMap, fights[player]);
-            HexMap<Structure> newStructures = RemoveDestruction(player, gameSettings.ArmySettings.StructureDamage, gameSettings.StructureSettings.Armor, playerStates[player].StructureMap, fights);
-            // ToDo: Remove constructions and trainings if the points are killed or buildings are destroyed
-            playerStates[player] = playerStates[player] with { ArmyMap = newArmies, Fights = fights[player] };
+            HexMap<Structure> destructions = GetDestructions(player, gameSettings.ArmySettings.StructureDamage, gameSettings.StructureSettings.Armor, playerStates[player].StructureMap, fights);
+            if (destructions.Any())
+            {
+                TurnMap<HexMap<Army>> newTrainings = RemoveTrainings(destructions, playerStates[player].TrainingMap, newArmies);
+                TurnMap<HexMap<Structure>> newConstructions = RemoveConstructions(destructions, playerStates[player].ConstructionMap, newArmies);
+                HexMap<Structure> newStructures = playerStates[player].StructureMap.Subtract(destructions);
+
+                playerStates[player] = playerStates[player] with 
+                { 
+                    ArmyMap = newArmies,
+                    Fights = fights[player],
+                    TrainingMap = newTrainings,
+                    ConstructionMap = newConstructions,
+                    StructureMap = newStructures
+                };
+            }
+            else
+            {
+                playerStates[player] = playerStates[player] with { ArmyMap = newArmies, Fights = fights[player] };
+            }
         }
         PlayerMap<PlayerState> playerStateMap = new(playerStates);
         State newState = new(playerStateMap, remainingMatter);
         return newState;
     }
 
-    public static HexMap<Structure> RemoveDestruction(string player, Army structureDamage, Structure armor, HexMap<Structure> structureMap, PlayerMap<HexMap<Fight>> fights)
+    private static TurnMap<HexMap<Structure>> RemoveConstructions(HexMap<Structure> destructions, TurnMap<HexMap<Structure>> constructionMap, HexMap<Army> newArmies)
+    {
+        Dictionary<ushort, Dictionary<Coordinates, Structure>> result = constructionMap.ToDictionary(x => x.Key, x => x.Value.ToDictionary(x => x.Key, x => x.Value));
+        foreach (var coordinates in destructions.Keys)
+        {
+
+        }
+
+        return new TurnMap<HexMap<Structure>>(result.ToDictionary(x => x.Key, x => new HexMap<Structure>(x.Value)));
+    }
+
+    private static TurnMap<HexMap<Army>> RemoveTrainings(HexMap<Structure> destructions, TurnMap<HexMap<Army>> trainingMap, HexMap<Army> newArmies)
+    {
+        throw new NotImplementedException();
+    }
+
+    public static HexMap<Structure> GetDestructions(string player, Army structureDamage, Structure armor, HexMap<Structure> structureMap, PlayerMap<HexMap<Fight>> fights)
     {
         if (!fights.ContainsKey(player))
         {
             return structureMap;
         }
 
-        Dictionary<Coordinates, Structure> result = structureMap.ToDictionary();
+        Dictionary<Coordinates, Structure> result = [];
 
         foreach (var opponent in fights.Keys.Where(x => x != player && fights.ContainsKey(x)))
         {
@@ -92,7 +126,7 @@ public static class StateHelper
                     fights[opponent].ContainsKey(coordinates) &&
                     fights[opponent][coordinates].Surviver.Any())
                 {
-                    result[coordinates] -= FightHelper.Destroy(fights[opponent][coordinates].Surviver, result[coordinates], structureDamage, armor);
+                    result[coordinates] = FightHelper.Destroy(fights[opponent][coordinates].Surviver, result[coordinates], structureDamage, armor);
                 }
             }
         }

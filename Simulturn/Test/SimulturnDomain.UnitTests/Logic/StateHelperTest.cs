@@ -69,7 +69,7 @@ public class StateHelperTest
         {
             { _players[0], new Dictionary<Coordinates, Fight>(){ { _coordinates[0], new Fight(new Army(2), new Army(1)) } } }
         };
-        var remainingStructures = StateHelper.RemoveDestruction(_players[0], damage, armor, structureMap.ToHexMap(), fights.ToPlayerHexMap());
+        var remainingStructures = StateHelper.GetDestructions(_players[0], damage, armor, structureMap.ToHexMap(), fights.ToPlayerHexMap());
         remainingStructures.Keys.Should().HaveCount(1);
         remainingStructures.ContainsKey(_coordinates[0]).Should().BeTrue();
     }
@@ -303,15 +303,15 @@ public class StateHelperTest
     }
 
     [Fact]
-    public void GetState_Print()
+    public void GetState_AiMonkey()
     {
         GameSettings settings = GameSettings.Default();
         var state = StateHelper.GetInitialState(settings, _players);
 
         var ai = new RandomAi(new Random(1));
         int iteration = 0;
-        Printer.Print($"Turns/Turn{iteration:D4}.svg", state);
-        while (iteration < 100 || state.PlayerStates.Values.Any(x => x.StructureMap.Sum(y => y.Value.Sum()) <= 0))
+        //Printer.Print($"Turns/Turn{iteration:D4}.svg", state);
+        while (iteration < 10000 || state.PlayerStates.Values.Any(x => x.StructureMap.Sum(y => y.Value.Sum()) <= 0))
         {
             iteration++;
             var orders = new Dictionary<string, Order>();
@@ -322,7 +322,7 @@ public class StateHelperTest
                 orders.Add(player, order);
             }
             state = StateHelper.GetNextState(state, orders, settings);
-            Printer.Print($"Turns/Turn{iteration:D4}.svg", state);
+            //Printer.Print($"Turns/Turn{iteration:D4}.svg", state);
         }
     }
 
