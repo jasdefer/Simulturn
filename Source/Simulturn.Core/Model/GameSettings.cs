@@ -8,13 +8,11 @@ public record GameSettings(
     Army RequiredSpace,
     Army TrainingDuration,
     Army Income,
-    Army InitialArmy,
     Army StructureDamage,
     Army FightExponent,
     Compound CompoundCost,
     Compound ProvidedSpace,
     Compound ConstructionDuration,
-    Compound InitialCompound,
     Compound Armor,
     ImmutableDictionary<Hexagon, HexagonSettings> HexagonSettings,
     int Seed = 1
