@@ -3,6 +3,18 @@
 namespace Simulturn.Core.Extensions;
 public static class DictionaryExtensions
 {
+    public static Compound SumConstructions(this ImmutableDictionary<ushort, ImmutablePlayerHexagonCompound> constructions, ushort currentTurn, string playerId, Hexagon hexagon)
+    {
+        Compound sum = Compound.Empty;
+        foreach (var turn in constructions.Keys.Where(x => x > currentTurn))
+        {
+            if (constructions[turn].TryGetValue(playerId, out var playerCompound) && playerCompound.TryGetValue(hexagon, out var compound))
+            {
+                sum += compound;
+            }
+        }
+        return sum;
+    }
     public static Dictionary<TKey1, Dictionary<TKey2, TValue>> Copy<TKey1, TKey2, TValue>(this IDictionary<TKey1, ImmutableDictionary<TKey2, TValue>> nestedDict)
         where TKey1 : notnull where TKey2 : notnull
     {
@@ -55,17 +67,17 @@ public static class DictionaryExtensions
     {
         foreach (var playerId in delta.Keys)
         {
-            if(!armies.TryGetValue(playerId, out var playerArmies))
+            if (!armies.TryGetValue(playerId, out var playerArmies))
             {
-                playerArmies =  [];
+                playerArmies = [];
                 armies.Add(playerId, playerArmies);
             }
-            foreach((Hexagon hexagon, Army armyDelta) in delta[playerId])
+            foreach ((Hexagon hexagon, Army armyDelta) in delta[playerId])
             {
-                if(playerArmies.TryGetValue(hexagon, out Army existingArmy))
+                if (playerArmies.TryGetValue(hexagon, out Army existingArmy))
                 {
                     var newArmy = existingArmy + armyDelta;
-                    if(newArmy.IsEmpty)
+                    if (newArmy.IsEmpty)
                     {
                         playerArmies.Remove(hexagon);
                     }

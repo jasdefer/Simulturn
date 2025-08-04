@@ -1,7 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Net.Http.Headers;
 using System.Numerics;
 
 namespace Simulturn.Core.Model;
@@ -118,6 +114,17 @@ public readonly struct Army : IEquatable<Army>, IAdditionOperators<Army, Army, A
             Square = (short)Math.Ceiling(fraction * Square),
             Circle = (short)Math.Ceiling(fraction * Circle),
             Dot = (short)Math.Ceiling(fraction * Dot),
+        };
+    }
+
+    public static Army Min(Army a, Army b)
+    {
+        return new Army()
+        {
+            Triangle = (short)Math.Min(a.Triangle, b.Triangle),
+            Circle = (short)Math.Min(a.Circle, b.Circle),
+            Square = (short)Math.Min(a.Square, b.Square),
+            Dot = (short)Math.Min(a.Dot, b.Dot)
         };
     }
 }

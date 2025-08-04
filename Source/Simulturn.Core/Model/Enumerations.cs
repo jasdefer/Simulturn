@@ -7,7 +7,7 @@ public enum Unit
     Square
 }
 
-public enum  Building
+public enum Building
 {
     Plane,
     Axis,

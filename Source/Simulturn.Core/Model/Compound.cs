@@ -44,6 +44,16 @@ public readonly struct Compound : IAdditionOperators<Compound, Compound, Compoun
             Axis = (short)(a.Axis + b.Axis)
         };
 
+    public static Compound operator -(Compound a, Compound b) =>
+        new Compound()
+        {
+            Dome = (short)(a.Dome - b.Dome),
+            Pyramid = (short)(a.Pyramid - b.Pyramid),
+            Cube = (short)(a.Cube - b.Cube),
+            Plane = (short)(a.Plane - b.Plane),
+            Axis = (short)(a.Axis - b.Axis)
+        };
+
     public static int operator *(Compound a, Compound b) =>
         a.Dome * b.Dome +
         a.Pyramid * b.Pyramid +

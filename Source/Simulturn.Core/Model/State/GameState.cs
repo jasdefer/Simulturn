@@ -1,6 +1,5 @@
 using Simulturn.Core.Extensions;
 using Simulturn.Core.Model.Commands;
-using System;
 
 namespace Simulturn.Core.Model.State;
 
@@ -72,23 +71,23 @@ public record GameState
     public bool IsValid(string playerId, Dictionary<Hexagon, Command> commands)
     {
         int requiredMatter = commands.Values.Sum(command => command.Training * _gameSettings.ArmyCost + command.Construction * _gameSettings.CompoundCost);
-        if(requiredMatter > _playerStates[playerId].Matter)
+        if (requiredMatter > _playerStates[playerId].Matter)
         {
             return false;
         }
         int requiredSpace = commands.Values.Sum(command => command.Training * _gameSettings.RequiredSpace);
-        if(requiredSpace + _playerStates[playerId].UsedSupply > _playerStates[playerId].AvailableSupply)
+        if (requiredSpace + _playerStates[playerId].UsedSpace > _playerStates[playerId].AvailableSpace)
         {
             return false;
         }
 
-        foreach((Hexagon hexagon, Command command) in commands)
+        foreach ((Hexagon hexagon, Command command) in commands)
         {
             int newConstructionSides = command.Construction.Sum();
             int existingConstructionSides = _constructions
                 .Where(x => x.Key >= _turn)
                 .Sum(x => x.Value[playerId][hexagon].Sum());
-            if(newConstructionSides + existingConstructionSides > _playerArmies[playerId][hexagon].Dot)
+            if (newConstructionSides + existingConstructionSides > _playerArmies[playerId][hexagon].Dot)
             {
                 return false;
             }
@@ -105,36 +104,56 @@ public record GameState
     public GameState NextTurn(PlayerHexagonCommands commands)
     {
         // ToDo: Compute required and available supply
-        // TODo: remove constructing workers from income
         // Income
         var remainingMatter = _remainingMatter.ToBuilder();
         var playerStates = _playerStates.ToBuilder();
-        foreach(var playerId in playerStates.Keys)
+        foreach (var playerId in playerStates.Keys)
         {
             int income = 0;
-            foreach((Hexagon hexagon, Army army) in _playerArmies[playerId])
+            foreach ((Hexagon hexagon, Army army) in _playerArmies[playerId])
             {
                 if (!_playerCompounds[playerId].TryGetValue(hexagon, out var compound) || compound.Plane == 0)
                 {
                     continue;
                 }
-                int hexagonIncome = _gameSettings.Income * army;
+                Compound upcomingConstructions = _constructions.SumConstructions(_turn, playerId, hexagon);
+                var idleArmy = army with
+                {
+                    Dot = (short)Math.Max(0, army.Dot - upcomingConstructions.Sum())
+                };
+                idleArmy = Army.Min(idleArmy, _gameSettings.MaximumNumberOfResourceGatheringUnits);
+                int hexagonIncome = _gameSettings.Income * idleArmy;
                 hexagonIncome = Math.Min(hexagonIncome, remainingMatter[hexagon]);
                 remainingMatter[hexagon] -= hexagonIncome;
                 income += hexagonIncome;
             }
+            int spendMatter = 0;
+            if (commands.TryGetValue(playerId, out var playerCommands))
+            {
+                spendMatter = playerCommands.Sum(x => x.Value.Construction * _gameSettings.CompoundCost +
+                    x.Value.Training * _gameSettings.ArmyCost);
+            }
+
             playerStates[playerId] = playerStates[playerId] with
             {
-                Matter = playerStates[playerId].Matter + income,
+                Matter = playerStates[playerId].Matter + income - spendMatter,
             };
         }
 
         // Trainigs
-        Dictionary<ushort,PlayerHexagonArmies> newTrainings = GetNewTrainings(commands);
+        Dictionary<ushort, PlayerHexagonArmies> newTrainings = GetNewTrainings(commands);
         PlayerHexagonArmies playerArmies = _playerArmies.Copy();
-        if(newTrainings.TryGetValue(_turn, out var trainings))
+        if (newTrainings.TryGetValue(_turn, out var trainings))
         {
             playerArmies.MergeArmies(trainings);
+            foreach (var playerId in trainings.Keys)
+            {
+                int usedSpace = playerStates[playerId].UsedSpace + trainings[playerId].Values.Sum(army => army * _gameSettings.RequiredSpace);
+                playerStates[playerId] = playerStates[playerId] with
+                {
+                    UsedSpace = usedSpace,
+                };
+            }
         }
 
         // Constructions
@@ -143,16 +162,24 @@ public record GameState
         if (newConstructions.TryGetValue(_turn, out var constructions))
         {
             playerCompounds.MergeCompounds(constructions);
+            foreach (var playerId in constructions.Keys)
+            {
+                int availableSpace = playerStates[playerId].AvailableSpace + constructions[playerId].Values.Sum(construction => construction * _gameSettings.ProvidedSpace);
+                playerStates[playerId] = playerStates[playerId] with
+                {
+                    AvailableSpace = availableSpace
+                };
+            }
         }
 
         // Movements
         HashSet<Hexagon> potentialFightHexagons = [];
-        foreach(var playerId in commands.Keys)
+        foreach (var playerId in commands.Keys)
         {
-            foreach(var hexagon in commands[playerId].Keys)
+            foreach (var hexagon in commands[playerId].Keys)
             {
                 var movement = commands[playerId][hexagon].MovementCommand;
-                if(movement.Army.IsEmpty)
+                if (movement.Army.IsEmpty)
                 {
                     continue;
                 }
@@ -166,14 +193,14 @@ public record GameState
         foreach (var hexagon in potentialFightHexagons)
         {
             List<(string playerId, Army army)> armies = [];
-            foreach(var playerId in playerArmies.Keys)
+            foreach (var playerId in playerArmies.Keys)
             {
                 if (playerArmies[playerId].TryGetValue(hexagon, out var army))
                 {
                     armies.Add((playerId, army));
                 }
             }
-            if(armies.Count < 2)
+            if (armies.Count < 2)
             {
                 continue;
             }
@@ -190,20 +217,24 @@ public record GameState
                     losses.Merge(armies[j].playerId, lossesPlayerJ);
                 }
             }
-            foreach(var playerId in losses.Keys)
+            foreach (var playerId in losses.Keys)
             {
                 playerArmies[playerId].Merge(hexagon, -losses[playerId]);
+                playerStates[playerId] = playerStates[playerId] with
+                {
+                    UsedSpace = playerStates[playerId].UsedSpace - losses[playerId] * _gameSettings.RequiredSpace
+                };
             }
         }
 
         // Destroy Buildings
-        foreach(var hexagon in _hexagons)
+        foreach (var hexagon in _hexagons)
         {
-            foreach(var armyPlayerId in playerArmies.Keys)
+            foreach (var armyPlayerId in playerArmies.Keys)
             {
-                foreach(var compoundPlayerId in playerCompounds.Keys)
+                foreach (var compoundPlayerId in playerCompounds.Keys)
                 {
-                    if(armyPlayerId == compoundPlayerId)
+                    if (armyPlayerId == compoundPlayerId)
                     {
                         continue;
                     }
@@ -213,7 +244,7 @@ public record GameState
                         double damage = _gameSettings.StructureDamage * army;
                         var buildings = _buildings.OrderBy(x => _gameSettings.Armor[x]);
                         var destroyedCompound = Compound.Empty;
-                        foreach(var building in buildings)
+                        foreach (var building in buildings)
                         {
                             var destroyedBuildings = (short)Math.Min(compound[building], Math.Floor(damage / (double)_gameSettings.Armor[building]));
                             if (destroyedBuildings <= 0)
@@ -223,11 +254,15 @@ public record GameState
                             damage -= destroyedBuildings * _gameSettings.Armor[building];
                             destroyedCompound = destroyedCompound + Compound.FromBuilding(building, destroyedBuildings);
                         }
-                        if(destroyedCompound.IsEmpty)
+                        if (destroyedCompound.IsEmpty)
                         {
                             continue;
                         }
                         playerCompounds[compoundPlayerId].Merge(hexagon, -destroyedCompound);
+                        playerStates[compoundPlayerId] = playerStates[compoundPlayerId] with
+                        {
+                            AvailableSpace = playerStates[compoundPlayerId].AvailableSpace - destroyedCompound * _gameSettings.ProvidedSpace
+                        };
                     }
                 }
             }
