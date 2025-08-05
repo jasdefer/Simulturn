@@ -63,6 +63,7 @@ public record GameState
         ImmutableDictionary<Hexagon, int> remainingMatter)
     {
         GameSettings = gameSettings;
+        PlayerIds = playerStates.Keys.ToHashSet();
         Turn = turn;
         Hexagons = GameSettings.HexagonSettings.Keys.ToImmutableHashSet();
         PlayerArmies = playerArmies;
@@ -182,14 +183,17 @@ public record GameState
         {
             foreach (var hexagon in commands[playerId].Keys)
             {
-                var movement = commands[playerId][hexagon].MovementCommand;
-                if (movement.Army.IsEmpty)
+                for (int i = 0; i < commands[playerId][hexagon].MovementCommands.Length; i++)
                 {
-                    continue;
+                    var movement = commands[playerId][hexagon].MovementCommands[i];
+                    if (movement.Army.IsEmpty)
+                    {
+                        continue;
+                    }
+                    playerArmies[playerId].Merge(hexagon, -movement.Army);
+                    playerArmies[playerId].Merge(movement.Destination, movement.Army);
+                    potentialFightHexagons.Add(movement.Destination);
                 }
-                playerArmies[playerId].Merge(hexagon, -movement.Army);
-                playerArmies[playerId].Merge(movement.Destination, movement.Army);
-                potentialFightHexagons.Add(movement.Destination);
             }
         }
 
