@@ -125,9 +125,9 @@ public class GameStateTest
         newTurn.PlayerCompounds["Player01"].Count.ShouldBe(1);
         newTurn.PlayerCompounds["Player02"][new Hexagon(1, 0)].ShouldBe(new Compound() { Plane = 1 });
         newTurn.PlayerCompounds["Player02"].Count.ShouldBe(1);
-        newTurn.RemainingMatter.Sum(x => x.Value).ShouldBe(20000-2*50);
-        newTurn.RemainingMatter[new Hexagon(-1, 0)].ShouldBe(10000-50);
-        newTurn.RemainingMatter[new Hexagon(1, 0)].ShouldBe(10000-50);
+        newTurn.RemainingMatter.Sum(x => x.Value).ShouldBe(20000 - 2 * 50);
+        newTurn.RemainingMatter[new Hexagon(-1, 0)].ShouldBe(10000 - 50);
+        newTurn.RemainingMatter[new Hexagon(1, 0)].ShouldBe(10000 - 50);
         newTurn.PlayerStates.Keys.ShouldBe(["Player01", "Player02"], ignoreOrder: true);
         newTurn.PlayerStates["Player01"].ShouldBe(new PlayerState()
         {
@@ -149,6 +149,9 @@ public class GameStateTest
         var gameState = new GameState(_gameSettings);
         var dict = new Dictionary<string, Dictionary<Hexagon, Command>>()
         {
+            {
+                "Player01", Command.Create([(new Hexagon(0,0), new Command() { Training = new Army() { Dot = 1 } })])
+            },
         };
         var newTurn = gameState.NextTurn(dict);
         newTurn.Turn.ShouldBe((ushort)1);

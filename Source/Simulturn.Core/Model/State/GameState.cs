@@ -325,9 +325,9 @@ public record GameState
         Dictionary<ushort, PlayerHexagonArmies> newTrainings = [];
         foreach (var playerId in commands.Keys)
         {
-            foreach (var hexagon in commands[playerId].Keys)
+            foreach ((var hexagon, var command) in commands[playerId].Where(x => x.Value.Training is not null))
             {
-                Army training = commands[playerId][hexagon].Training;
+                Army training = command.Training!.Value;
                 foreach (var unit in _units)
                 {
                     if (training[unit] <= 0)
