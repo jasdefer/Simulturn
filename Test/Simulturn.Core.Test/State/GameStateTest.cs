@@ -3,11 +3,13 @@ using Shouldly;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
+using Simulturn.Core.Model.Upgrades;
 using System.Collections.Immutable;
 
 namespace Simulturn.Core.Test.State;
 public class GameStateTest
 {
+    private static readonly Dictionary<string, Dictionary<Hexagon, Command>> _noCommands = [];
     private static readonly GameSettings _gameSettings = new()
     {
         Armor = new Compound() { Axis = 10, Dome = 20, Cube = 20, Plane = 30, Pyramid = 20 },
@@ -15,6 +17,16 @@ public class GameStateTest
         CompoundCost = new Compound() { Axis = 150, Dome = 100, Cube = 150, Plane = 350, Pyramid = 150 },
         ConstructionDuration = new Compound() { Axis = 2, Dome = 3, Cube = 3, Plane = 4, Pyramid = 3 },
         FightExponent = new Army() { Triangle = 120, Circle = 120, Square = 120, Dot = 1 },
+        Income = new Army() { Triangle = 0, Circle = 0, Square = 0, Dot = 10 },
+        ProvidedSpace = new Compound() { Axis = 10, Dome = 0, Cube = 0, Plane = 10, Pyramid = 0 },
+        RequiredSpace = new Army() { Triangle = 3, Circle = 3, Square = 3, Dot = 1 },
+        Seed = 1,
+        StartMatter = 500,
+        StructureDamage = new Army() { Triangle = 4, Circle = 4, Square = 4, Dot = 1 },
+        TrainingDuration = new Army() { Triangle = 2, Circle = 2, Square = 2, Dot = 1 },
+        StartUpgrades = ImmutableDictionary<string, ImmutableArray<Upgrade>>.Empty,
+        UpgradeStartMatters = ImmutableArray<UpgradeStartMatter>.Empty,
+        DotUpgrades = ImmutableArray<DotUpgrade>.Empty,
         HexagonSettings = new Dictionary<Hexagon, HexagonSettings>
         {
             {
@@ -51,13 +63,6 @@ public class GameStateTest
                 new Hexagon(1,-1), HexagonSettings.Empty
             }
         }.ToImmutableDictionary(),
-        Income = new Army() { Triangle = 0, Circle = 0, Square = 0, Dot = 10 },
-        ProvidedSpace = new Compound() { Axis = 10, Dome = 0, Cube = 0, Plane = 10, Pyramid = 0 },
-        RequiredSpace = new Army() { Triangle = 3, Circle = 3, Square = 3, Dot = 1 },
-        Seed = 1,
-        StartMatter = 500,
-        StructureDamage = new Army() { Triangle = 4, Circle = 4, Square = 4, Dot = 1 },
-        TrainingDuration = new Army() { Triangle = 2, Circle = 2, Square = 2, Dot = 1 },
     };
 
     [Test]
@@ -106,8 +111,8 @@ public class GameStateTest
     public void EmptyTurn()
     {
         var gameState = new GameState(_gameSettings);
-        var dict = new Dictionary<string, Dictionary<Hexagon, Command>>();
-        var newTurn = gameState.NextTurn(dict);
+
+        var newTurn = gameState.NextTurn(_noCommands);
         newTurn.Turn.ShouldBe((ushort)1);
         newTurn.Hexagons.Count.ShouldBe(7);
         newTurn.Hexagons.Select(hexagon => hexagon.X + hexagon.Y + hexagon.Z)
@@ -150,38 +155,41 @@ public class GameStateTest
         var dict = new Dictionary<string, Dictionary<Hexagon, Command>>()
         {
             {
-                "Player01", Command.Create([(new Hexagon(0,0), new Command() { Training = new Army() { Dot = 1 } })])
+                "Player01", Command.Create([(new Hexagon(-1,0), new Command() { Training = new Army() { Dot = 1 } })])
             },
         };
-        var newTurn = gameState.NextTurn(dict);
-        newTurn.Turn.ShouldBe((ushort)1);
-        newTurn.Hexagons.Count.ShouldBe(7);
-        newTurn.Hexagons.Select(hexagon => hexagon.X + hexagon.Y + hexagon.Z)
+        var turn1 = gameState.NextTurn(dict);
+        turn1.Turn.ShouldBe((ushort)1);
+        turn1.Hexagons.Count.ShouldBe(7);
+        turn1.Hexagons.Select(hexagon => hexagon.X + hexagon.Y + hexagon.Z)
             .Distinct()
             .Single()
             .ShouldBe(0);
-        newTurn.Constructions.ShouldBeEmpty();
-        newTurn.Trainings.ShouldBeEmpty();
-        newTurn.GameSettings.ShouldBe(_gameSettings);
-        newTurn.PlayerArmies["Player01"][new Hexagon(-1, 0)].ShouldBe(new Army() { Dot = 5 });
-        newTurn.PlayerArmies["Player01"].Count.ShouldBe(1);
-        newTurn.PlayerArmies["Player02"][new Hexagon(1, 0)].ShouldBe(new Army() { Dot = 5 });
-        newTurn.PlayerArmies["Player02"].Count.ShouldBe(1);
-        newTurn.PlayerCompounds["Player01"][new Hexagon(-1, 0)].ShouldBe(new Compound() { Plane = 1 });
-        newTurn.PlayerCompounds["Player01"].Count.ShouldBe(1);
-        newTurn.PlayerCompounds["Player02"][new Hexagon(1, 0)].ShouldBe(new Compound() { Plane = 1 });
-        newTurn.PlayerCompounds["Player02"].Count.ShouldBe(1);
-        newTurn.RemainingMatter.Sum(x => x.Value).ShouldBe(20000 - 2 * 50);
-        newTurn.RemainingMatter[new Hexagon(-1, 0)].ShouldBe(10000 - 50);
-        newTurn.RemainingMatter[new Hexagon(1, 0)].ShouldBe(10000 - 50);
-        newTurn.PlayerStates.Keys.ShouldBe(["Player01", "Player02"], ignoreOrder: true);
-        newTurn.PlayerStates["Player01"].ShouldBe(new PlayerState()
+        turn1.Constructions.ShouldBeEmpty();
+        turn1.Trainings.ShouldHaveSingleItem()
+            .Value.ShouldHaveSingleItem()
+            .Value.ShouldHaveSingleItem()
+            .Value.ShouldBe(new Army() { Dot = 1 });
+        turn1.GameSettings.ShouldBe(_gameSettings);
+        turn1.PlayerArmies["Player01"][new Hexagon(-1, 0)].ShouldBe(new Army() { Dot = 6 });
+        turn1.PlayerArmies["Player01"].Count.ShouldBe(1);
+        turn1.PlayerArmies["Player02"][new Hexagon(1, 0)].ShouldBe(new Army() { Dot = 5 });
+        turn1.PlayerArmies["Player02"].Count.ShouldBe(1);
+        turn1.PlayerCompounds["Player01"][new Hexagon(-1, 0)].ShouldBe(new Compound() { Plane = 1 });
+        turn1.PlayerCompounds["Player01"].Count.ShouldBe(1);
+        turn1.PlayerCompounds["Player02"][new Hexagon(1, 0)].ShouldBe(new Compound() { Plane = 1 });
+        turn1.PlayerCompounds["Player02"].Count.ShouldBe(1);
+        turn1.RemainingMatter.Sum(x => x.Value).ShouldBe(20000 - 2 * 50);
+        turn1.RemainingMatter[new Hexagon(-1, 0)].ShouldBe(10000 - 50);
+        turn1.RemainingMatter[new Hexagon(1, 0)].ShouldBe(10000 - 50);
+        turn1.PlayerStates.Keys.ShouldBe(["Player01", "Player02"], ignoreOrder: true);
+        turn1.PlayerStates["Player01"].ShouldBe(new PlayerState()
         {
             AvailableSpace = 10,
-            UsedSpace = 5,
-            Matter = 500 + 50
+            UsedSpace = 6,
+            Matter = 500 + 50 - 75
         });
-        newTurn.PlayerStates["Player02"].ShouldBe(new PlayerState()
+        turn1.PlayerStates["Player02"].ShouldBe(new PlayerState()
         {
             AvailableSpace = 10,
             UsedSpace = 5,

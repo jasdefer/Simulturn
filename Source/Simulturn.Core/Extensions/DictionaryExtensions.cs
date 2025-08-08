@@ -15,6 +15,7 @@ public static class DictionaryExtensions
         }
         return sum;
     }
+
     public static Dictionary<TKey1, Dictionary<TKey2, TValue>> Copy<TKey1, TKey2, TValue>(this IDictionary<TKey1, ImmutableDictionary<TKey2, TValue>> nestedDict)
         where TKey1 : notnull where TKey2 : notnull
     {

@@ -292,8 +292,10 @@ public record GameState
 
     private (Army lossesPlayer0, Army lossesPlayer1) Fight(string player1Id, Army army1, string player2Id, Army army2)
     {
-        var army1Strength = army1.GetStrengthOver(army2, GameSettings.FightExponent);
-        var army2Strength = army2.GetStrengthOver(army1, GameSettings.FightExponent);
+        Army player1Upgrades = PlayerStates[player1Id].ExponentBonusFromUpgrades(GameSettings);
+        Army player2Upgrades = PlayerStates[player2Id].ExponentBonusFromUpgrades(GameSettings);
+        var army1Strength = army1.GetStrengthOver(army2, GameSettings.FightExponent + player1Upgrades);
+        var army2Strength = army2.GetStrengthOver(army1, GameSettings.FightExponent + player2Upgrades);
         Army arm1Losses;
         Army arm2Losses;
         if (army1Strength > army2Strength)
@@ -315,26 +317,22 @@ public record GameState
         return (arm1Losses, arm2Losses);
     }
 
-    public GameState GetFromThePerspectiveOf(string player)
-    {
-        throw new NotImplementedException();
-    }
-
     private Dictionary<ushort, PlayerHexagonArmies> GetNewTrainings(PlayerHexagonCommands commands)
     {
         Dictionary<ushort, PlayerHexagonArmies> newTrainings = [];
         foreach (var playerId in commands.Keys)
         {
-            foreach ((var hexagon, var command) in commands[playerId].Where(x => x.Value.Training is not null))
+            foreach ((var hexagon, var command) in commands[playerId].Where(x => !x.Value.Training.IsEmpty))
             {
-                Army training = command.Training!.Value;
+                Army training = command.Training;
                 foreach (var unit in _units)
                 {
                     if (training[unit] <= 0)
                     {
                         continue;
                     }
-                    ushort completionTurn = (ushort)(Turn + GameSettings.TrainingDuration[unit]);
+                    // Subtract 1 to account for the current turn, the turn increments after all game state logic is completed
+                    ushort completionTurn = (ushort)(Turn + GameSettings.TrainingDuration[unit] - 1);
                     if (!newTrainings.TryGetValue(completionTurn, out var turnDict))
                     {
                         turnDict ??= [];
@@ -388,7 +386,7 @@ public record GameState
                     {
                         continue;
                     }
-                    ushort completionTurn = (ushort)(Turn + GameSettings.ConstructionDuration[building]);
+                    ushort completionTurn = (ushort)(Turn + GameSettings.ConstructionDuration[building] - 1);
                     if (!newConstructions.TryGetValue(completionTurn, out var turnDict))
                     {
                         turnDict ??= [];

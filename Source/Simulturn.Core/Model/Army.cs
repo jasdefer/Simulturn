@@ -85,6 +85,18 @@ public readonly struct Army : IEquatable<Army>, IAdditionOperators<Army, Army, A
         _ => throw new ArgumentOutOfRangeException(nameof(unit), unit, null)
     };
 
+    public Army AddUnit(Unit unit, short count)
+    {
+        return unit switch
+        {
+            Unit.Dot => this with { Dot = (short)(Dot + count) },
+            Unit.Triangle => this with { Triangle = (short)(Triangle + count) },
+            Unit.Circle => this with { Circle = (short)(Circle + count) },
+            Unit.Square => this with { Square = (short)(Square + count) },
+            _ => throw new ArgumentOutOfRangeException(nameof(unit), unit, null)
+        };
+    }
+
     public static Army FromUnit(Unit unit, short count)
     {
         return unit switch

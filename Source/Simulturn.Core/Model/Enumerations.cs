@@ -15,3 +15,9 @@ public enum Building
     Pyramid,
     Cube,
 }
+
+public enum Upgrade
+{
+    UpgradeStartMatter,
+    DotUpgrade,
+}

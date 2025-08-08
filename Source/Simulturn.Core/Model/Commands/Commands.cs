@@ -2,9 +2,9 @@
 public record Command
 {
     public Compound Construction { get; init; } = Compound.Empty;
-    public ImmutableArray<MovementCommand> MovementCommands { get; init; }
+    public ImmutableArray<MovementCommand> MovementCommands { get; init; } = ImmutableArray<MovementCommand>.Empty;
     public Army Training { get; init; } = Army.Empty;
-    public UpgradeCommand UpgradeCommand { get; init; }
+    public ImmutableHashSet<Upgrade> Upgrades { get; init; } = ImmutableHashSet<Upgrade>.Empty;
 
     public static Dictionary<Hexagon, Command> Create(params (Hexagon hexagon, Command command)[] commands)
     {

@@ -1,4 +1,4 @@
-using Simulturn.Core.Model.Upgrade;
+using Simulturn.Core.Model.Upgrades;
 
 namespace Simulturn.Core.Model;
 
@@ -24,6 +24,8 @@ public record GameSettings
     public required Compound ConstructionDuration { get; init; }
     public required Compound Armor { get; init; }
     public required ImmutableDictionary<Hexagon, HexagonSettings> HexagonSettings { get; init; }
-    public ImmutableArray<UpgradeStartMatter> UpgradeStartMatter { get; set; }
+    public required ImmutableDictionary<string, ImmutableArray<Upgrade>> StartUpgrades { get; init; }
+    public required ImmutableArray<UpgradeStartMatter> UpgradeStartMatters { get; init; }
+    public required ImmutableArray<DotUpgrade> DotUpgrades { get; init; }
     public int Seed { get; init; }
 }
