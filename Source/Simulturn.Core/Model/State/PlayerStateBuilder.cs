@@ -3,9 +3,9 @@ public class PlayerStateBuilder
 {
     private PlayerStateBuilder() { }
 
-    public int Matter { get; init; }
-    public int UsedSpace { get; init; }
-    public int AvailableSpace { get; init; }
+    public int Matter { get; set; }
+    public int UsedSpace { get; set; }
+    public int AvailableSpace { get; set; }
     public required ImmutableDictionary<Hexagon, Army>.Builder Armies { get; init; }
     public required ImmutableDictionary<Hexagon, Compound>.Builder Compounds { get; init; }
     public required List<(ushort Turn, Hexagon Hexagon, Army Training)> Trainings { get; init; }

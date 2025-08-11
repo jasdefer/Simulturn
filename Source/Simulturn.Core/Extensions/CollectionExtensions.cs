@@ -7,4 +7,9 @@ public static class CollectionExtensions
     {
         return armies.Aggregate(new Army(), (acc, army) => acc + army);
     }
+
+    public static Compound Sum(this IEnumerable<Compound> armies)
+    {
+        return armies.Aggregate(new Compound(), (acc, compound) => acc + compound);
+    }
 }

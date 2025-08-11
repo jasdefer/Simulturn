@@ -58,93 +58,96 @@ public record GameState
     {
         // Income
         var remainingMatter = RemainingMatter.ToBuilder();
-        var playerStates = PlayerStates.ToBuilder();
-        foreach(string playerId in PlayerIds)
+        var playerStates = PlayerStates.ToDictionary(x => x.Key, x => PlayerStateBuilder.FromPlayerState(x.Value));
+        foreach (string playerId in PlayerIds)
         {
-            if(commands.TryGetValue(playerId, out var command))
+            IReadOnlyDictionary<Hexagon, Command> commandsForPlayer;
+            if (commands.TryGetValue(playerId, out var command))
             {
-                command = new Dictionary<Hexagon, Command>();
+                commandsForPlayer = command;
             }
-        }
-        PlayerStateBuilder builder = PlayerStateBuilder.FromPlayerState(this);
-        int income = 0;
-        foreach ((Hexagon hexagon, Army army) in builder.Armies)
-        {
-            if (!builder.Compounds.TryGetValue(hexagon, out var compound) || compound.Plane == 0)
+            else
             {
-                continue;
+                commandsForPlayer = ImmutableDictionary<Hexagon, Command>.Empty;
             }
-            Compound upcomingConstructions = Constructions.SumConstructions<ImmutableDictionary<Hexagon, Compound>>(3, hexagon);
-            var idleArmy = army with
+            PlayerStateBuilder playerStateBuilder = playerStates[playerId];
+            int income = 0;
+            foreach ((Hexagon hexagon, Army army) in playerStateBuilder.Armies)
             {
-                Dot = (short)Math.Max(0, army.Dot - upcomingConstructions.Sum())
-            };
-            idleArmy = Army.Min(idleArmy, gameSettings.HexagonSettings[hexagon].MaxNumberOfUnitsGeneratingMatter);
-            int hexagonIncome = gameSettings.Income * idleArmy;
-            hexagonIncome = Math.Min(hexagonIncome, remainingMatter[hexagon]);
-            remainingMatter[hexagon] -= hexagonIncome;
-            income += hexagonIncome;
-        }
-        int spendMatter = 0;
-        if (commands.TryGetValue(playerId, out var playerCommands))
-        {
-            spendMatter = playerCommands.Sum(x => x.Value.Construction * GameSettings.CompoundCost +
-                x.Value.Training * GameSettings.ArmyCost);
-        }
-
-        playerStates[playerId] = playerStates[playerId] with
-        {
-            Matter = playerStates[playerId].Matter + income - spendMatter,
-        };
-
-        // Trainigs
-        Dictionary<ushort, PlayerHexagonArmies> newTrainings = GetNewTrainings(commands);
-        PlayerHexagonArmies playerArmies = PlayerArmies.Copy();
-        if (newTrainings.TryGetValue(Turn, out var trainings))
-        {
-            playerArmies.MergeArmies(trainings);
-            foreach (var playerId in trainings.Keys)
-            {
-                int usedSpace = playerStates[playerId].UsedSpace + trainings[playerId].Values.Sum(army => army * GameSettings.RequiredSpace);
-                playerStates[playerId] = playerStates[playerId] with
+                if (!playerStateBuilder.Compounds.TryGetValue(hexagon, out var compound) || compound.Plane == 0)
                 {
-                    UsedSpace = usedSpace,
+                    continue;
+                }
+                Compound upcomingConstructions = playerStates[playerId].Constructions
+                    .Where(x => x.Turn >= Turn && x.Hexagon == hexagon)
+                    .Select(x => x.Construction)
+                    .Sum();
+
+                var idleArmy = army with
+                {
+                    Dot = (short)Math.Max(0, army.Dot - upcomingConstructions.Sum())
                 };
+                idleArmy = Army.Min(idleArmy, GameSettings.HexagonSettings[hexagon].MaxNumberOfUnitsGeneratingMatter);
+                int hexagonIncome = GameSettings.Income * idleArmy;
+                hexagonIncome = Math.Min(hexagonIncome, remainingMatter[hexagon]);
+                remainingMatter[hexagon] -= hexagonIncome;
+                income += hexagonIncome;
             }
-        }
+        
+            int spendMatter = commandsForPlayer.Sum(x => x.Value.Construction * GameSettings.CompoundCost +
+                    x.Value.Training * GameSettings.ArmyCost);
 
-        // Constructions
-        Dictionary<ushort, PlayerHexagonCompound> newConstructions = GetNewConstructions(commands);
-        var playerCompounds = PlayerCompounds.Copy();
-        if (newConstructions.TryGetValue(Turn, out var constructions))
-        {
-            playerCompounds.MergeCompounds(constructions);
-            foreach (var playerId in constructions.Keys)
-            {
-                int availableSpace = playerStates[playerId].AvailableSpace + constructions[playerId].Values.Sum(construction => construction * GameSettings.ProvidedSpace);
-                playerStates[playerId] = playerStates[playerId] with
-                {
-                    AvailableSpace = availableSpace
-                };
-            }
-        }
+            playerStateBuilder.Matter += income - spendMatter;
 
-        // Movements
-        HashSet<Hexagon> potentialFightHexagons = [];
-        foreach (var playerId in commands.Keys)
-        {
-            foreach (var hexagon in commands[playerId].Keys)
+            // Trainigs
+            Dictionary<ushort, PlayerHexagonArmies> newTrainings = GetNewTrainings(commands);
+            PlayerHexagonArmies playerArmies = PlayerArmies.Copy();
+            if (newTrainings.TryGetValue(Turn, out var trainings))
             {
-                for (int i = 0; i < commands[playerId][hexagon].MovementCommands.Length; i++)
+                playerArmies.MergeArmies(trainings);
+                foreach (var playerId in trainings.Keys)
                 {
-                    var movement = commands[playerId][hexagon].MovementCommands[i];
-                    if (movement.Army.IsEmpty)
+                    int usedSpace = playerStates[playerId].UsedSpace + trainings[playerId].Values.Sum(army => army * GameSettings.RequiredSpace);
+                    playerStates[playerId] = playerStates[playerId] with
                     {
-                        continue;
+                        UsedSpace = usedSpace,
+                    };
+                }
+            }
+
+            // Constructions
+            Dictionary<ushort, PlayerHexagonCompound> newConstructions = GetNewConstructions(commands);
+            var playerCompounds = PlayerCompounds.Copy();
+            if (newConstructions.TryGetValue(Turn, out var constructions))
+            {
+                playerCompounds.MergeCompounds(constructions);
+                foreach (var playerId in constructions.Keys)
+                {
+                    int availableSpace = playerStates[playerId].AvailableSpace + constructions[playerId].Values.Sum(construction => construction * GameSettings.ProvidedSpace);
+                    playerStates[playerId] = playerStates[playerId] with
+                    {
+                        AvailableSpace = availableSpace
+                    };
+                }
+            }
+
+            // Movements
+            HashSet<Hexagon> potentialFightHexagons = [];
+            foreach (var playerId in commands.Keys)
+            {
+                foreach (var hexagon in commands[playerId].Keys)
+                {
+                    for (int i = 0; i < commands[playerId][hexagon].MovementCommands.Length; i++)
+                    {
+                        var movement = commands[playerId][hexagon].MovementCommands[i];
+                        if (movement.Army.IsEmpty)
+                        {
+                            continue;
+                        }
+                        playerArmies[playerId].Merge(hexagon, -movement.Army);
+                        playerArmies[playerId].Merge(movement.Destination, movement.Army);
+                        potentialFightHexagons.Add(movement.Destination);
                     }
-                    playerArmies[playerId].Merge(hexagon, -movement.Army);
-                    playerArmies[playerId].Merge(movement.Destination, movement.Army);
-                    potentialFightHexagons.Add(movement.Destination);
                 }
             }
         }
