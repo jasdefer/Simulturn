@@ -5,6 +5,10 @@ public record PlayerState
     public int Matter { get; init; }
     public int UsedSpace { get; init; }
     public int AvailableSpace { get; init; }
+    public required ImmutableDictionary<Hexagon, Army> Armies { get; init; }
+    public required ImmutableDictionary<Hexagon, Compound> Compounds { get; init; }
+    public required Trainings Trainings { get; init; }
+    public required Constructinos Constructions { get; init; }
     public ImmutableDictionary<Upgrade, byte> UpgradeLevels { get; init; } = ImmutableDictionary<Upgrade, byte>.Empty;
 
     public Army ExponentBonusFromUpgrades(GameSettings gameSettings)

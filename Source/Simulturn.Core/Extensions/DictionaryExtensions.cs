@@ -3,12 +3,13 @@
 namespace Simulturn.Core.Extensions;
 public static class DictionaryExtensions
 {
-    public static Compound SumConstructions(this ImmutableDictionary<ushort, ImmutablePlayerHexagonCompound> constructions, ushort currentTurn, string playerId, Hexagon hexagon)
+    public static Compound SumConstructions<TConstructions>(this IReadOnlyDictionary<ushort, TConstructions> constructions, ushort currentTurn, Hexagon hexagon)
+        where TConstructions: IReadOnlyDictionary<Hexagon, Compound>
     {
         Compound sum = Compound.Empty;
         foreach (var turn in constructions.Keys.Where(x => x > currentTurn))
         {
-            if (constructions[turn].TryGetValue(playerId, out var playerCompound) && playerCompound.TryGetValue(hexagon, out var compound))
+            if (constructions[turn].TryGetValue(hexagon, out var compound))
             {
                 sum += compound;
             }
