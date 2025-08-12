@@ -8,13 +8,26 @@ public class PlayerStateBuilder
     public int AvailableSpace { get; set; }
     public required ImmutableDictionary<Hexagon, Army>.Builder Armies { get; init; }
     public required ImmutableDictionary<Hexagon, Compound>.Builder Compounds { get; init; }
-    public required List<(ushort Turn, Hexagon Hexagon, Army Training)> Trainings { get; init; }
-    public required List<(ushort Turn, Hexagon Hexagon, Compound Construction)> Constructions { get; init; }
+    public required ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Army>.Builder>.Builder Trainings { get; init; }
+    public required ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Compound>.Builder>.Builder Constructions { get; init; }
     public required ImmutableDictionary<Upgrade, byte>.Builder UpgradeLevels { get; init; }
 
     public PlayerState ToPlayerState()
     {
-        throw new NotImplementedException();
+        return new PlayerState()
+        {
+            Matter = Matter,
+            UsedSpace = UsedSpace,
+            AvailableSpace = AvailableSpace,
+            Armies = Armies.ToImmutableDictionary(),
+            Compounds = Compounds.ToImmutableDictionary(),
+            Trainings = Trainings.ToImmutableDictionary(
+                kvp => kvp.Key,
+                kvp => kvp.Value.ToImmutableDictionary()),
+            Constructions = Constructions.ToImmutableDictionary(
+                kvp => kvp.Key,
+                kvp => kvp.Value.ToImmutableDictionary())
+        };
     }
 
     public static PlayerStateBuilder FromPlayerState(PlayerState playerState)
@@ -26,8 +39,12 @@ public class PlayerStateBuilder
             AvailableSpace = playerState.AvailableSpace,
             Armies = playerState.Armies.ToBuilder(),
             Compounds = playerState.Compounds.ToBuilder(),
-            Trainings = playerState.Trainings.SelectMany(x => x.Value.Select(y => (x.Key, y.Key, y.Value))).ToList(),
-            Constructions = playerState.Constructions.SelectMany(x => x.Value.Select(y => (x.Key, y.Key, y.Value))).ToList(),
+            Trainings = playerState.Trainings.ToImmutableDictionary(
+                kvp => kvp.Key,
+                kvp => kvp.Value.ToBuilder()).ToBuilder(),
+            Constructions = playerState.Constructions.ToImmutableDictionary(
+                kvp => kvp.Key,
+                kvp => kvp.Value.ToBuilder()).ToBuilder(),
             UpgradeLevels = playerState.UpgradeLevels.ToBuilder()
         };
     }

@@ -1,127 +1,78 @@
 ﻿using Simulturn.Core.Model;
+using Simulturn.Core.Model.Commands;
+using System.Numerics;
 
 namespace Simulturn.Core.Extensions;
 public static class DictionaryExtensions
 {
-    public static Compound SumConstructions<TConstructions>(this IReadOnlyDictionary<ushort, TConstructions> constructions, ushort currentTurn, Hexagon hexagon)
-        where TConstructions: IReadOnlyDictionary<Hexagon, Compound>
-    {
-        Compound sum = Compound.Empty;
-        foreach (var turn in constructions.Keys.Where(x => x > currentTurn))
-        {
-            if (constructions[turn].TryGetValue(hexagon, out var compound))
-            {
-                sum += compound;
-            }
-        }
-        return sum;
-    }
-
-    public static Dictionary<TKey1, Dictionary<TKey2, TValue>> Copy<TKey1, TKey2, TValue>(this IDictionary<TKey1, ImmutableDictionary<TKey2, TValue>> nestedDict)
-        where TKey1 : notnull where TKey2 : notnull
-    {
-        return nestedDict
-            .ToDictionary(x => x.Key, x => x.Value.ToDictionary(y => y.Key, y => y.Value));
-
-    }
-
-    public static ImmutableDictionary<TKey1, ImmutableDictionary<TKey2, TValue>> ToImmutable<TKey1, TKey2, TValue>(this Dictionary<TKey1, Dictionary<TKey2, TValue>> nestedDict)
-        where TKey1 : notnull where TKey2 : notnull
-    {
-        return nestedDict.ToImmutableDictionary(x => x.Key, x => x.Value.ToImmutableDictionary(y => y.Key, y => y.Value));
-    }
-
-    public static void Merge<TKey>(this Dictionary<TKey, Army> dict, TKey key, Army army)
+    public static void Merge<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key, TValue addition)
         where TKey : notnull
+        where TValue : IAdditionOperators<TValue, TValue, TValue>
     {
-        if (!dict.TryGetValue(key, out Army existingArmy))
+        if (!dict.TryGetValue(key, out TValue? existingValue))
         {
-            dict.Add(key, army);
+            dict.Add(key, addition);
+            return;
         }
-        Army newArmy = existingArmy + army;
-        if (newArmy.IsEmpty)
+        TValue newValue = existingValue + addition;
+        if (newValue.Equals(default(TValue)))
         {
             dict.Remove(key);
             return;
         }
-        dict[key] = newArmy;
+        dict[key] = newValue;
         return;
     }
 
-    public static void Merge<TKey>(this Dictionary<TKey, Compound> dict, TKey key, Compound compound)
+    public static void Merge<TKey, TValue>(this ImmutableDictionary<TKey, TValue>.Builder builder, IReadOnlyDictionary<TKey, TValue> other)
+        where TValue : IAdditionOperators<TValue, TValue, TValue>
         where TKey : notnull
     {
-        if (!dict.TryGetValue(key, out Compound existingCompound))
+        foreach (var kvp in other)
         {
-            dict.Add(key, compound);
-        }
-        Compound newArmy = existingCompound + compound;
-        if (newArmy.IsEmpty)
-        {
-            dict.Remove(key);
-            return;
-        }
-        dict[key] = newArmy;
-        return;
-    }
-
-    public static void MergeArmies(this PlayerHexagonArmies armies, PlayerHexagonArmies delta)
-    {
-        foreach (var playerId in delta.Keys)
-        {
-            if (!armies.TryGetValue(playerId, out var playerArmies))
+            if (builder.TryGetValue(kvp.Key, out var existingValue))
             {
-                playerArmies = [];
-                armies.Add(playerId, playerArmies);
+                builder[kvp.Key] += kvp.Value;
             }
-            foreach ((Hexagon hexagon, Army armyDelta) in delta[playerId])
+            else
             {
-                if (playerArmies.TryGetValue(hexagon, out Army existingArmy))
-                {
-                    var newArmy = existingArmy + armyDelta;
-                    if (newArmy.IsEmpty)
-                    {
-                        playerArmies.Remove(hexagon);
-                    }
-                    else
-                    {
-                        playerArmies[hexagon] = newArmy;
-                    }
-                }
-                else
-                {
-                    playerArmies.Add(hexagon, armyDelta);
-                }
+                builder.Add(kvp.Key, kvp.Value);
             }
         }
     }
 
-    public static void MergeCompounds(this PlayerHexagonCompound compounds, PlayerHexagonCompound delta)
+    public static IReadOnlyDictionary<Hexagon, Command> GetOrDefault<TInner>(this IReadOnlyDictionary<string, TInner> dict, string key)
+        where TInner : IReadOnlyDictionary<Hexagon, Command>
     {
-        foreach (var playerId in delta.Keys)
+        if (dict.TryGetValue(key, out var innerDict))
         {
-            if (!compounds.TryGetValue(playerId, out var playerCompounds))
+            return innerDict;
+        }
+        return ImmutableDictionary<Hexagon, Command>.Empty;
+    }
+
+    public static void Merge<TKey1, TKey2, TValue>(this ImmutableDictionary<TKey1, ImmutableDictionary<TKey2, TValue>.Builder>.Builder dict,
+        ImmutableDictionary<TKey1, ImmutableDictionary<TKey2, TValue>.Builder>.Builder other)
+        where TKey1 : notnull
+        where TKey2 : notnull
+        where TValue : IAdditionOperators<TValue, TValue, TValue>
+    {
+        foreach (var kvp in other)
+        {
+            if (!dict.TryGetValue(kvp.Key, out var innerDict))
             {
-                playerCompounds = [];
-                compounds.Add(playerId, playerCompounds);
+                dict[kvp.Key] = kvp.Value;
+                continue;
             }
-            foreach ((Hexagon hexagon, Compound compoundDelta) in delta[playerId])
+            foreach (var innerKvp in kvp.Value)
             {
-                if (playerCompounds.TryGetValue(hexagon, out Compound existingCompound))
+                if (innerDict.TryGetValue(innerKvp.Key, out var existingValue))
                 {
-                    var newCompound = existingCompound + compoundDelta;
-                    if (newCompound.IsEmpty)
-                    {
-                        playerCompounds.Remove(hexagon);
-                    }
-                    else
-                    {
-                        playerCompounds[hexagon] = newCompound;
-                    }
+                    innerDict[innerKvp.Key] += innerKvp.Value;
                 }
                 else
                 {
-                    playerCompounds.Add(hexagon, compoundDelta);
+                    innerDict.Add(innerKvp.Key, innerKvp.Value);
                 }
             }
         }
