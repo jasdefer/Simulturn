@@ -1,3 +1,7 @@
 namespace Simulturn.Core.Model.Commands;
 
-public record MovementCommand(Hexagon Destination, Army Army);
+public record MovementCommand
+{
+    public Hexagon Destination { get; init; }
+    public Army Army { get; init; }
+}

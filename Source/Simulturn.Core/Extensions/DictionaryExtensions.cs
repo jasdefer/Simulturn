@@ -77,4 +77,22 @@ public static class DictionaryExtensions
             }
         }
     }
+
+    public static Dictionary<string, Dictionary<Hexagon, Command>> ToDictionary(this IEnumerable<(string PlayerId, Hexagon Origin, Hexagon Destination, Army Army)> movements)
+    {
+        return movements.GroupBy(x => x.PlayerId)
+            .ToDictionary(
+                group => group.Key,
+                group => group.ToDictionary(
+                    x => x.Origin,
+                    x => new Command
+                    {
+                        MovementCommands = [new MovementCommand()
+                        {
+                            Destination = x.Destination,
+                            Army = x.Army
+                        }],
+                        Training = x.Army
+                    }));
+    }
 }

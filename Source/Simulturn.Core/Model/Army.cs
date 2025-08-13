@@ -112,9 +112,10 @@ public readonly struct Army : IEquatable<Army>, IAdditionOperators<Army, Army, A
     public double GetStrengthOver(Army opponent, Army exponent)
     {
         var strength =
-            Math.Pow(Math.Max(0, Triangle - opponent.Square), exponent.Triangle / 100) +
-            Math.Pow(Math.Max(0, Square - opponent.Circle), exponent.Square / 100) +
-            Math.Pow(Math.Max(0, Circle - opponent.Triangle), exponent.Circle / 100);
+            Math.Pow(Math.Max(0, Triangle - opponent.Square), exponent.Triangle / 100d) +
+            Math.Pow(Math.Max(0, Square - opponent.Circle), exponent.Square / 100d) +
+            Math.Pow(Math.Max(0, Circle - opponent.Triangle), exponent.Circle / 100d) +
+            Dot;
         return strength;
     }
 

@@ -223,7 +223,7 @@ public record GameState
         }
         else if (army1Strength == 0 && army2Strength == 0)
         {
-            return (Army.Empty, Army.Empty);
+            return (army1, army2);
         }
         else
         {
