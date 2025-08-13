@@ -9,6 +9,7 @@ public record PlayerState
     public required ImmutableDictionary<Hexagon, Compound> Compounds { get; init; }
     public required Trainings Trainings { get; init; }
     public required Constructinos Constructions { get; init; }
+    public required ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Upgrade>> Researches { get; init; }
     public ImmutableDictionary<Upgrade, byte> UpgradeLevels { get; init; } = ImmutableDictionary<Upgrade, byte>.Empty;
 
     public Army ExponentBonusFromUpgrades(GameSettings gameSettings)

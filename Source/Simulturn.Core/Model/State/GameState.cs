@@ -65,7 +65,7 @@ public record GameState
             PlayerStateBuilder playerStateBuilder = playerStates[playerId];
             var newConstructions = GetNewConstructions(commandsForPlayer);
             var newTrainings = GetNewTrainings(commandsForPlayer);
-
+            var newResearches = GetNewResearches(commandsForPlayer, playerStateBuilder.UpgradeLevels);
             // Income
             foreach ((Hexagon hexagon, Army army) in playerStateBuilder.Armies)
             {
@@ -285,5 +285,25 @@ public record GameState
             }
         }
         return newConstructions;
+    }
+
+    private ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Upgrade>.Builder>.Builder GetNewResearches(IReadOnlyDictionary<Hexagon, Command> commands, 
+        ImmutableDictionary<Upgrade, byte>.Builder upgradeLevels)
+    {
+        ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Upgrade>.Builder>.Builder newResearches = ImmutableDictionary.CreateBuilder<ushort, ImmutableDictionary<Hexagon, Upgrade>.Builder>();
+        foreach ((var hexagon, var command) in commands.Where(x => x.Value.Upgrade is not null))
+        {
+            Upgrade upgrade = command.Upgrade!.Value;
+            byte currentLevel = upgradeLevels.GetValueOrDefault(upgrade, 0);
+            ushort completionTurn = (ushort)(Turn + GameSettings.Upgrades[upgrade][currentLevel].Duration - 1);
+
+            if(!newResearches.TryGetValue(completionTurn, out var turnDict))
+            {
+                turnDict = ImmutableDictionary.CreateBuilder<Hexagon, Upgrade>();
+            }
+            turnDict[hexagon] = upgrade;
+
+        }
+        return newResearches;
     }
 }

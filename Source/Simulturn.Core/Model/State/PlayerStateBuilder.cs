@@ -10,6 +10,7 @@ public class PlayerStateBuilder
     public required ImmutableDictionary<Hexagon, Compound>.Builder Compounds { get; init; }
     public required ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Army>.Builder>.Builder Trainings { get; init; }
     public required ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Compound>.Builder>.Builder Constructions { get; init; }
+    public required ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Upgrade>.Builder>.Builder Researches { get; init; }
     public required ImmutableDictionary<Upgrade, byte>.Builder UpgradeLevels { get; init; }
 
     public PlayerState ToPlayerState()
@@ -26,7 +27,10 @@ public class PlayerStateBuilder
                 kvp => kvp.Value.ToImmutableDictionary()),
             Constructions = Constructions.ToImmutableDictionary(
                 kvp => kvp.Key,
-                kvp => kvp.Value.ToImmutableDictionary())
+                kvp => kvp.Value.ToImmutableDictionary()),
+            Researches = Researches.ToImmutableDictionary(
+                kvp => kvp.Key,
+                kvp => kvp.Value.ToImmutableDictionary()),
         };
     }
 
@@ -43,6 +47,9 @@ public class PlayerStateBuilder
                 kvp => kvp.Key,
                 kvp => kvp.Value.ToBuilder()).ToBuilder(),
             Constructions = playerState.Constructions.ToImmutableDictionary(
+                kvp => kvp.Key,
+                kvp => kvp.Value.ToBuilder()).ToBuilder(),
+            Researches = playerState.Researches.ToImmutableDictionary(
                 kvp => kvp.Key,
                 kvp => kvp.Value.ToBuilder()).ToBuilder(),
             UpgradeLevels = playerState.UpgradeLevels.ToBuilder()
