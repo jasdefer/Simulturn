@@ -31,6 +31,7 @@ public class PlayerStateBuilder
             Researches = Researches.ToImmutableDictionary(
                 kvp => kvp.Key,
                 kvp => kvp.Value.ToImmutableDictionary()),
+            UpgradeLevels = UpgradeLevels.ToImmutableDictionary()
         };
     }
 

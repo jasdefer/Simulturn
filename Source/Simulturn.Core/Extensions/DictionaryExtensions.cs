@@ -51,6 +51,25 @@ public static class DictionaryExtensions
         return ImmutableDictionary<Hexagon, Command>.Empty;
     }
 
+    public static void MergeOrOverwrite<TKey1, TKey2, TValue>(this ImmutableDictionary<TKey1, ImmutableDictionary<TKey2, TValue>.Builder>.Builder dict,
+        ImmutableDictionary<TKey1, ImmutableDictionary<TKey2, TValue>.Builder>.Builder other)
+        where TKey1 : notnull
+        where TKey2 : notnull
+    {
+        foreach (var kvp in other)
+        {
+            if (!dict.TryGetValue(kvp.Key, out var innerDict))
+            {
+                dict[kvp.Key] = kvp.Value;
+                continue;
+            }
+            foreach (var innerKvp in kvp.Value)
+            {
+                innerDict[innerKvp.Key] = innerKvp.Value;
+            }
+        }
+    }
+
     public static void Merge<TKey1, TKey2, TValue>(this ImmutableDictionary<TKey1, ImmutableDictionary<TKey2, TValue>.Builder>.Builder dict,
         ImmutableDictionary<TKey1, ImmutableDictionary<TKey2, TValue>.Builder>.Builder other)
         where TKey1 : notnull
@@ -94,5 +113,15 @@ public static class DictionaryExtensions
                         }],
                         Training = x.Army
                     }));
+    }
+
+    public static Dictionary<string, Dictionary<Hexagon, Command>> ToDictionary(this IEnumerable<(string PlayerId, Hexagon Hexagon, Command Command)> commands)
+    {
+        return commands.GroupBy(x => x.PlayerId)
+            .ToDictionary(
+                group => group.Key,
+                group => group.ToDictionary(
+                    x => x.Hexagon,
+                    x => x.Command));
     }
 }

@@ -27,8 +27,11 @@ public class GameStateTest
         StructureDamage = new Army() { Triangle = 4, Circle = 4, Square = 4, Dot = 1 },
         TrainingDuration = new Army() { Triangle = 2, Circle = 2, Square = 2, Dot = 1 },
         StartUpgrades = ImmutableDictionary<string, ImmutableArray<Upgrade>>.Empty,
-        UpgradeStartMatters = ImmutableArray<UpgradeStartMatter>.Empty,
-        DotUpgrades = ImmutableArray<DotUpgrade>.Empty,
+        Upgrades = new IUpgrade[]
+            {
+                    new DotUpgrade() { Cost = 150, Duration = 3, ExponentBonus = 20 },
+                    new DotUpgrade() { Cost = 175, Duration = 4, ExponentBonus = 20 }
+            }.ToDictionary(),
         HexagonSettings = new Dictionary<Hexagon, HexagonSettings>
         {
             {
@@ -50,7 +53,7 @@ public class GameStateTest
                 }
             },
             {
-                new Hexagon(0,0), HexagonSettings.Empty
+                new Hexagon(0,0), HexagonSettings.Empty with { ResearchableUpgrades = [Upgrade.DotUpgrade, Upgrade.DotUpgrade] }
             },
             {
                 new Hexagon(0,1), HexagonSettings.Empty
@@ -101,8 +104,7 @@ public class GameStateTest
         gameState.PlayerStates["Player02"].UsedSpace.ShouldBe(5);
         gameState.PlayerStates["Player02"].Matter.ShouldBe(500);
 
-        var dict = new Dictionary<string, Dictionary<Hexagon, Command>>();
-        var newTurn = gameState.NextTurn(dict);
+        var newTurn = gameState.NextTurn(_noCommands);
         newTurn.Turn.ShouldBe((ushort)1);
     }
 
@@ -378,5 +380,31 @@ public class GameStateTest
             .ShouldBe(new Army() { Square = 1 });
         turn1.PlayerStates["Player01"]
             .Armies.ShouldNotContainKey(new Hexagon(0, 0));
+    }
+
+    [Test]
+    public void UpgradeTW()
+    {
+        var gameState = new GameState(_gameSettings);
+        var commands = DictionaryExtensions.ToDictionary([
+            ("Player01", new Hexagon(-1,0), new Hexagon(0,0), new Army() { Dot = 1 })
+        ]);
+        var turn1 = gameState.NextTurn(commands);
+        commands = DictionaryExtensions.ToDictionary([
+            ("Player01", new Hexagon(0,0),new Command(){ Upgrade = Upgrade.DotUpgrade})
+        ]);
+        var turn2 = turn1.NextTurn(commands);
+        turn2.PlayerStates["Player01"]
+            .Researches.ShouldHaveSingleItem().Value.ShouldHaveSingleItem().Value.ShouldBe(Upgrade.DotUpgrade);
+        turn2.PlayerStates["Player01"].UpgradeLevels.ShouldBeEmpty();
+        var turn3 = turn2.NextTurn(_noCommands);
+        turn3.PlayerStates["Player01"]
+            .Researches.ShouldHaveSingleItem().Value.ShouldHaveSingleItem().Value.ShouldBe(Upgrade.DotUpgrade);
+        turn3.PlayerStates["Player01"].UpgradeLevels.ShouldBeEmpty();
+        var turn4 = turn3.NextTurn(_noCommands);
+        turn4.PlayerStates["Player01"]
+            .Researches.ShouldHaveSingleItem().Value.ShouldHaveSingleItem().Value.ShouldBe(Upgrade.DotUpgrade);
+        turn4.PlayerStates["Player01"].UpgradeLevels.ShouldHaveSingleItem().Key.ShouldBe(Upgrade.DotUpgrade);
+        turn4.PlayerStates["Player01"].UpgradeLevels.ShouldHaveSingleItem().Value.ShouldBe((byte)1);
     }
 }

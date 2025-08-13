@@ -1,3 +1,5 @@
+using Simulturn.Core.Model.Upgrades;
+
 namespace Simulturn.Core.Model.State;
 
 public record PlayerState
@@ -18,7 +20,7 @@ public record PlayerState
         Army player1Upgrades = Army.Empty;
         if (UpgradeLevels.TryGetValue(Upgrade.DotUpgrade, out byte dotUpgradeLevel))
         {
-            player1Upgrades = player1Upgrades.AddUnit(Unit.Dot, gameSettings.DotUpgrades[dotUpgradeLevel].ExponentBonus);
+            player1Upgrades = player1Upgrades.AddUnit(Unit.Dot, ((DotUpgrade)gameSettings.Upgrades[Upgrade.DotUpgrade][dotUpgradeLevel]).ExponentBonus);
         }
         return bonus;
     }
