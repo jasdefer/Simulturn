@@ -1,5 +1,6 @@
 using Simulturn.Core.Extensions;
 using Simulturn.Core.Model.Commands;
+using Simulturn.Core.Model.State.StateValidation;
 
 namespace Simulturn.Core.Model.State;
 
@@ -322,5 +323,38 @@ public record GameState
 
         }
         return newResearches;
+    }
+
+    public void Validate<TCommands>(IReadOnlyDictionary<string, TCommands> commands)
+            where TCommands : IReadOnlyDictionary<Hexagon, Command>
+    {
+        List<IStateValidation> validations = [];
+        foreach ((var playerId, var playerCommands) in commands)
+        {
+            if(!PlayerIds.Contains(playerId))
+            {
+                validations.Add(new InvalidPlayerId(playerId));
+                continue;
+            }
+
+            // Matter
+            int trainingCost = commands.Sum(x => x.Value.Sum(y => y.Value.Training * GameSettings.ArmyCost));
+            int constructionCost = commands.Sum(x => x.Value.Sum(y => y.Value.Construction * GameSettings.CompoundCost));
+            int researchCost = commands.Sum(x => x.Value.Sum(y => y.Value));
+            int totalCost = trainingCost + constructionCost + researchCost;
+            if (totalCost > PlayerStates[playerId].Matter)
+            {
+                validations.Add(new InsufficientMatter(playerId, totalCost, PlayerStates[playerId].Matter));
+            }
+
+            // Space
+            int additionalSpace = commands.Sum(x => x.Value.Sum(y => y.Value.MovementCommands.Sum(z => z.Army * GameSettings.RequiredSpace)));
+            if(PlayerStates[playerId].AvailableSpace + additionalSpace > PlayerStates[playerId].AvailableSpace)
+            {
+                validations.Add(new InsufficientSpace(playerId, additionalSpace, PlayerStates[playerId].AvailableSpace));
+            }
+
+
+        }
     }
 }
