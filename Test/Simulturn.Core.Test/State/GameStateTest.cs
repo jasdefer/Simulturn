@@ -118,7 +118,6 @@ public class GameStateTest
         gameState.PlayerStates["Player02"].UsedSpace.ShouldBe(5);
         gameState.PlayerStates["Player02"].Matter.ShouldBe(500);
 
-
         var newTurn = GetNextTurnAndValidate(gameState, _noCommands);
         newTurn.Turn.ShouldBe((ushort)1);
     }

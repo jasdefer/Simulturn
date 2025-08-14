@@ -172,6 +172,8 @@ public record GameState
             {
                 playerStates[playerId].Armies.Merge(hexagon, -losses[playerId]);
                 playerStates[playerId].UsedSpace -= losses[playerId] * GameSettings.RequiredSpace;
+
+                // ToDo: Cancel Constructions if dots are lost
             }
         }
 
@@ -209,6 +211,8 @@ public record GameState
                         }
                         playerStates[compoundPlayerId].Compounds.Merge(hexagon, -destroyedCompound);
                         playerStates[compoundPlayerId].AvailableSpace -= destroyedCompound * GameSettings.ProvidedSpace;
+
+                        // ToDo: Cancel Trainings
                     }
                 }
             }
