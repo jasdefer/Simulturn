@@ -337,10 +337,17 @@ public record GameState
                 continue;
             }
 
+            var playerState = PlayerStates[playerId];
+
             // Matter
             int trainingCost = commands.Sum(x => x.Value.Sum(y => y.Value.Training * GameSettings.ArmyCost));
             int constructionCost = commands.Sum(x => x.Value.Sum(y => y.Value.Construction * GameSettings.CompoundCost));
-            int researchCost = commands.Sum(x => x.Value.Sum(y => y.Value));
+            int researchCost = commands
+                .Sum(x => x.Value
+                    .Select(y => y.Value.Upgrade)
+                    .Sum(upgrade => upgrade.HasValue ? 
+                        GameSettings.Upgrades[upgrade!.Value][playerState.UpgradeLevels[upgrade.Value]].Cost
+                        : 0));
             int totalCost = trainingCost + constructionCost + researchCost;
             if (totalCost > PlayerStates[playerId].Matter)
             {
@@ -352,6 +359,20 @@ public record GameState
             if(PlayerStates[playerId].AvailableSpace + additionalSpace > PlayerStates[playerId].AvailableSpace)
             {
                 validations.Add(new InsufficientSpace(playerId, additionalSpace, PlayerStates[playerId].AvailableSpace));
+            }
+
+            
+            foreach ((var hexagon, var command) in playerCommands)
+            {
+                // Training has enough compounds
+                if (!command.Training.IsEmpty)
+                {
+                    playerState.Trainings
+                        .Where(x => x.Key >= Turn)
+                        .SelectMany(x => x.Value)
+                }
+
+                // Constructions have enough dots (workers)
             }
 
 
