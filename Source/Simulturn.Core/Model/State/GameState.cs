@@ -325,57 +325,233 @@ public record GameState
         return newResearches;
     }
 
-    public void Validate<TCommands>(IReadOnlyDictionary<string, TCommands> commands)
-            where TCommands : IReadOnlyDictionary<Hexagon, Command>
+    public IEnumerable<IStateValidation> IsValid()
     {
-        List<IStateValidation> validations = [];
-        foreach ((var playerId, var playerCommands) in commands)
+        // Remaining Matter
+        foreach ((var hexagon, int remainingMatter) in RemainingMatter)
         {
-            if(!PlayerIds.Contains(playerId))
+            if (remainingMatter < 0)
             {
-                validations.Add(new InvalidPlayerId(playerId));
-                continue;
+                yield return new NegativeRemainingMatter(hexagon, remainingMatter);
+            }
+            if (!GameSettings.HexagonSettings.ContainsKey(hexagon))
+            {
+                yield return new HexagonMissingInSettings(hexagon);
+            }
+        }
+
+        // Player States
+        foreach ((var playerId, var playerState) in PlayerStates)
+        {
+            if (!PlayerIds.Contains(playerId))
+            {
+                yield return new InvalidPlayerId(playerId);
             }
 
-            var playerState = PlayerStates[playerId];
-
-            // Matter
-            int trainingCost = commands.Sum(x => x.Value.Sum(y => y.Value.Training * GameSettings.ArmyCost));
-            int constructionCost = commands.Sum(x => x.Value.Sum(y => y.Value.Construction * GameSettings.CompoundCost));
-            int researchCost = commands
-                .Sum(x => x.Value
-                    .Select(y => y.Value.Upgrade)
-                    .Sum(upgrade => upgrade.HasValue ? 
-                        GameSettings.Upgrades[upgrade!.Value][playerState.UpgradeLevels[upgrade.Value]].Cost
-                        : 0));
-            int totalCost = trainingCost + constructionCost + researchCost;
-            if (totalCost > PlayerStates[playerId].Matter)
+            // Armies
+            foreach ((var hexagon, var army) in playerState.Armies)
             {
-                validations.Add(new InsufficientMatter(playerId, totalCost, PlayerStates[playerId].Matter));
-            }
-
-            // Space
-            int additionalSpace = commands.Sum(x => x.Value.Sum(y => y.Value.MovementCommands.Sum(z => z.Army * GameSettings.RequiredSpace)));
-            if(PlayerStates[playerId].AvailableSpace + additionalSpace > PlayerStates[playerId].AvailableSpace)
-            {
-                validations.Add(new InsufficientSpace(playerId, additionalSpace, PlayerStates[playerId].AvailableSpace));
-            }
-
-            
-            foreach ((var hexagon, var command) in playerCommands)
-            {
-                // Training has enough compounds
-                if (!command.Training.IsEmpty)
+                if (!GameSettings.HexagonSettings.ContainsKey(hexagon))
                 {
-                    playerState.Trainings
-                        .Where(x => x.Key >= Turn)
-                        .SelectMany(x => x.Value)
+                    yield return new HexagonMissingInSettings(hexagon);
+                }
+                foreach (var unit in _units)
+                {
+                    if (army[unit] < 0)
+                    {
+                        yield return new NegativeUnitCount(playerId, hexagon, unit, army[unit]);
+                    }
+                }
+            }
+
+            // Compounds
+            foreach ((var hexagon, var compound) in playerState.Compounds)
+            {
+                if (!GameSettings.HexagonSettings.ContainsKey(hexagon))
+                {
+                    yield return new HexagonMissingInSettings(hexagon);
+                }
+                foreach (var building in _buildings)
+                {
+                    if (compound[building] < 0)
+                    {
+                        yield return new NegativeBuildingCount(playerId, hexagon, building, compound[building]);
+                    }
+                }
+            }
+
+            // Trainings
+            foreach ((ushort turn, var trainings) in playerState.Trainings.Where(x => x.Key >= Turn))
+            {
+                foreach ((Hexagon hexagon, Army training) in trainings)
+                {
+                    if (!GameSettings.HexagonSettings.ContainsKey(hexagon))
+                    {
+                        yield return new HexagonMissingInSettings(hexagon);
+                    }
+                    Compound compound = playerState.Compounds.GetValueOrDefault(hexagon, Compound.Empty);
+                    foreach (var unit in _units)
+                    {
+                        if (training[unit] < 0)
+                        {
+                            yield return new NegativeTrainingCount(playerId, hexagon, unit, training[unit]);
+                        }
+                        if (training[unit] > compound[GameSettings.TrainingBuildingPerUnit[unit]])
+                        {
+                            yield return new MissingBuildingForTraining(playerId, hexagon, unit, training[unit], compound[GameSettings.TrainingBuildingPerUnit[unit]]);
+                        }
+                    }
+                }
+            }
+
+            // Constructions
+            foreach ((ushort turn, var constructions) in playerState.Constructions.Where(x => x.Key >= Turn))
+            {
+                foreach ((Hexagon hexagon, Compound construction) in constructions)
+                {
+                    if (!GameSettings.HexagonSettings.ContainsKey(hexagon))
+                    {
+                        yield return new HexagonMissingInSettings(hexagon);
+                    }
+                    short dotCount = playerState.Armies.GetValueOrDefault(hexagon, Army.Empty).Dot;
+                    foreach (var building in _buildings)
+                    {
+                        if (construction[building] < 0)
+                        {
+                            yield return new NegativeConstructionCount(playerId, hexagon, building, construction[building]);
+                        }
+                        if (construction.Sum() > dotCount)
+                        {
+                            yield return new MissingDotsForConstruction(playerId, hexagon, construction, dotCount);
+                        }
+                    }
+                }
+            }
+
+            // Researches
+            foreach ((ushort turn, var researches) in playerState.Researches.Where(x => x.Key >= Turn))
+            {
+                foreach ((Hexagon hexagon, Upgrade upgrade) in researches)
+                {
+                    if (!GameSettings.HexagonSettings.ContainsKey(hexagon))
+                    {
+                        yield return new HexagonMissingInSettings(hexagon);
+                    }
+                    if (!playerState.Armies.TryGetValue(hexagon, out var army) || army.Dot <= 0)
+                    {
+                        yield return new UpgradeRequiresDot(playerId, hexagon, upgrade);
+                    }
+
+                    byte currentLevel = playerState.UpgradeLevels.GetValueOrDefault(upgrade);
+                    int availableUpgrades = GameSettings.HexagonSettings[hexagon]
+                        .ResearchableUpgrades.Where(x => x == upgrade)
+                        .Count();
+                    if (currentLevel > availableUpgrades)
+                    {
+                        yield return new UpgradeExceedsAvailableLevel(playerId, hexagon, upgrade, currentLevel, availableUpgrades);
+                    }
+                }
+            }
+        }
+    }
+
+    public IEnumerable<ICommandValidation> Validate(string playerId, IReadOnlyDictionary<Hexagon, Command> commands)
+    {
+        if (!PlayerIds.Contains(playerId))
+        {
+            yield return new InvalidPlayerId(playerId);
+            yield break;
+        }
+
+        var playerState = PlayerStates[playerId];
+
+        // Space
+        int additionalSpace = commands.Sum(command => command.Value.MovementCommands.Sum(z => z.Army * GameSettings.RequiredSpace));
+        if (commands.Any(x => x.Value.Training.Total > 0) &&
+            PlayerStates[playerId].AvailableSpace + additionalSpace > PlayerStates[playerId].AvailableSpace)
+        {
+            // Only check the space, if there is a training. A player can have more space than available, but not train in such a case.
+            yield return new InsufficientSpace(playerId, additionalSpace, PlayerStates[playerId].AvailableSpace);
+        }
+
+        int researchCost = 0;
+        foreach ((var hexagon, var command) in commands)
+        {
+            Compound compound = playerState.Compounds.GetValueOrDefault(hexagon, Compound.Empty);
+            // Training has enough compounds
+            if (!command.Training.IsEmpty)
+            {
+                Army trainings = playerState.Trainings
+                    .Where(x => x.Key >= Turn)
+                    .Select(x => x.Value[hexagon])
+                    .Sum();
+                trainings += command.Training;
+                foreach (var unit in _units)
+                {
+                    short trainedUnits = trainings[unit];
+                    short availableBuildings = compound[GameSettings.TrainingBuildingPerUnit[unit]];
+                    if (trainedUnits > availableBuildings)
+                    {
+                        yield return new MissingBuildingForTraining(playerId, hexagon, unit, trainedUnits, availableBuildings);
+                    }
+                }
+            }
+
+            // Constructions have enough dots (workers)
+            if (!command.Construction.IsEmpty)
+            {
+                Compound constructions = playerState.Constructions
+                    .Where(x => x.Key >= Turn)
+                    .Select(x => x.Value[hexagon])
+                    .Sum();
+                constructions += command.Construction;
+                if (constructions.Sum() > playerState.Armies[hexagon][Unit.Dot])
+                {
+                    yield return new MissingDotsForConstruction(playerId, hexagon, constructions, playerState.Armies[hexagon][Unit.Dot]);
+                }
+            }
+
+            // Movement has enough armies
+            Army departingArmy = command.MovementCommands.Select(x => x.Army).Sum();
+            Army availableArmy = playerState.Armies.GetValueOrDefault(hexagon);
+            foreach (var unit in _units)
+            {
+                if (departingArmy[unit] > availableArmy[unit])
+                {
+                    yield return new MissingArmyForMovement(playerId, hexagon, unit, departingArmy[unit], availableArmy[unit]);
+                }
+            }
+
+            // Upgrades are valid
+            if (command.Upgrade is not null)
+            {
+                byte currentLevel = playerState.UpgradeLevels.GetValueOrDefault(command.Upgrade.Value);
+                int availableUpgrades = GameSettings.HexagonSettings[hexagon]
+                    .ResearchableUpgrades.Where(x => x == command.Upgrade)
+                    .Count();
+                if (currentLevel >= availableUpgrades)
+                {
+                    yield return new UpgradeExceedsAvailableLevel(playerId, hexagon, command.Upgrade.Value, currentLevel, availableUpgrades);
+                }
+                else
+                {
+                    researchCost += GameSettings.Upgrades[command.Upgrade.Value][currentLevel].Cost; // a level of 1 means the first upgrade, which is at index 0
                 }
 
-                // Constructions have enough dots (workers)
+                if (!playerState.Armies.TryGetValue(hexagon, out var army) || army.Dot <= 0)
+                {
+                    yield return new UpgradeRequiresDot(playerId, hexagon, command.Upgrade.Value);
+                }
             }
+        }
 
-
+        // Matter
+        int trainingCost = commands.Sum(command => command.Value.Training * GameSettings.ArmyCost);
+        int constructionCost = commands.Sum(command => command.Value.Construction * GameSettings.CompoundCost);
+        int totalCost = trainingCost + constructionCost + researchCost;
+        if (totalCost > PlayerStates[playerId].Matter)
+        {
+            yield return new InsufficientMatter(playerId, totalCost, PlayerStates[playerId].Matter);
         }
     }
 }

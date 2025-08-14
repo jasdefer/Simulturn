@@ -27,4 +27,11 @@ public record GameSettings
     public required ImmutableDictionary<string, ImmutableArray<Upgrade>> StartUpgrades { get; init; }
     public required ImmutableDictionary<Upgrade, ImmutableArray<IUpgrade>> Upgrades { get; init; }
     public int Seed { get; init; }
+    public static ImmutableDictionary<Unit, Building> TrainingBuildingPerUnit => new Dictionary<Unit, Building>
+        {
+            { Unit.Dot, Building.Plane },
+            { Unit.Circle, Building.Dome },
+            { Unit.Triangle, Building.Pyramid },
+            { Unit.Square, Building.Cube }
+        }.ToImmutableDictionary();
 }

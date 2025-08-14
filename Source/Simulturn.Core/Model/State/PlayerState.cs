@@ -12,6 +12,10 @@ public record PlayerState
     public required Trainings Trainings { get; init; }
     public required Constructinos Constructions { get; init; }
     public required ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Upgrade>> Researches { get; init; }
+
+    /// <summary>
+    /// A level of 0 means the upgrade is not researched and is equivalent to not having the element in the dictionary.
+    /// </summary>
     public ImmutableDictionary<Upgrade, byte> UpgradeLevels { get; init; } = ImmutableDictionary<Upgrade, byte>.Empty;
 
     public Army ExponentBonusFromUpgrades(GameSettings gameSettings)

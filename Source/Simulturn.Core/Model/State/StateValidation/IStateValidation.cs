@@ -1,11 +1,6 @@
 ﻿namespace Simulturn.Core.Model.State.StateValidation;
-internal interface IStateValidation
-{
-    string PlayerId { get; }
-}
+public interface IStateValidation;
 
-public record InvalidPlayerId(string PlayerId) : IStateValidation;
+public record NegativeRemainingMatter(Hexagon Hexagon, int RemainingMatter) : IStateValidation;
 
-public record InsufficientMatter(string PlayerId, int Required, int Available) : IStateValidation;
-
-public record InsufficientSpace(string PlayerId, int Required, int Available) : IStateValidation;
+public record HexagonMissingInSettings(Hexagon Hexagon) : IStateValidation;

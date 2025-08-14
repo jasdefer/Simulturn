@@ -1,5 +1,4 @@
-﻿using Shouldly;
-using Simulturn.Core.Extensions;
+﻿using Simulturn.Core.Extensions;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
@@ -70,10 +69,25 @@ public class GameStateTest
         }.ToImmutableDictionary(),
     };
 
+    private static GameState GetNextTurnAndValidate(GameState gameState, Dictionary<string, Dictionary<Hexagon, Command>> commands, bool valiateCommand = true)
+    {
+        if (valiateCommand)
+        {
+            foreach ((string playerId, Dictionary<Hexagon, Command> playerCommands) in commands)
+            {
+                gameState.Validate(playerId, playerCommands).ShouldBeEmpty();
+            }
+        }
+        var newState = gameState.NextTurn(commands);
+        newState.IsValid().ShouldBeEmpty();
+        return newState;
+    }
+
     [Test]
     public void Initialize()
     {
         var gameState = new GameState(_gameSettings);
+        gameState.IsValid().ShouldBeEmpty();
         gameState.Turn.ShouldBe((ushort)0);
         gameState.Hexagons.Count.ShouldBe(7);
         gameState.Hexagons.Select(hexagon => hexagon.X + hexagon.Y + hexagon.Z)
@@ -104,7 +118,8 @@ public class GameStateTest
         gameState.PlayerStates["Player02"].UsedSpace.ShouldBe(5);
         gameState.PlayerStates["Player02"].Matter.ShouldBe(500);
 
-        var newTurn = gameState.NextTurn(_noCommands);
+
+        var newTurn = GetNextTurnAndValidate(gameState, _noCommands);
         newTurn.Turn.ShouldBe((ushort)1);
     }
 
@@ -113,7 +128,7 @@ public class GameStateTest
     {
         var gameState = new GameState(_gameSettings);
 
-        var newTurn = gameState.NextTurn(_noCommands);
+        var newTurn = GetNextTurnAndValidate(gameState, _noCommands);
         newTurn.Turn.ShouldBe((ushort)1);
         newTurn.Hexagons.Count.ShouldBe(7);
         newTurn.Hexagons.Select(hexagon => hexagon.X + hexagon.Y + hexagon.Z)
@@ -155,7 +170,7 @@ public class GameStateTest
                 "Player01", Command.Create([(new Hexagon(-1,0), new Command() { Training = new Army() { Dot = 1 } })])
             },
         };
-        var turn1 = gameState.NextTurn(dict);
+        var turn1 = GetNextTurnAndValidate(gameState, dict);
         turn1.Turn.ShouldBe((ushort)1);
         turn1.Hexagons.Count.ShouldBe(7);
         turn1.Hexagons.Select(hexagon => hexagon.X + hexagon.Y + hexagon.Z)
@@ -199,7 +214,7 @@ public class GameStateTest
                 "Player01", Command.Create([(new Hexagon(-1,0), new Command() { Construction = new Compound() { Pyramid = 1 } })])
             },
         };
-        var turn1 = gameState.NextTurn(dict);
+        var turn1 = GetNextTurnAndValidate(gameState, dict);
         turn1.Turn.ShouldBe((ushort)1);
         turn1.Hexagons.Count.ShouldBe(7);
         turn1.Hexagons.Select(hexagon => hexagon.X + hexagon.Y + hexagon.Z)
@@ -232,9 +247,9 @@ public class GameStateTest
         turn1.PlayerStates["Player02"].UsedSpace.ShouldBe(5);
         turn1.PlayerStates["Player02"].Matter.ShouldBe(500 + 50);
 
-        var turn2 = turn1.NextTurn(_noCommands);
+        var turn2 = GetNextTurnAndValidate(turn1, _noCommands);
         turn2.PlayerStates["Player01"].Compounds[_player1Start].ShouldBe(new Compound() { Plane = 1 });
-        var turn3 = turn2.NextTurn(_noCommands);
+        var turn3 = GetNextTurnAndValidate(turn2, _noCommands);
         turn3.PlayerStates["Player01"].Compounds[_player1Start].ShouldBe(new Compound() { Plane = 1, Pyramid = 1 });
     }
 
@@ -243,13 +258,13 @@ public class GameStateTest
     {
         // Assign
         var gameState = new GameState(_gameSettings);
-        var commands = DictionaryExtensions.ToDictionary([
+        var commands = DictionaryExtensions.MovementsToDictionary([
             ("Player01", new Hexagon(-1,0), new Hexagon(0,0), new Army() { Dot = 5 }),
             ("Player02", new Hexagon(1,0), new Hexagon(0,0), new Army() { Dot = 3 })
         ]);
 
         // Act
-        var turn1 = gameState.NextTurn(commands);
+        var turn1 = GetNextTurnAndValidate(gameState, commands);
 
         // Assert
         turn1.PlayerStates["Player01"]
@@ -284,13 +299,13 @@ public class GameStateTest
             HexagonSettings = builder.ToImmutableDictionary()
         };
         var gameState = new GameState(gameSettings);
-        var commands = DictionaryExtensions.ToDictionary([
+        var commands = DictionaryExtensions.MovementsToDictionary([
             ("Player01", new Hexagon(-1,0), new Hexagon(0,0), new Army() { Circle = 5 }),
             ("Player02", new Hexagon(1,0), new Hexagon(0,0), new Army() { Circle = 3 })
         ]);
 
         // Act
-        var turn1 = gameState.NextTurn(commands);
+        var turn1 = GetNextTurnAndValidate(gameState, commands);
 
         // Assert
         turn1.PlayerStates["Player01"]
@@ -325,13 +340,13 @@ public class GameStateTest
             HexagonSettings = builder.ToImmutableDictionary()
         };
         var gameState = new GameState(gameSettings);
-        var commands = DictionaryExtensions.ToDictionary([
+        var commands = DictionaryExtensions.MovementsToDictionary([
             ("Player01", new Hexagon(-1,0), new Hexagon(0,0), new Army() { Circle = 3 }),
             ("Player02", new Hexagon(1,0), new Hexagon(0,0), new Army() { Square = 5 })
         ]);
 
         // Act
-        var turn1 = gameState.NextTurn(commands);
+        var turn1 = GetNextTurnAndValidate(gameState, commands);
 
         // Assert
         turn1.PlayerStates["Player01"]
@@ -366,13 +381,13 @@ public class GameStateTest
             HexagonSettings = builder.ToImmutableDictionary()
         };
         var gameState = new GameState(gameSettings);
-        var commands = DictionaryExtensions.ToDictionary([
+        var commands = DictionaryExtensions.MovementsToDictionary([
             ("Player01", new Hexagon(-1,0), new Hexagon(0,0), new Army() { Circle = 5, Dot = 5, Square = 5, Triangle = 5 }),
             ("Player02", new Hexagon(1,0), new Hexagon(0,0), new Army() { Square = 15, Dot = 5 })
         ]);
 
         // Act
-        var turn1 = gameState.NextTurn(commands);
+        var turn1 = GetNextTurnAndValidate(gameState, commands, valiateCommand: false);
 
         // Assert
         turn1.PlayerStates["Player02"]
@@ -383,25 +398,25 @@ public class GameStateTest
     }
 
     [Test]
-    public void UpgradeTW()
+    public void UpgradeTest()
     {
         var gameState = new GameState(_gameSettings);
-        var commands = DictionaryExtensions.ToDictionary([
+        var commands = DictionaryExtensions.MovementsToDictionary([
             ("Player01", new Hexagon(-1,0), new Hexagon(0,0), new Army() { Dot = 1 })
         ]);
-        var turn1 = gameState.NextTurn(commands);
-        commands = DictionaryExtensions.ToDictionary([
+        var turn1 = GetNextTurnAndValidate(gameState, commands);
+        commands = DictionaryExtensions.CommandsToDictionary([
             ("Player01", new Hexagon(0,0),new Command(){ Upgrade = Upgrade.DotUpgrade})
         ]);
-        var turn2 = turn1.NextTurn(commands);
+        var turn2 = GetNextTurnAndValidate(turn1, commands);
         turn2.PlayerStates["Player01"]
             .Researches.ShouldHaveSingleItem().Value.ShouldHaveSingleItem().Value.ShouldBe(Upgrade.DotUpgrade);
         turn2.PlayerStates["Player01"].UpgradeLevels.ShouldBeEmpty();
-        var turn3 = turn2.NextTurn(_noCommands);
+        var turn3 = GetNextTurnAndValidate(turn2, _noCommands);
         turn3.PlayerStates["Player01"]
             .Researches.ShouldHaveSingleItem().Value.ShouldHaveSingleItem().Value.ShouldBe(Upgrade.DotUpgrade);
         turn3.PlayerStates["Player01"].UpgradeLevels.ShouldBeEmpty();
-        var turn4 = turn3.NextTurn(_noCommands);
+        var turn4 = GetNextTurnAndValidate(turn3, _noCommands);
         turn4.PlayerStates["Player01"]
             .Researches.ShouldHaveSingleItem().Value.ShouldHaveSingleItem().Value.ShouldBe(Upgrade.DotUpgrade);
         turn4.PlayerStates["Player01"].UpgradeLevels.ShouldHaveSingleItem().Key.ShouldBe(Upgrade.DotUpgrade);

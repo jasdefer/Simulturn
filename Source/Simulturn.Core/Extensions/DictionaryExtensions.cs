@@ -97,7 +97,7 @@ public static class DictionaryExtensions
         }
     }
 
-    public static Dictionary<string, Dictionary<Hexagon, Command>> ToDictionary(this IEnumerable<(string PlayerId, Hexagon Origin, Hexagon Destination, Army Army)> movements)
+    public static Dictionary<string, Dictionary<Hexagon, Command>> MovementsToDictionary(this IEnumerable<(string PlayerId, Hexagon Origin, Hexagon Destination, Army Army)> movements)
     {
         return movements.GroupBy(x => x.PlayerId)
             .ToDictionary(
@@ -110,12 +110,11 @@ public static class DictionaryExtensions
                         {
                             Destination = x.Destination,
                             Army = x.Army
-                        }],
-                        Training = x.Army
+                        }]
                     }));
     }
 
-    public static Dictionary<string, Dictionary<Hexagon, Command>> ToDictionary(this IEnumerable<(string PlayerId, Hexagon Hexagon, Command Command)> commands)
+    public static Dictionary<string, Dictionary<Hexagon, Command>> CommandsToDictionary(this IEnumerable<(string PlayerId, Hexagon Hexagon, Command Command)> commands)
     {
         return commands.GroupBy(x => x.PlayerId)
             .ToDictionary(
