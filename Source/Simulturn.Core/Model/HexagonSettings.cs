@@ -9,6 +9,7 @@ public record HexagonSettings
         MaxNumberOfUnitsGeneratingMatter = Army.Empty,
         PlayerInitialization = null
     };
+
     public HexagonSettings()
     {
     }

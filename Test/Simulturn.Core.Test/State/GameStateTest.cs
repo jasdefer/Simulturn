@@ -23,7 +23,7 @@ public class GameStateTest
         RequiredSpace = new Army() { Triangle = 3, Circle = 3, Square = 3, Dot = 1 },
         Seed = 1,
         StartMatter = 500,
-        StructureDamage = new Army() { Triangle = 4, Circle = 4, Square = 4, Dot = 1 },
+        StructureDamage = new Army() { Triangle = 5, Circle = 5, Square = 5, Dot = 1 },
         TrainingDuration = new Army() { Triangle = 2, Circle = 2, Square = 2, Dot = 1 },
         StartUpgrades = ImmutableDictionary<string, ImmutableArray<Upgrade>>.Empty,
         Upgrades = new IUpgrade[]
@@ -420,5 +420,96 @@ public class GameStateTest
             .Researches.ShouldHaveSingleItem().Value.ShouldHaveSingleItem().Value.ShouldBe(Upgrade.DotUpgrade);
         turn4.PlayerStates["Player01"].UpgradeLevels.ShouldHaveSingleItem().Key.ShouldBe(Upgrade.DotUpgrade);
         turn4.PlayerStates["Player01"].UpgradeLevels.ShouldHaveSingleItem().Value.ShouldBe((byte)1);
+    }
+
+    [Test]
+    public void CancelConstructionsAfterDotKill()
+    {
+        // Assign
+        var builder = _gameSettings.HexagonSettings.ToBuilder();
+        builder[_player1Start] = new HexagonSettings()
+        {
+            IsBuildable = true,
+            Matter = 10000,
+            MaxNumberOfUnitsGeneratingMatter = new Army() { Triangle = 0, Circle = 0, Square = 0, Dot = 12 },
+            PlayerInitialization = new("Player01", new Army() { Dot = 15 }, new Compound() { Plane = 10 })
+        };
+        builder[_player2Start] = new HexagonSettings()
+        {
+            IsBuildable = true,
+            Matter = 10000,
+            MaxNumberOfUnitsGeneratingMatter = new Army() { Triangle = 0, Circle = 0, Square = 0, Dot = 12 },
+            PlayerInitialization = new("Player02", new Army() { Square = 3 }, new Compound() { Plane = 10 })
+        };
+
+        var gameSettings = _gameSettings with
+        {
+            HexagonSettings = builder.ToImmutableDictionary()
+        };
+        var gameState = new GameState(gameSettings);
+        var commands = DictionaryExtensions.CommandsToDictionary([
+            ("Player01", _player1Start, new Command() { Construction = new Compound() { Plane = 2, Pyramid = 2} }),
+            ("Player02", _player2Start, new Command() { MovementCommands = [ new MovementCommand() { Army = new Army() { Square = 3}, Destination = new Hexagon(0,0) }] }),
+        ]);
+
+        // Act
+        var turn1 = GetNextTurnAndValidate(gameState, commands, false);
+
+        commands = DictionaryExtensions.CommandsToDictionary([
+            ("Player01", _player1Start, new Command() { Construction = new Compound() { Plane = 1, Dome = 1} }),
+            ("Player02", new Hexagon(0,0), new Command() { MovementCommands = [ new MovementCommand() { Army = new Army() { Square = 3}, Destination = _player1Start }] }),
+        ]);
+
+        var turn2 = GetNextTurnAndValidate(turn1, commands, false);
+
+        // Assert
+        turn2.PlayerStates["Player01"]
+            .Constructions.ShouldHaveSingleItem().Value.ShouldHaveSingleItem().Value.ShouldBe(new Compound() { Pyramid = 2 });
+    }
+
+    [Test]
+    public void CancelTrainingsAfterCompoundDestruction()
+    {
+        // Assign
+        var builder = _gameSettings.HexagonSettings.ToBuilder();
+        builder[_player1Start] = new HexagonSettings()
+        {
+            IsBuildable = true,
+            Matter = 10000,
+            MaxNumberOfUnitsGeneratingMatter = new Army() { Triangle = 0, Circle = 0, Square = 0, Dot = 12 },
+            PlayerInitialization = new("Player01", new Army() { Dot = 0 }, new Compound() { Pyramid = 2, Cube = 2, Dome = 2 })
+        };
+        builder[_player2Start] = new HexagonSettings()
+        {
+            IsBuildable = true,
+            Matter = 10000,
+            MaxNumberOfUnitsGeneratingMatter = new Army() { Triangle = 0, Circle = 0, Square = 0, Dot = 12 },
+            PlayerInitialization = new("Player02", new Army() { Square = 10 }, new Compound() { Plane = 10 })
+        };
+
+        var gameSettings = _gameSettings with
+        {
+            HexagonSettings = builder.ToImmutableDictionary(),
+            StartMatter = 20000
+        };
+        var gameState = new GameState(gameSettings);
+        var commands = DictionaryExtensions.CommandsToDictionary([
+            ("Player01", _player1Start, new Command() { Training = new Army(){Circle = 1, Square = 1, Triangle = 1} }),
+            ("Player02", _player2Start, new Command() { MovementCommands = [ new MovementCommand() { Army = new Army() { Square = 10}, Destination = new Hexagon(0,0) }] }),
+        ]);
+
+        // Act
+        var turn1 = GetNextTurnAndValidate(gameState, commands);
+
+        commands = DictionaryExtensions.CommandsToDictionary([
+            ("Player01", _player1Start, new Command() { Training = new Army(){Circle = 1, Square = 1, Triangle = 1} }),
+            ("Player02", new Hexagon(0,0), new Command() { MovementCommands = [ new MovementCommand() { Army = new Army() { Square = 10}, Destination = _player1Start }] }),
+        ]);
+
+        var turn2 = GetNextTurnAndValidate(turn1, commands);
+
+        // Assert
+        turn2.PlayerStates["Player01"]
+            .Trainings.ShouldHaveSingleItem().Value.ShouldHaveSingleItem().Value.Total.ShouldBe(4);
     }
 }

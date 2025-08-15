@@ -1,6 +1,7 @@
 using Simulturn.Core.Extensions;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State.StateValidation;
+using System.Net.NetworkInformation;
 
 namespace Simulturn.Core.Model.State;
 
@@ -97,6 +98,7 @@ public record GameState
             {
                 playerStateBuilder.Armies.Merge(trainings);
                 playerStateBuilder.UsedSpace += trainings.Values.Sum(army => army * GameSettings.RequiredSpace);
+                potentialFightHexagons.UnionWith(trainings.Keys); // The army might be trained on a hexagon with an enemy army
             }
             playerStateBuilder.Matter -= newTrainings.Sum(x => x.Value.Values.Sum(training => training * GameSettings.ArmyCost));
 
@@ -173,7 +175,55 @@ public record GameState
                 playerStates[playerId].Armies.Merge(hexagon, -losses[playerId]);
                 playerStates[playerId].UsedSpace -= losses[playerId] * GameSettings.RequiredSpace;
 
-                // ToDo: Cancel Constructions if dots are lost
+                short dotLosses = losses[playerId].Dot;
+                if (dotLosses <= 0)
+                {
+                    continue;
+                }
+
+                // Stop constructions for each lost dot
+                Compound constructions = playerStates[playerId].Constructions
+                    .Where(x => x.Key >= Turn)
+                    .Select(x => x.Value.GetValueOrDefault(hexagon))
+                    .Sum();
+                var canceledConstructionCandidates = playerStates[playerId]
+                    .Constructions
+                    .Where(x => x.Key >= Turn)
+                    .OrderByDescending(x => x.Key);
+                foreach ((ushort turn, var constructionForTurn) in canceledConstructionCandidates)
+                {
+                    if(!constructionForTurn.TryGetValue(hexagon, out var construction) || construction.IsEmpty)
+                    {
+                        continue;
+                    }
+                    Compound newConstruction = construction;
+                    foreach (var building in _buildings)
+                    {
+                        if(newConstruction[building] <= 0)
+                        {
+                            continue;
+                        }
+                        Compound cancel = Compound.FromBuilding(building, Math.Min(newConstruction[building], dotLosses));
+                        dotLosses -= cancel[building];
+                        newConstruction -= cancel;
+                        if(dotLosses <= 0)
+                        {
+                            break;
+                        }
+                    }
+                    if(newConstruction.IsEmpty)
+                    {
+                        playerStates[playerId].Constructions[turn].Remove(hexagon);
+                        if (playerStates[playerId].Constructions[turn].Count == 0)
+                        {
+                            playerStates[playerId].Constructions.Remove(turn);
+                        }
+                    }
+                    else
+                    {
+                        playerStates[playerId].Constructions[turn][hexagon] = newConstruction;
+                    }
+                }
             }
         }
 
@@ -212,7 +262,23 @@ public record GameState
                         playerStates[compoundPlayerId].Compounds.Merge(hexagon, -destroyedCompound);
                         playerStates[compoundPlayerId].AvailableSpace -= destroyedCompound * GameSettings.ProvidedSpace;
 
-                        // ToDo: Cancel Trainings
+                        foreach(var building in _buildings)
+                        {
+                            short destroyedCount = destroyedCompound[building];
+                            if (destroyedCount <= 0)
+                            {
+                                continue;
+                            }
+                            var cancelCandidates = playerStates[compoundPlayerId].Trainings.Where(x => x.Key >= Turn);
+                            foreach((ushort turn, var candidate) in cancelCandidates)
+                            {
+                                if (!candidate.TryGetValue(hexagon, out Army training))
+                                {
+                                    continue;
+                                }
+                            }
+
+                        }
                     }
                 }
             }
