@@ -1,7 +1,6 @@
 using Simulturn.Core.Extensions;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State.StateValidation;
-using System.Net.NetworkInformation;
 
 namespace Simulturn.Core.Model.State;
 
@@ -93,11 +92,11 @@ public record GameState
             }
 
             // Trainigs
+            playerStateBuilder.UsedSpace += newTrainings.Values.SelectMany(x => x.Values).Sum(army => army * GameSettings.RequiredSpace);
             playerStateBuilder.Trainings.Merge(newTrainings);
             if (playerStateBuilder.Trainings.TryGetValue(Turn, out var trainings))
             {
                 playerStateBuilder.Armies.Merge(trainings);
-                playerStateBuilder.UsedSpace += trainings.Values.Sum(army => army * GameSettings.RequiredSpace);
                 potentialFightHexagons.UnionWith(trainings.Keys); // The army might be trained on a hexagon with an enemy army
             }
             playerStateBuilder.Matter -= newTrainings.Sum(x => x.Value.Values.Sum(training => training * GameSettings.ArmyCost));
@@ -192,26 +191,26 @@ public record GameState
                     .OrderByDescending(x => x.Key);
                 foreach ((ushort turn, var constructionForTurn) in canceledConstructionCandidates)
                 {
-                    if(!constructionForTurn.TryGetValue(hexagon, out var construction) || construction.IsEmpty)
+                    if (!constructionForTurn.TryGetValue(hexagon, out var construction) || construction.IsEmpty)
                     {
                         continue;
                     }
                     Compound newConstruction = construction;
                     foreach (var building in _buildings)
                     {
-                        if(newConstruction[building] <= 0)
+                        if (newConstruction[building] <= 0)
                         {
                             continue;
                         }
                         Compound cancel = Compound.FromBuilding(building, Math.Min(newConstruction[building], dotLosses));
                         dotLosses -= cancel[building];
                         newConstruction -= cancel;
-                        if(dotLosses <= 0)
+                        if (dotLosses <= 0)
                         {
                             break;
                         }
                     }
-                    if(newConstruction.IsEmpty)
+                    if (newConstruction.IsEmpty)
                     {
                         playerStates[playerId].Constructions[turn].Remove(hexagon);
                         if (playerStates[playerId].Constructions[turn].Count == 0)
@@ -262,7 +261,8 @@ public record GameState
                         playerStates[compoundPlayerId].Compounds.Merge(hexagon, -destroyedCompound);
                         playerStates[compoundPlayerId].AvailableSpace -= destroyedCompound * GameSettings.ProvidedSpace;
 
-                        foreach(var building in _buildings)
+                        // Cancel trainings for each destroyed building
+                        foreach (var building in _buildings)
                         {
                             short destroyedCount = destroyedCompound[building];
                             if (destroyedCount <= 0)
@@ -270,14 +270,26 @@ public record GameState
                                 continue;
                             }
                             var cancelCandidates = playerStates[compoundPlayerId].Trainings.Where(x => x.Key >= Turn);
-                            foreach((ushort turn, var candidate) in cancelCandidates)
+                            foreach ((ushort turn, var candidate) in cancelCandidates)
                             {
-                                if (!candidate.TryGetValue(hexagon, out Army training))
+                                if (destroyedCount <= 0 || !candidate.TryGetValue(hexagon, out Army training) || training.IsEmpty)
                                 {
                                     continue;
                                 }
+                                foreach (Unit unit in _units)
+                                {
+                                    if (destroyedCount <= 0 ||
+                                        training[unit] <= 0 ||
+                                        GameSettings.TrainingBuildingPerUnit[unit] != building)
+                                    {
+                                        continue;
+                                    }
+                                    short canceledCount = (short)Math.Min(training[unit], destroyedCount);
+                                    playerStates[compoundPlayerId].UsedSpace -= canceledCount * GameSettings.RequiredSpace[unit];
+                                    destroyedCount -= canceledCount;
+                                    playerStates[compoundPlayerId].Trainings[turn].Merge(hexagon, -Army.FromUnit(unit, canceledCount));
+                                }
                             }
-
                         }
                     }
                 }

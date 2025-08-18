@@ -510,6 +510,6 @@ public class GameStateTest
 
         // Assert
         turn2.PlayerStates["Player01"]
-            .Trainings.ShouldHaveSingleItem().Value.ShouldHaveSingleItem().Value.Total.ShouldBe(4);
+            .Trainings.Sum(x => x.Value.Sum(y => y.Value.Total)).ShouldBe(4);
     }
 }
