@@ -13,6 +13,7 @@ public record GameState
     public HashSet<string> PlayerIds { get; init; }
     public ImmutableDictionary<string, PlayerState> PlayerStates { get; init; }
     public ImmutableDictionary<Hexagon, int> RemainingMatter { get; init; }
+    public bool IsGameOver => PlayerStates.Where(x => x.Value.Compounds.Any(compound => !compound.Value.IsEmpty)).Count() <= 1;
 
     public ushort Turn { get; init; }
 
@@ -594,7 +595,7 @@ public record GameState
                     .Select(x => x.Value[hexagon])
                     .Sum();
                 constructions += command.Construction;
-                if (constructions.Sum() > playerState.Armies[hexagon][Unit.Dot])
+                if (constructions.Sum() > playerState.Armies.GetValueOrDefault(hexagon)[Unit.Dot])
                 {
                     yield return new MissingDotsForConstruction(playerId, hexagon, constructions, playerState.Armies[hexagon][Unit.Dot]);
                 }

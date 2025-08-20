@@ -398,7 +398,7 @@ public class GameStateTest
         turn1.PlayerStates["Player01"]
             .Armies.ShouldNotContainKey(new Hexagon(0, 0));
         turn1.PlayerStates["Player01"]
-            .Losses[new Hexagon(0,0)]
+            .Losses[new Hexagon(0, 0)]
             .ShouldBe(new Army() { Circle = 5, Dot = 5, Square = 5, Triangle = 5 });
         turn1.PlayerStates["Player02"]
             .Losses[new Hexagon(0, 0)]
@@ -520,6 +520,6 @@ public class GameStateTest
         // Assert
         turn2.PlayerStates["Player01"]
             .Trainings.Sum(x => x.Value.Sum(y => y.Value.Total)).ShouldBe(4);
-        File.WriteAllText("test.svg",Printer.PrintState(turn2, Printer.GetFullInfo));
+        File.WriteAllText("test.svg", Printer.PrintState(turn2, Printer.GetFullInfo));
     }
 }

@@ -76,8 +76,8 @@ public readonly struct Army : IEquatable<Army>, IAdditionOperators<Army, Army, A
     public override string ToString() =>
         $"Triangles: {Triangle}, Circles: {Circle}, Squares: {Square}, Dots: {Dot}";
 
-    public string ToCompactString() => 
-        $"{(Triangle!=0?$"Triangles: {Triangle}, ":"")}{(Circle != 0 ? $"Circles: {Circle}, " : "")}{(Square != 0 ? $"Squares: {Square}, " : "")}{(Dot != 0 ? $"Dots: {Dot}" : "")}";
+    public string ToCompactString() =>
+        $"{(Triangle != 0 ? $"Triangles: {Triangle}, " : "")}{(Circle != 0 ? $"Circles: {Circle}, " : "")}{(Square != 0 ? $"Squares: {Square}, " : "")}{(Dot != 0 ? $"Dots: {Dot}" : "")}";
 
     public short this[Unit unit] => unit switch
     {

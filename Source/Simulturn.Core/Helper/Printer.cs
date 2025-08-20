@@ -9,7 +9,7 @@ public static class Printer
     private const int _hexagonSize = 100;
     private const string _hexagonFillColor = "#EEEEEE";
     private const string _hexagonStrokeColor = "#424242";
-    private static readonly ImmutableArray<string> _playerColors = ["#fbc02d", "#2d67fb", "#F44336" , "#4CAF50"];
+    private static readonly ImmutableArray<string> _playerColors = ["#fbc02d", "#2d67fb", "#F44336", "#4CAF50"];
     private const int _hexagonStrokeWidth = 2;
     private static readonly double _squareRootOfThree = Math.Sqrt(3);
 
@@ -44,7 +44,7 @@ public static class Printer
 
     public static string PrintState(GameState gameState, Func<GameState, Hexagon, List<string>> getInfo)
     {
-        StringBuilder sb = new ();
+        StringBuilder sb = new();
         (double minX, double minY, double maxX, double maxY) = GetBoundingBox(gameState.Hexagons);
         sb.AppendLine($"<svg xmlns='http://www.w3.org/2000/svg' viewBox='{minX} {minY} {maxX - minX} {maxY - minY}'>");
         sb.AppendLine("<defs>");
@@ -72,7 +72,7 @@ public static class Printer
             string hexagonColor = hexagonPlayers.Length == 1 ? playerColors[hexagonPlayers[0]] : _hexagonFillColor;
             var points = GetHexagonCorners(hexagon)
                 .ToArray();
-            sb.AppendLine($"<polygon class='hex' points='{string.Join(" ",points.Select(p => $"{p.x} {p.y}"))}' fill='{hexagonColor}' stroke='{_hexagonStrokeColor}' stroke-width='{_hexagonStrokeWidth}'></polygon>");
+            sb.AppendLine($"<polygon class='hex' points='{string.Join(" ", points.Select(p => $"{p.x} {p.y}"))}' fill='{hexagonColor}' stroke='{_hexagonStrokeColor}' stroke-width='{_hexagonStrokeWidth}'></polygon>");
             sb.AppendLine(GetTextElement(info, points));
         }
 
@@ -100,7 +100,7 @@ public static class Printer
 
         fs = Math.Clamp(fs, 6, 14);
 
-        StringBuilder sb = new ();
+        StringBuilder sb = new();
         sb.Append(CultureInfo.InvariantCulture,
             $"<text class='lbl' x='{cx:F2}' font-size='{fs:F2}'>");
 
@@ -129,7 +129,8 @@ public static class Printer
 
     private static (double minX, double minY, double maxX, double maxY) GetBoundingBox(IEnumerable<Hexagon> hexagons)
     {
-        var centers = hexagons.Select(hexagon => {
+        var centers = hexagons.Select(hexagon =>
+        {
             double cx = _squareRootOfThree * _hexagonSize * (hexagon.X + hexagon.Z / 2.0);
             double cy = 1.5 * _hexagonSize * hexagon.Z;
             return (cx, cy);
