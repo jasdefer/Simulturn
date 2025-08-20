@@ -37,6 +37,7 @@ public record GameState
                     Constructions = Constructinos.Empty,
                     Trainings = Trainings.Empty,
                     Matter = GameSettings.StartMatter,
+                    Losses = ImmutableDictionary<Hexagon, Army>.Empty,
                     Researches = ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Upgrade>>.Empty,
                     Visibilities = PlayerStateBuilder.GetVisibility(armies, Hexagons, gameSettings.PartialVisibilityRange, gameSettings.VisibilityRange),
                     UpgradeLevels = GameSettings.StartUpgrades.ContainsKey(x.Key)
@@ -46,8 +47,6 @@ public record GameState
             });
         PlayerIds = PlayerStates.Keys.ToHashSet();
     }
-
-
 
     private GameState(GameSettings gameSettings,
         ushort turn,
@@ -176,12 +175,13 @@ public record GameState
                     losses.Merge(armies[j].playerId, lossesPlayerJ);
                 }
             }
-            foreach (var playerId in losses.Keys)
+            foreach ((string playerId, Army loss) in losses)
             {
-                playerStates[playerId].Armies.Merge(hexagon, -losses[playerId]);
-                playerStates[playerId].UsedSpace -= losses[playerId] * GameSettings.RequiredSpace;
+                playerStates[playerId].Losses.Add(hexagon, loss);
+                playerStates[playerId].Armies.Merge(hexagon, -loss);
+                playerStates[playerId].UsedSpace -= loss * GameSettings.RequiredSpace;
 
-                short dotLosses = losses[playerId].Dot;
+                short dotLosses = loss.Dot;
                 if (dotLosses <= 0)
                 {
                     continue;

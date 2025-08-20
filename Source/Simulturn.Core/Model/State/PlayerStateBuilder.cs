@@ -12,6 +12,7 @@ public class PlayerStateBuilder
     public required ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Compound>.Builder>.Builder Constructions { get; init; }
     public required ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Upgrade>.Builder>.Builder Researches { get; init; }
     public required ImmutableDictionary<Upgrade, byte>.Builder UpgradeLevels { get; init; }
+    public required ImmutableDictionary<Hexagon, Army>.Builder Losses { get; init; }
 
     public PlayerState ToPlayerState(GameSettings gameSettings)
     {
@@ -35,7 +36,8 @@ public class PlayerStateBuilder
             Visibilities = GetVisibility(Armies,
                 gameSettings.HexagonSettings.Keys,
                 gameSettings.PartialVisibilityRange,
-                gameSettings.VisibilityRange)
+                gameSettings.VisibilityRange),
+            Losses = Losses.ToImmutableDictionary()
         };
     }
 
@@ -96,7 +98,8 @@ public class PlayerStateBuilder
             Researches = playerState.Researches.ToImmutableDictionary(
                 kvp => kvp.Key,
                 kvp => kvp.Value.ToBuilder()).ToBuilder(),
-            UpgradeLevels = playerState.UpgradeLevels.ToBuilder()
+            UpgradeLevels = playerState.UpgradeLevels.ToBuilder(),
+            Losses = playerState.Losses.ToBuilder()
         };
     }
 }

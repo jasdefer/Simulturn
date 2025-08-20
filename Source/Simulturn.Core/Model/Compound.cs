@@ -75,7 +75,10 @@ public readonly struct Compound : IAdditionOperators<Compound, Compound, Compoun
         => -1 * compound;
 
     public override string ToString() =>
-        $"Army(Plane: {Plane}, Axis: {Axis}, Dome: {Dome}, Pyramid: {Pyramid}, Cube: {Cube})";
+        $"Plane: {Plane}, Axis: {Axis}, Dome: {Dome}, Pyramid: {Pyramid}, Cube: {Cube}";
+
+    public string ToCompactString() =>
+        $"{(Plane != 0 ? $"Plane: {Plane}, " : "")}{(Axis != 0 ? $"Axis: {Axis}, " : "")}{(Dome != 0 ? $"Dome: {Dome}, " : "")}{(Pyramid != 0 ? $"Pyramid: {Pyramid}, " : "")}{(Cube != 0 ? $"Cube: {Cube}" : "")}";
 
     public short this[Building building] => building switch
     {

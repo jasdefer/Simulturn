@@ -17,6 +17,7 @@ public record HexagonSettings
     public int Matter { get; init; } = 0;
     public Army MaxNumberOfUnitsGeneratingMatter { get; init; } = Army.Empty;
     public bool IsBuildable { get; init; } = true;
-    public ImmutableArray<Upgrade> ResearchableUpgrades { get; init; } = ImmutableArray<Upgrade>.Empty;
+    public ImmutableArray<Upgrade> ResearchableUpgrades { get; init; } = [];
+    public Army NeutralArmy { get; init; } = Army.Empty;
     public (string StartingPlayerId, Army InitialArmy, Compound InitialCompound)? PlayerInitialization { get; init; } = null;
 }

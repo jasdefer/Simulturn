@@ -13,6 +13,10 @@ public record PlayerState
     public required Constructinos Constructions { get; init; }
     public required ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Upgrade>> Researches { get; init; }
     public required ImmutableDictionary<Hexagon, Visibility> Visibilities { get; init; }
+    /// <summary>
+    /// The losses of the player in the current turn.
+    /// </summary>
+    public required ImmutableDictionary<Hexagon, Army> Losses { get; init; }
 
     /// <summary>
     /// A level of 0 means the upgrade is not researched and is equivalent to not having the element in the dictionary.
