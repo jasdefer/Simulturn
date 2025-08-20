@@ -13,7 +13,7 @@ public class PlayerStateBuilder
     public required ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Upgrade>.Builder>.Builder Researches { get; init; }
     public required ImmutableDictionary<Upgrade, byte>.Builder UpgradeLevels { get; init; }
 
-    public PlayerState ToPlayerState()
+    public PlayerState ToPlayerState(GameSettings gameSettings)
     {
         return new PlayerState()
         {
@@ -31,8 +31,51 @@ public class PlayerStateBuilder
             Researches = Researches.ToImmutableDictionary(
                 kvp => kvp.Key,
                 kvp => kvp.Value.ToImmutableDictionary()),
-            UpgradeLevels = UpgradeLevels.ToImmutableDictionary()
+            UpgradeLevels = UpgradeLevels.ToImmutableDictionary(),
+            Visibilities = GetVisibility(Armies,
+                gameSettings.HexagonSettings.Keys,
+                gameSettings.PartialVisibilityRange,
+                gameSettings.VisibilityRange)
         };
+    }
+
+    public static ImmutableDictionary<Hexagon, Visibility> GetVisibility(IDictionary<Hexagon, Army> armies,
+        IEnumerable<Hexagon> hexagons,
+        byte partialVisibilityRange,
+        byte visibilityRange)
+    {
+        ImmutableDictionary<Hexagon, Visibility>.Builder visibilities = ImmutableDictionary.CreateBuilder<Hexagon, Visibility>();
+        foreach (Hexagon hexagon in hexagons)
+        {
+            Visibility visibility = Visibility.Mapped;
+            foreach ((Hexagon armyHexagon, Army army) in armies)
+            {
+                if (army.IsEmpty)
+                {
+                    continue;
+                }
+                var distance = hexagon.DistanceTo(armyHexagon);
+                if (distance == 0)
+                {
+                    visibility = Visibility.Occupied;
+                    break;
+                }
+                if (distance <= visibilityRange)
+                {
+                    visibility = Visibility.Visible;
+                    continue;
+                }
+                if (visibility < Visibility.Visible && distance <= partialVisibilityRange)
+                {
+                    visibility = Visibility.PartiallyVisible;
+                }
+            }
+            if (visibility > Visibility.Unknown)
+            {
+                visibilities[hexagon] = visibility;
+            }
+        }
+        return visibilities.ToImmutableDictionary();
     }
 
     public static PlayerStateBuilder FromPlayerState(PlayerState playerState)

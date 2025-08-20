@@ -6,8 +6,8 @@ namespace Simulturn.Core.Model.State;
 
 public record GameState
 {
-    private static readonly ImmutableArray<Unit> _units = Enum.GetValues(typeof(Unit)).Cast<Unit>().ToImmutableArray();
-    private static readonly ImmutableArray<Building> _buildings = Enum.GetValues(typeof(Building)).Cast<Building>().ToImmutableArray();
+    private static readonly ImmutableArray<Unit> _units = Enum.GetValues<Unit>().Cast<Unit>().ToImmutableArray();
+    private static readonly ImmutableArray<Building> _buildings = Enum.GetValues<Building>().Cast<Building>().ToImmutableArray();
     public GameSettings GameSettings { get; init; }
     public ImmutableHashSet<Hexagon> Hexagons { get; init; }
     public HashSet<string> PlayerIds { get; init; }
@@ -25,22 +25,29 @@ public record GameState
             x => x.Value.Matter);
         PlayerStates = GameSettings.HexagonSettings.Where(x => x.Value.PlayerInitialization is not null)
             .GroupBy(x => x.Value.PlayerInitialization!.Value.StartingPlayerId)
-            .ToImmutableDictionary(x => x.Key, x => new PlayerState()
+            .ToImmutableDictionary(x => x.Key, x =>
             {
-                Armies = x.ToImmutableDictionary(y => y.Key, y => y.Value.PlayerInitialization!.Value.InitialArmy),
-                Compounds = x.ToImmutableDictionary(y => y.Key, y => y.Value.PlayerInitialization!.Value.InitialCompound),
-                AvailableSpace = x.Sum(y => y.Value.PlayerInitialization!.Value.InitialCompound * GameSettings.ProvidedSpace),
-                UsedSpace = x.Sum(y => y.Value.PlayerInitialization!.Value.InitialArmy * GameSettings.RequiredSpace),
-                Constructions = Constructinos.Empty,
-                Trainings = Trainings.Empty,
-                Matter = GameSettings.StartMatter,
-                Researches = ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Upgrade>>.Empty,
-                UpgradeLevels = GameSettings.StartUpgrades.ContainsKey(x.Key)
-                    ? GameSettings.StartUpgrades[x.Key].GroupBy(x => x).ToImmutableDictionary(x => x.Key, x => Convert.ToByte(x.Count()))
-                    : ImmutableDictionary<Upgrade, byte>.Empty
+                var armies = x.ToImmutableDictionary(y => y.Key, y => y.Value.PlayerInitialization!.Value.InitialArmy);
+                return new PlayerState()
+                {
+                    Armies = armies,
+                    Compounds = x.ToImmutableDictionary(y => y.Key, y => y.Value.PlayerInitialization!.Value.InitialCompound),
+                    AvailableSpace = x.Sum(y => y.Value.PlayerInitialization!.Value.InitialCompound * GameSettings.ProvidedSpace),
+                    UsedSpace = x.Sum(y => y.Value.PlayerInitialization!.Value.InitialArmy * GameSettings.RequiredSpace),
+                    Constructions = Constructinos.Empty,
+                    Trainings = Trainings.Empty,
+                    Matter = GameSettings.StartMatter,
+                    Researches = ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Upgrade>>.Empty,
+                    Visibilities = PlayerStateBuilder.GetVisibility(armies, Hexagons, gameSettings.PartialVisibilityRange, gameSettings.VisibilityRange),
+                    UpgradeLevels = GameSettings.StartUpgrades.ContainsKey(x.Key)
+                        ? GameSettings.StartUpgrades[x.Key].GroupBy(x => x).ToImmutableDictionary(x => x.Key, x => Convert.ToByte(x.Count()))
+                        : ImmutableDictionary<Upgrade, byte>.Empty
+                };
             });
         PlayerIds = PlayerStates.Keys.ToHashSet();
     }
+
+
 
     private GameState(GameSettings gameSettings,
         ushort turn,
@@ -302,7 +309,7 @@ public record GameState
         }
         return new GameState(GameSettings,
             (ushort)(1 + Turn),
-            playerStates.ToImmutableDictionary(x => x.Key, x => x.Value.ToPlayerState()),
+            playerStates.ToImmutableDictionary(x => x.Key, x => x.Value.ToPlayerState(GameSettings)),
             remainingMatter.ToImmutableDictionary());
     }
 

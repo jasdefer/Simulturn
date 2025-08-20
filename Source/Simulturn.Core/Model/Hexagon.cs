@@ -30,4 +30,9 @@ public readonly struct Hexagon : IEquatable<Hexagon>
 
     public override string ToString() =>
         $"Hex({X}, {Y}, {Z})";
+
+    public int DistanceTo(Hexagon other)
+    {
+        return (Math.Abs(X - other.X) + Math.Abs(Y - other.Y) + Math.Abs(Z - other.Z)) / 2;
+    }
 }

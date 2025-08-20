@@ -14,6 +14,8 @@ public record GameSettings
     public required Army TrainingDuration { get; init; }
     public required Army Income { get; init; }
     public required Army StructureDamage { get; init; }
+    public required byte PartialVisibilityRange { get; set; }
+    public required byte VisibilityRange { get; set; }
 
     /// <summary>
     /// The values are divided by 100, so 100 means 1.0. It is the exponent for the fight calculation.

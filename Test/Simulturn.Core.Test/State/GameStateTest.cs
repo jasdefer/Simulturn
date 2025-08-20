@@ -23,6 +23,8 @@ public class GameStateTest
         RequiredSpace = new Army() { Triangle = 3, Circle = 3, Square = 3, Dot = 1 },
         Seed = 1,
         StartMatter = 500,
+        PartialVisibilityRange = 2,
+        VisibilityRange = 1,
         StructureDamage = new Army() { Triangle = 5, Circle = 5, Square = 5, Dot = 1 },
         TrainingDuration = new Army() { Triangle = 2, Circle = 2, Square = 2, Dot = 1 },
         StartUpgrades = ImmutableDictionary<string, ImmutableArray<Upgrade>>.Empty,
