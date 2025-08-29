@@ -1,4 +1,4 @@
-using System.Numerics;
+﻿using System.Numerics;
 
 namespace Simulturn.Core.Model;
 
@@ -77,7 +77,7 @@ public readonly struct Army : IEquatable<Army>, IAdditionOperators<Army, Army, A
         $"Triangles: {Triangle}, Circles: {Circle}, Squares: {Square}, Dots: {Dot}";
 
     public string ToCompactString() =>
-        $"{(Triangle != 0 ? $"Triangles: {Triangle}, " : "")}{(Circle != 0 ? $"Circles: {Circle}, " : "")}{(Square != 0 ? $"Squares: {Square}, " : "")}{(Dot != 0 ? $"Dots: {Dot}" : "")}";
+        $"{(Triangle != 0 ? $"△: {Triangle}, " : "")}{(Circle != 0 ? $"○: {Circle}, " : "")}{(Square != 0 ? $"□: {Square}, " : "")}{(Dot != 0 ? $"•: {Dot}" : "")}";
 
     public short this[Unit unit] => unit switch
     {

@@ -6,6 +6,7 @@ using System.Text;
 namespace Simulturn.Core.Helper;
 public static class Printer
 {
+    private static readonly Random _random = new Random(1);
     private const int _hexagonSize = 100;
     private const string _hexagonFillColor = "#EEEEEE";
     private const string _hexagonStrokeColor = "#424242";
@@ -70,21 +71,62 @@ public static class Printer
                 .ToArray();
 
             string hexagonColor = hexagonPlayers.Length == 1 ? playerColors[hexagonPlayers[0]] : _hexagonFillColor;
-            var points = GetHexagonCorners(hexagon)
-                .ToArray();
-            sb.AppendLine($"<polygon class='hex' points='{string.Join(" ", points.Select(p => $"{p.x} {p.y}"))}' fill='{hexagonColor}' stroke='{_hexagonStrokeColor}' stroke-width='{_hexagonStrokeWidth}'></polygon>");
-            sb.AppendLine(GetTextElement(info, points));
+
+            // Generate hand-drawn path
+            double cx = _squareRootOfThree * _hexagonSize * (hexagon.X + hexagon.Z / 2.0);
+            double cy = 1.5 * _hexagonSize * hexagon.Z;
+
+            var idealCorners = new (double x, double y)[6];
+            for (int i = 0; i < 6; i++)
+            {
+                double angle = Math.PI / 180.0 * (60 * i - 30);
+                idealCorners[i] = (cx + _hexagonSize * Math.Cos(angle), cy + _hexagonSize * Math.Sin(angle));
+            }
+
+            double jitter = _hexagonSize * 0.04;
+            var randomizedCorners = new (double x, double y)[6];
+            for (int i = 0; i < 6; i++)
+            {
+                randomizedCorners[i] = (idealCorners[i].x + (_random.NextDouble() * 2 - 1) * jitter,
+                                        idealCorners[i].y + (_random.NextDouble() * 2 - 1) * jitter);
+            }
+
+            StringBuilder path = new();
+            path.Append(CultureInfo.InvariantCulture, $"M {randomizedCorners[0].x:F2} {randomizedCorners[0].y:F2} ");
+
+            for (int i = 0; i < 6; i++)
+            {
+                var p1 = randomizedCorners[i];
+                var p2 = randomizedCorners[(i + 1) % 6];
+
+                double dx = p2.x - p1.x;
+                double dy = p2.y - p1.y;
+
+                double controlJitter = _hexagonSize * 0.1;
+
+                var cp1 = (x: p1.x + dx * 0.25 + (_random.NextDouble() * 2 - 1) * controlJitter,
+                           y: p1.y + dy * 0.25 + (_random.NextDouble() * 2 - 1) * controlJitter);
+
+                var cp2 = (x: p1.x + dx * 0.75 + (_random.NextDouble() * 2 - 1) * controlJitter,
+                           y: p1.y + dy * 0.75 + (_random.NextDouble() * 2 - 1) * controlJitter);
+
+                path.Append(CultureInfo.InvariantCulture, $"C {cp1.x:F2} {cp1.y:F2}, {cp2.x:F2} {cp2.y:F2}, {p2.x:F2} {p2.y:F2} ");
+            }
+            path.Append("Z");
+            string pathData = path.ToString();
+
+            sb.AppendLine(CultureInfo.InvariantCulture, $"<path class='hex' d='{pathData}' fill='{hexagonColor}' stroke='{_hexagonStrokeColor}' stroke-width='{_hexagonStrokeWidth}'></path>");
+            sb.AppendLine(GetTextElement(info, (cx, cy)));
         }
 
         sb.AppendLine("</svg>");
         return sb.ToString();
     }
 
-    private static string GetTextElement(List<string> info, (double x, double y)[] points)
+    private static string GetTextElement(List<string> info, (double x, double y) center)
     {
-
-        double cx = points.Sum(p => p.x) / points.Length;
-        double cy = points.Sum(p => p.y) / points.Length;
+        double cx = center.x;
+        double cy = center.y;
 
         // 3) Available vertical space = s (rectangle height), minus tiny padding
         double padding = Math.Max(1, _hexagonStrokeWidth);
@@ -113,18 +155,6 @@ public static class Printer
 
         sb.Append("</text>");
         return sb.ToString();
-    }
-
-    private static IEnumerable<(double x, double y)> GetHexagonCorners(Hexagon hexagon)
-    {
-        double cx = _squareRootOfThree * _hexagonSize * (hexagon.X + hexagon.Z / 2.0);
-        double cy = 1.5 * _hexagonSize * hexagon.Z;
-
-        for (int i = 0; i < 6; i++)
-        {
-            double angle = Math.PI / 180.0 * (60 * i - 30);
-            yield return (cx + _hexagonSize * Math.Cos(angle), cy + _hexagonSize * Math.Sin(angle));
-        }
     }
 
     private static (double minX, double minY, double maxX, double maxY) GetBoundingBox(IEnumerable<Hexagon> hexagons)
