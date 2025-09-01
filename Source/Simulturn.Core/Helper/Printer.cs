@@ -36,7 +36,15 @@ public static class Printer
             {
                 if (trainings.TryGetValue(hexagon, out var training) && !training.IsEmpty)
                 {
-                    info.Add($"Turn {turn} Training: {training.ToCompactString()}");
+                    info.Add($"↻ {turn} 🎓: {training.ToCompactString()}");
+                }
+            }
+
+            foreach ((ushort turn, var constructions) in playerState.Constructions.Where(x => x.Key >= gameState.Turn))
+            {
+                if (constructions.TryGetValue(hexagon, out var construction) && !construction.IsEmpty)
+                {
+                    info.Add($"↻ {turn} ⚒: {construction.ToCompactString()}");
                 }
             }
         }
@@ -50,7 +58,7 @@ public static class Printer
         sb.AppendLine($"<svg xmlns='http://www.w3.org/2000/svg' viewBox='{minX} {minY} {maxX - minX} {maxY - minY}'>");
         sb.AppendLine("<defs>");
         sb.AppendLine("  <style>");
-        sb.AppendLine("    <![CDATA[.lbl{font:8px sans-serif; text-anchor:middle; dominant-baseline:middle; fill:#111}]]>");
+        sb.AppendLine("    <![CDATA[.lbl{font:8px sans-serif; text-anchor:middle; dominant-baseline:middle; fill:#111} .pi-lbl{font:10px sans-serif; dominant-baseline:middle; fill:#111}]]>");
         sb.AppendLine("  </style>");
         sb.AppendLine("</defs>");
 
@@ -118,6 +126,34 @@ public static class Printer
             sb.AppendLine(CultureInfo.InvariantCulture, $"<path class='hex' d='{pathData}' fill='{hexagonColor}' stroke='{_hexagonStrokeColor}' stroke-width='{_hexagonStrokeWidth}'></path>");
             sb.AppendLine(GetTextElement(info, (cx, cy)));
         }
+
+        double playerInfoBoxX = minX + 10;
+        double playerInfoBoxY = minY + 10;
+        double playerInfoBoxWidth = 70;
+        double playerInfoBoxHeight = 55;
+        double playerInfoBoxMargin = 10;
+        double playerInfoBoxPadding = 5;
+        double playerInfoLineHeight = 15;
+
+        foreach ((string playerId, PlayerState playerState) in gameState.PlayerStates.OrderBy(p => p.Key))
+        {
+            string playerColor = playerColors[playerId];
+
+            sb.AppendLine(CultureInfo.InvariantCulture, $"<rect x='{playerInfoBoxX}' y='{playerInfoBoxY}' width='{playerInfoBoxWidth}' height='{playerInfoBoxHeight}' fill='{_hexagonFillColor}' stroke='{playerColor}' stroke-width='{_hexagonStrokeWidth}' />");
+
+            double textY = playerInfoBoxY + playerInfoBoxPadding;
+            sb.AppendLine(CultureInfo.InvariantCulture, $"<text class='pi-lbl' x='{playerInfoBoxX + playerInfoBoxPadding}' y='{textY + 7}' font-weight='bold' fill='{playerColor}'>{playerId}</text>");
+
+            textY += playerInfoLineHeight;
+            sb.AppendLine(CultureInfo.InvariantCulture, $"<text class='pi-lbl' x='{playerInfoBoxX + playerInfoBoxPadding}' y='{textY + 7}'>Matter: {playerState.Matter}</text>");
+
+            textY += playerInfoLineHeight;
+            sb.AppendLine(CultureInfo.InvariantCulture, $"<text class='pi-lbl' x='{playerInfoBoxX + playerInfoBoxPadding}' y='{textY + 7}'>Space: {playerState.UsedSpace} / {playerState.AvailableSpace}</text>");
+
+            playerInfoBoxY += playerInfoBoxHeight + playerInfoBoxMargin;
+        }
+
+        sb.AppendLine(CultureInfo.InvariantCulture, $"<text class='pi-lbl' x='{playerInfoBoxX + playerInfoBoxPadding}' y='{playerInfoBoxY + playerInfoBoxPadding + 7}'>Turn: {gameState.Turn}</text>");
 
         sb.AppendLine("</svg>");
         return sb.ToString();

@@ -556,12 +556,12 @@ public record GameState
         var playerState = PlayerStates[playerId];
 
         // Space
-        int additionalSpace = commands.Sum(command => command.Value.MovementCommands.Sum(z => z.Army * GameSettings.RequiredSpace));
+        int additionalSpace = commands.Sum(command => command.Value.Training * GameSettings.RequiredSpace);
         if (commands.Any(x => x.Value.Training.Total > 0) &&
-            PlayerStates[playerId].AvailableSpace + additionalSpace > PlayerStates[playerId].AvailableSpace)
+            PlayerStates[playerId].UsedSpace + additionalSpace > PlayerStates[playerId].AvailableSpace)
         {
             // Only check the space, if there is a training. A player can have more space than available, but not train in such a case.
-            yield return new InsufficientSpace(playerId, additionalSpace, PlayerStates[playerId].AvailableSpace);
+            yield return new InsufficientSpace(playerId, PlayerStates[playerId].UsedSpace + additionalSpace, PlayerStates[playerId].AvailableSpace);
         }
 
         int researchCost = 0;

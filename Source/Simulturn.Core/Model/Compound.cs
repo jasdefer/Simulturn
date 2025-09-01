@@ -1,4 +1,4 @@
-using System.Numerics;
+﻿using System.Numerics;
 
 namespace Simulturn.Core.Model;
 
@@ -78,7 +78,7 @@ public readonly struct Compound : IAdditionOperators<Compound, Compound, Compoun
         $"Plane: {Plane}, Axis: {Axis}, Dome: {Dome}, Pyramid: {Pyramid}, Cube: {Cube}";
 
     public string ToCompactString() =>
-        $"{(Plane != 0 ? $"Plane: {Plane}, " : "")}{(Axis != 0 ? $"Axis: {Axis}, " : "")}{(Dome != 0 ? $"Dome: {Dome}, " : "")}{(Pyramid != 0 ? $"Pyramid: {Pyramid}, " : "")}{(Cube != 0 ? $"Cube: {Cube}" : "")}";
+        $"{(Plane != 0 ? $"⬒: {Plane}, " : "")}{(Axis != 0 ? $"⤢: {Axis}, " : "")}{(Dome != 0 ? $"⊙: {Dome}, " : "")}{(Pyramid != 0 ? $"⛛: {Pyramid}, " : "")}{(Cube != 0 ? $"🧊: {Cube}" : "")}";
 
     public short this[Building building] => building switch
     {

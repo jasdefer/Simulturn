@@ -10,6 +10,7 @@ Console.WriteLine("Hello, Simulturn World!");
 GameState gameState = new(ConsoleGameSettings.DefaultGame);
 string stateString = Printer.PrintState(gameState, Printer.GetFullInfo);
 File.WriteAllText($"Turn{gameState.Turn}.svg", stateString);
+File.WriteAllText($"CurrentTurn.svg", stateString);
 while (!gameState.IsGameOver)
 {
     Console.WriteLine($"Turn {gameState.Turn}: Please add commands for the next turn in CSV format and press any key to continue.");
@@ -103,5 +104,6 @@ while (!gameState.IsGameOver)
     gameState = gameState.NextTurn(commands);
     stateString = Printer.PrintState(gameState, Printer.GetFullInfo);
     File.WriteAllText($"Turn{gameState.Turn}.svg", stateString);
+    File.WriteAllText($"CurrentTurn.svg", stateString);
 }
 

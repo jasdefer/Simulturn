@@ -3,6 +3,7 @@ using Simulturn.Core.Helper;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
+using Simulturn.Core.Model.State.StateValidation;
 using Simulturn.Core.Model.Upgrades;
 using System.Collections.Immutable;
 
@@ -521,5 +522,107 @@ public class GameStateTest
         turn2.PlayerStates["Player01"]
             .Trainings.Sum(x => x.Value.Sum(y => y.Value.Total)).ShouldBe(4);
         File.WriteAllText("test.svg", Printer.PrintState(turn2, Printer.GetFullInfo));
+    }
+
+    [Test]
+    public void Fight_Army_vs_Army_InTwoTurns()
+    {
+        // Assign
+        var builder = _gameSettings.HexagonSettings.ToBuilder();
+        builder[_player1Start] = new HexagonSettings()
+        {
+            IsBuildable = true,
+            Matter = 10000,
+            MaxNumberOfUnitsGeneratingMatter = new Army() { Triangle = 0, Circle = 0, Square = 0, Dot = 12 },
+            PlayerInitialization = new("Player01", new Army() { Square = 15 }, new Compound() { Plane = 1 })
+        };
+        builder[_player2Start] = new HexagonSettings()
+        {
+            IsBuildable = true,
+            Matter = 10000,
+            MaxNumberOfUnitsGeneratingMatter = new Army() { Triangle = 0, Circle = 0, Square = 0, Dot = 12 },
+            PlayerInitialization = new("Player02", new Army() { Square = 15 }, new Compound() { Plane = 1 })
+        };
+
+        var gameSettings = _gameSettings with
+        {
+            HexagonSettings = builder.ToImmutableDictionary()
+        };
+        var gameState = new GameState(gameSettings);
+        var commands = DictionaryExtensions.MovementsToDictionary([
+            ("Player01", new Hexagon(-1,0), new Hexagon(0,0), new Army() { Square = 15 }),
+            ("Player02", new Hexagon(1,0), new Hexagon(0,0), new Army() { Square = 5 })
+        ]);
+
+        // Act
+        var turn1 = GetNextTurnAndValidate(gameState, commands, valiateCommand: false);
+
+        commands = DictionaryExtensions.MovementsToDictionary([
+            ("Player02", new Hexagon(1,0), new Hexagon(0,0), new Army() { Square = 5 })
+        ]);
+
+        // Act
+        var turn2 = GetNextTurnAndValidate(turn1, commands, valiateCommand: false);
+
+        commands = DictionaryExtensions.MovementsToDictionary([
+            ("Player02", new Hexagon(1,0), new Hexagon(0,0), new Army() { Square = 5 })
+        ]);
+
+        // Act
+        var turn3 = GetNextTurnAndValidate(turn1, commands, valiateCommand: false);
+
+        // Assert
+        turn1.PlayerStates["Player02"]
+            .Losses.Keys.ShouldContain(new Hexagon(0, 0));
+        turn1.PlayerStates["Player01"]
+            .Losses.Keys.ShouldContain(new Hexagon(0, 0));
+        turn2.PlayerStates["Player02"]
+            .Losses.Keys.ShouldContain(new Hexagon(0, 0));
+        turn2.PlayerStates["Player01"]
+            .Losses.Keys.ShouldContain(new Hexagon(0, 0));
+        turn3.PlayerStates["Player02"]
+            .Losses.Keys.ShouldContain(new Hexagon(0, 0));
+        turn3.PlayerStates["Player01"]
+            .Losses.Keys.ShouldContain(new Hexagon(0, 0));
+    }
+
+    [Test]
+    public void Train_NoSupply()
+    {
+        // Assign
+        var builder = _gameSettings.HexagonSettings.ToBuilder();
+        builder[_player1Start] = new HexagonSettings()
+        {
+            IsBuildable = true,
+            Matter = 10000,
+            MaxNumberOfUnitsGeneratingMatter = new Army() { Triangle = 0, Circle = 0, Square = 0, Dot = 12 },
+            PlayerInitialization = new("Player01", new Army() { Dot = 9 }, new Compound() { Plane = 1, Cube = 1, Dome = 1, Pyramid = 1 })
+        };
+        builder[_player2Start] = new HexagonSettings()
+        {
+            IsBuildable = true,
+            Matter = 10000,
+            MaxNumberOfUnitsGeneratingMatter = new Army() { Triangle = 0, Circle = 0, Square = 0, Dot = 12 },
+            PlayerInitialization = new("Player02", new Army() { Square = 10 }, new Compound() { Plane = 1 })
+        };
+
+        var gameSettings = _gameSettings with
+        {
+            HexagonSettings = builder.ToImmutableDictionary(),
+            StartMatter = 1000
+        };
+        var gameState = new GameState(gameSettings);
+
+        var commands = new Dictionary<string, Dictionary<Hexagon, Command>>()
+        {
+            {
+                "Player01", Command.Create([(new Hexagon(-1,0), new Command() { Training = new Army() { Circle = 1, Square = 1, Triangle = 1 } })])
+            },
+        };
+
+        // Act
+        var validations = gameState.Validate(commands.Keys.Single(), commands.Single().Value);
+        (validations.ShouldHaveSingleItem()
+             as InsufficientSpace)!.Required.ShouldBe(9 + 9);
     }
 }

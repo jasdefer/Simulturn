@@ -99,7 +99,7 @@ public class PlayerStateBuilder
                 kvp => kvp.Key,
                 kvp => kvp.Value.ToBuilder()).ToBuilder(),
             UpgradeLevels = playerState.UpgradeLevels.ToBuilder(),
-            Losses = playerState.Losses.ToBuilder()
+            Losses = ImmutableDictionary<Hexagon, Army>.Empty.ToBuilder()
         };
     }
 }

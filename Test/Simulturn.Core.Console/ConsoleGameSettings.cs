@@ -10,7 +10,7 @@ internal class ConsoleGameSettings
     {
         Armor = new Compound() { Axis = 10, Dome = 20, Cube = 20, Plane = 30, Pyramid = 20 },
         ArmyCost = new Army() { Triangle = 200, Circle = 200, Square = 200, Dot = 75 },
-        CompoundCost = new Compound() { Axis = 150, Dome = 100, Cube = 150, Plane = 350, Pyramid = 150 },
+        CompoundCost = new Compound() { Axis = 100, Dome = 150, Cube = 150, Plane = 350, Pyramid = 150 },
         ConstructionDuration = new Compound() { Axis = 2, Dome = 3, Cube = 3, Plane = 4, Pyramid = 3 },
         FightExponent = new Army() { Triangle = 120, Circle = 120, Square = 120, Dot = 1 },
         Income = new Army() { Triangle = 0, Circle = 0, Square = 0, Dot = 10 },
