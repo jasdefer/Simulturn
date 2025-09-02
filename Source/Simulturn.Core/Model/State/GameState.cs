@@ -35,7 +35,7 @@ public record GameState
                     Compounds = x.ToImmutableDictionary(y => y.Key, y => y.Value.PlayerInitialization!.Value.InitialCompound),
                     AvailableSpace = x.Sum(y => y.Value.PlayerInitialization!.Value.InitialCompound * GameSettings.ProvidedSpace),
                     UsedSpace = x.Sum(y => y.Value.PlayerInitialization!.Value.InitialArmy * GameSettings.RequiredSpace),
-                    Constructions = Constructinos.Empty,
+                    Constructions = Constructions.Empty,
                     Trainings = Trainings.Empty,
                     Matter = GameSettings.StartMatter,
                     Losses = ImmutableDictionary<Hexagon, Army>.Empty,
