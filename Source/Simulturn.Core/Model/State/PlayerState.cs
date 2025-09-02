@@ -10,7 +10,7 @@ public record PlayerState
     public required ImmutableDictionary<Hexagon, Army> Armies { get; init; }
     public required ImmutableDictionary<Hexagon, Compound> Compounds { get; init; }
     public required Trainings Trainings { get; init; }
-    public required Constructinos Constructions { get; init; }
+    public required Constructions Constructions { get; init; }
     public required ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Upgrade>> Researches { get; init; }
     public required ImmutableDictionary<Hexagon, Visibility> Visibilities { get; init; }
     /// <summary>
