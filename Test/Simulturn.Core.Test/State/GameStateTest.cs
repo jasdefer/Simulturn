@@ -73,9 +73,9 @@ public class GameStateTest
         }.ToImmutableDictionary(),
     };
 
-    private static GameState GetNextTurnAndValidate(GameState gameState, Dictionary<string, Dictionary<Hexagon, Command>> commands, bool valiateCommand = true)
+    private static GameState GetNextTurnAndValidate(GameState gameState, Dictionary<string, Dictionary<Hexagon, Command>> commands, bool validateCommand = true)
     {
-        if (valiateCommand)
+        if (validateCommand)
         {
             foreach ((string playerId, Dictionary<Hexagon, Command> playerCommands) in commands)
             {
