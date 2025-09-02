@@ -32,7 +32,7 @@ public readonly struct Compound : IAdditionOperators<Compound, Compound, Compoun
 
     public bool IsEmpty => Dome == 0 && Pyramid == 0 && Cube == 0 && Plane == 0 && Axis == 0;
 
-    public int Sum() => Dome + Axis + Dome + Pyramid + Cube;
+    public int Sum() => Dome + Axis + Plane + Pyramid + Cube;
 
     public static Compound operator +(Compound a, Compound b) =>
         new Compound()
