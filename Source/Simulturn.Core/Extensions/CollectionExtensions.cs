@@ -2,6 +2,7 @@
 using Simulturn.Core.Model.Upgrades;
 
 namespace Simulturn.Core.Extensions;
+
 public static class CollectionExtensions
 {
     public static Army Sum(this IEnumerable<Army> armies)

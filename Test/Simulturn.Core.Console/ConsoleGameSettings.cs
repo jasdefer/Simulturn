@@ -4,6 +4,7 @@ using Simulturn.Core.Model.Upgrades;
 using System.Collections.Immutable;
 
 namespace Simulturn.Core.Console;
+
 internal class ConsoleGameSettings
 {
     public static readonly GameSettings DefaultGame = new()

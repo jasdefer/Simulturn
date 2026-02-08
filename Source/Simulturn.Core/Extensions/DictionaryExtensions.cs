@@ -3,6 +3,7 @@ using Simulturn.Core.Model.Commands;
 using System.Numerics;
 
 namespace Simulturn.Core.Extensions;
+
 public static class DictionaryExtensions
 {
     public static void Merge<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key, TValue addition)

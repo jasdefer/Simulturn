@@ -8,6 +8,7 @@ using Simulturn.Core.Model.Upgrades;
 using System.Collections.Immutable;
 
 namespace Simulturn.Core.Test.State;
+
 public class GameStateTest
 {
     private static readonly Hexagon _player1Start = new Hexagon(-1, 0);
@@ -390,7 +391,7 @@ public class GameStateTest
         ]);
 
         // Act
-        var turn1 = GetNextTurnAndValidate(gameState, commands, valiateCommand: false);
+        var turn1 = GetNextTurnAndValidate(gameState, commands, validateCommand: false);
 
         // Assert
         turn1.PlayerStates["Player02"]
@@ -487,7 +488,7 @@ public class GameStateTest
             IsBuildable = true,
             Matter = 10000,
             MaxNumberOfUnitsGeneratingMatter = new Army() { Triangle = 0, Circle = 0, Square = 0, Dot = 12 },
-            PlayerInitialization = new("Player01", new Army() { Dot = 0 }, new Compound() { Pyramid = 2, Cube = 2, Dome = 2 })
+            PlayerInitialization = new("Player01", new Army() { Dot = 0 }, new Compound() { Pyramid = 2, Cube = 2, Dome = 2, Plane = 2 })
         };
         builder[_player2Start] = new HexagonSettings()
         {
@@ -555,21 +556,21 @@ public class GameStateTest
         ]);
 
         // Act
-        var turn1 = GetNextTurnAndValidate(gameState, commands, valiateCommand: false);
+        var turn1 = GetNextTurnAndValidate(gameState, commands, validateCommand: false);
 
         commands = DictionaryExtensions.MovementsToDictionary([
             ("Player02", new Hexagon(1,0), new Hexagon(0,0), new Army() { Square = 5 })
         ]);
 
         // Act
-        var turn2 = GetNextTurnAndValidate(turn1, commands, valiateCommand: false);
+        var turn2 = GetNextTurnAndValidate(turn1, commands, validateCommand: false);
 
         commands = DictionaryExtensions.MovementsToDictionary([
             ("Player02", new Hexagon(1,0), new Hexagon(0,0), new Army() { Square = 5 })
         ]);
 
         // Act
-        var turn3 = GetNextTurnAndValidate(turn1, commands, valiateCommand: false);
+        var turn3 = GetNextTurnAndValidate(turn1, commands, validateCommand: false);
 
         // Assert
         turn1.PlayerStates["Player02"]

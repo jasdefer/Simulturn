@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text;
 
 namespace Simulturn.Core.Helper;
+
 public static class Printer
 {
     private static readonly Random _random = new Random(1);

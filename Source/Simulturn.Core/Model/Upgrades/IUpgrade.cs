@@ -1,4 +1,5 @@
 ﻿namespace Simulturn.Core.Model.Upgrades;
+
 public interface IUpgrade
 {
     short Cost { get; }

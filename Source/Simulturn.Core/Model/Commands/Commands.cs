@@ -1,4 +1,5 @@
 ﻿namespace Simulturn.Core.Model.Commands;
+
 public record Command
 {
     public Compound Construction { get; init; } = Compound.Empty;

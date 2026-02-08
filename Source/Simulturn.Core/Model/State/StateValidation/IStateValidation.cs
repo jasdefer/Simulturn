@@ -1,4 +1,5 @@
 ﻿namespace Simulturn.Core.Model.State.StateValidation;
+
 public interface IStateValidation;
 
 public record NegativeRemainingMatter(Hexagon Hexagon, int RemainingMatter) : IStateValidation;

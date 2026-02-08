@@ -1,4 +1,5 @@
 ﻿namespace Simulturn.Core.Model.State.StateValidation;
+
 public interface ICommandValidation
 {
     string PlayerId { get; }

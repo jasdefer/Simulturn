@@ -1,4 +1,5 @@
 ﻿namespace Simulturn.Core.Model.Upgrades;
+
 public readonly struct DotUpgrade : IUpgrade
 {
     public short Cost { get; init; }

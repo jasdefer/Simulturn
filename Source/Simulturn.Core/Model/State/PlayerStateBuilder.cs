@@ -1,4 +1,5 @@
 ﻿namespace Simulturn.Core.Model.State;
+
 public class PlayerStateBuilder
 {
     private PlayerStateBuilder() { }

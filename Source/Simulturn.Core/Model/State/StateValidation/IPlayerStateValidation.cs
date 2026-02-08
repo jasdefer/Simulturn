@@ -1,4 +1,5 @@
 ﻿namespace Simulturn.Core.Model.State.StateValidation;
+
 internal interface IPlayerStateValidation : IStateValidation
 {
     public string PlayerId { get; }

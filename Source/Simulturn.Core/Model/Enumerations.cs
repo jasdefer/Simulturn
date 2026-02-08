@@ -1,4 +1,5 @@
 ﻿namespace Simulturn.Core.Model;
+
 public enum Unit
 {
     Dot,
