@@ -81,7 +81,6 @@ public static class Printer
 
             string hexagonColor = hexagonPlayers.Length == 1 ? playerColors[hexagonPlayers[0]] : _hexagonFillColor;
 
-            // Generate hand-drawn path
             double cx = _squareRootOfThree * _hexagonSize * (hexagon.X + hexagon.Z / 2.0);
             double cy = 1.5 * _hexagonSize * hexagon.Z;
 
@@ -165,12 +164,10 @@ public static class Printer
         double cx = center.x;
         double cy = center.y;
 
-        // 3) Available vertical space = s (rectangle height), minus tiny padding
         double padding = Math.Max(1, _hexagonStrokeWidth);
         double availableHeight = _hexagonSize - 2 * padding;
         double lineGapEm = 1.2;
 
-        // Font-size to fit vertically
         double fs = availableHeight / (info.Count * lineGapEm);
         if (double.IsNaN(fs) || fs <= 0)
         {

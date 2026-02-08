@@ -4,7 +4,7 @@ Use it as the default workflow and style baseline for this repository.
 
 ## Repository Snapshot
 - Solution: `Simulturn.sln`
-- Runtime: .NET 9 (`net9.0`)
+- Runtime: .NET 10 (`net10.0`)
 - Core project: `Source/Simulturn.Core/Simulturn.Core.csproj`
 - Test project: `Test/Simulturn.Core.Test/Simulturn.Core.Test.csproj`
 - Console project: `Test/Simulturn.Core.Console/Simulturn.Core.Console.csproj`
@@ -69,9 +69,8 @@ dotnet run --project Test/Simulturn.Core.Console/Simulturn.Core.Console.csproj
 ```
 
 ## Current Build Health
-At generation time, `dotnet test Simulturn.sln` failed to compile because of typoed
-named arguments (`valiateCommand`) in `Test/Simulturn.Core.Test/State/GameStateTest.cs`.
-If unchanged, expect test runs to fail until this is fixed.
+At generation time, `dotnet build Simulturn.sln` and
+`dotnet test Test/Simulturn.Core.Test/Simulturn.Core.Test.csproj` passed.
 
 ## Project Structure Expectations
 - Core game model types live in `Source/Simulturn.Core/Model/`

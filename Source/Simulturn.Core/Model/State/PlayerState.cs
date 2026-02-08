@@ -25,6 +25,7 @@ public record PlayerState
 
     public Army ExponentBonusFromUpgrades(GameSettings gameSettings)
     {
+        // TODO: Extend upgrade exponent bonuses to support all unit-specific upgrades.
         Army bonus = Army.Empty;
         Army player1Upgrades = Army.Empty;
         if (UpgradeLevels.TryGetValue(Upgrade.DotUpgrade, out byte dotUpgradeLevel))

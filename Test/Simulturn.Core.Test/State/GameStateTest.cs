@@ -570,7 +570,7 @@ public class GameStateTest
         ]);
 
         // Act
-        var turn3 = GetNextTurnAndValidate(turn1, commands, validateCommand: false);
+        var turn3 = GetNextTurnAndValidate(turn2, commands, validateCommand: false);
 
         // Assert
         turn1.PlayerStates["Player02"]
@@ -585,6 +585,71 @@ public class GameStateTest
             .Losses.Keys.ShouldContain(new Hexagon(0, 0));
         turn3.PlayerStates["Player01"]
             .Losses.Keys.ShouldContain(new Hexagon(0, 0));
+    }
+
+    [Test]
+    public void IncomeIsCappedByMaxNumberOfUnitsGeneratingMatter()
+    {
+        var builder = _gameSettings.HexagonSettings.ToBuilder();
+        builder[_player1Start] = new HexagonSettings()
+        {
+            IsBuildable = true,
+            Matter = 10000,
+            MaxNumberOfUnitsGeneratingMatter = new Army() { Dot = 3 },
+            PlayerInitialization = new("Player01", new Army() { Dot = 15 }, new Compound() { Plane = 1 })
+        };
+
+        var gameSettings = _gameSettings with
+        {
+            HexagonSettings = builder.ToImmutableDictionary()
+        };
+
+        var gameState = new GameState(gameSettings);
+        var turn1 = GetNextTurnAndValidate(gameState, _noCommands);
+
+        turn1.PlayerStates["Player01"].Matter.ShouldBe(gameSettings.StartMatter + 30);
+        turn1.RemainingMatter[_player1Start].ShouldBe(10000 - 30);
+    }
+
+    [Test]
+    public void ValidateReturnsInsufficientMatterWhenCombinedCostsExceedBudget()
+    {
+        var gameSettings = _gameSettings with
+        {
+            StartMatter = 200
+        };
+        var gameState = new GameState(gameSettings);
+
+        Dictionary<string, Dictionary<Hexagon, Command>> commands =
+            new Dictionary<string, Dictionary<Hexagon, Command>>()
+            {
+                {
+                    "Player01",
+                    Command.Create(
+                    [
+                        (
+                            _player1Start,
+                            new Command()
+                            {
+                                Training = new Army() { Dot = 1 },
+                                Construction = new Compound() { Pyramid = 1 }
+                            }
+                        )
+                    ])
+                }
+            };
+
+        var validations = gameState.Validate("Player01", commands["Player01"]);
+
+        validations.OfType<InsufficientMatter>().ShouldHaveSingleItem();
+    }
+
+    [Test]
+    public void NextTurnThrowsWhenTurnLimitIsReached()
+    {
+        var gameState = new GameState(_gameSettings) with { Turn = ushort.MaxValue };
+
+        Should.Throw<InvalidOperationException>(() => gameState.NextTurn(_noCommands));
     }
 
     [Test]
