@@ -8,7 +8,7 @@ public static class ArenaWorker
 {
     public static int Run(Dictionary<string, string> arguments)
     {
-        string playersArgument = arguments.GetValueOrDefault("players", "StateMachine,Random,Random:Aggressive,Idle");
+        string playersArgument = arguments.GetValueOrDefault("players", "Commander,StateMachine,Random,Random:Aggressive,Idle");
         var players = playersArgument.Split(',').Select(PlayerCatalog.Parse).ToList();
         if (players.Count < 2)
         {

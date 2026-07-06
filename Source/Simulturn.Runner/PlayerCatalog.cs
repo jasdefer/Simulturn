@@ -19,7 +19,8 @@ public static class PlayerCatalog
             "idle" => _ => new IdlePlayer(),
             "random" => seed => new RandomPlayer(seed, ParseRandomOptions(variant)),
             "statemachine" or "sm" => _ => new StateMachinePlayer(),
-            _ => throw new ArgumentException($"Unknown player '{specification}'. Known players: Idle, Random[:Uniform|Aggressive|Defensive|Expansive], StateMachine.")
+            "commander" => _ => new CommanderPlayer(),
+            _ => throw new ArgumentException($"Unknown player '{specification}'. Known players: Idle, Random[:Uniform|Aggressive|Defensive|Expansive], StateMachine, Commander.")
         };
         return new ArenaPlayer()
         {

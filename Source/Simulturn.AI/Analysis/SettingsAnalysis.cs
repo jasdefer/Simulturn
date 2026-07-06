@@ -33,4 +33,20 @@ public record SettingsAnalysis
     /// The cheapest building per provided space.
     /// </summary>
     public required Building SpaceBuilding { get; init; }
+
+    /// <summary>
+    /// Distributes a unit count evenly over the fighter types. Used to estimate an
+    /// enemy army when only its total count is known.
+    /// </summary>
+    public Army UniformFighterMix(int unitCount)
+    {
+        Army army = Army.Empty;
+        int perType = unitCount / Fighters.Length;
+        int remainder = unitCount % Fighters.Length;
+        for (int i = 0; i < Fighters.Length; i++)
+        {
+            army = army.AddUnit(Fighters[i], (short)(perType + (i < remainder ? 1 : 0)));
+        }
+        return army;
+    }
 }

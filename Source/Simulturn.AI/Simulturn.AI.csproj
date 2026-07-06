@@ -10,4 +10,8 @@
     <ProjectReference Include="..\Simulturn.Core\Simulturn.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Simulturn.AI.Test" />
+  </ItemGroup>
+
 </Project>
