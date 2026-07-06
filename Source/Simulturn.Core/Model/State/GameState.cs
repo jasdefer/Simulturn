@@ -46,6 +46,7 @@ public record GameState
                         : ImmutableDictionary<Upgrade, byte>.Empty
                 };
             });
+        PlayerStates = FogOfWar.UpdateMemories(PlayerStates, RemainingMatter, Turn);
         PlayerIds = PlayerStates.Keys.ToHashSet();
     }
 
@@ -308,10 +309,23 @@ public record GameState
         {
             throw new InvalidOperationException("Max turn limit reached.");
         }
+        ushort nextTurn = (ushort)(1 + Turn);
+        var newRemainingMatter = remainingMatter.ToImmutableDictionary();
+        var newPlayerStates = playerStates.ToImmutableDictionary(x => x.Key, x => x.Value.ToPlayerState(GameSettings));
+        newPlayerStates = FogOfWar.UpdateMemories(newPlayerStates, newRemainingMatter, nextTurn);
         return new GameState(GameSettings,
-            (ushort)(1 + Turn),
-            playerStates.ToImmutableDictionary(x => x.Key, x => x.Value.ToPlayerState(GameSettings)),
-            remainingMatter.ToImmutableDictionary());
+            nextTurn,
+            newPlayerStates,
+            newRemainingMatter);
+    }
+
+    /// <summary>
+    /// Builds the partially informed view of the game for a single player.
+    /// Clients and AI players must only receive this view, never the full game state.
+    /// </summary>
+    public PlayerGameState GetPlayerGameState(string playerId)
+    {
+        return FogOfWar.GetPlayerGameState(this, playerId);
     }
 
     private (Army lossesPlayer0, Army lossesPlayer1) Fight(string player1Id, Army army1, string player2Id, Army army2)

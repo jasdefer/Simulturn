@@ -23,6 +23,12 @@ public record PlayerState
     /// </summary>
     public ImmutableDictionary<Upgrade, byte> UpgradeLevels { get; init; } = ImmutableDictionary<Upgrade, byte>.Empty;
 
+    /// <summary>
+    /// What the player remembers about each hexagon from the last turn it was at least partially visible.
+    /// Hexagons that were never seen have no entry.
+    /// </summary>
+    public ImmutableDictionary<Hexagon, HexagonMemory> Memories { get; init; } = ImmutableDictionary<Hexagon, HexagonMemory>.Empty;
+
     public Army ExponentBonusFromUpgrades(GameSettings gameSettings)
     {
         // TODO: Extend upgrade exponent bonuses to support all unit-specific upgrades.
