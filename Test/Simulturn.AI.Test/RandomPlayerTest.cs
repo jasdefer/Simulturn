@@ -1,3 +1,4 @@
+using Simulturn.AI.Evaluation;
 using Simulturn.AI.Players;
 using Simulturn.Core.Extensions;
 using Simulturn.Core.Model;
@@ -97,6 +98,36 @@ public class RandomPlayerTest
                 onTurnCompleted: state => state.IsValid().ShouldBeEmpty($"Invalid state in game with seed {seed} on turn {state.Turn}"));
 
             result.Turns.ShouldBeGreaterThan((ushort)0);
+        }
+    }
+
+    /// <summary>
+    /// The validity contract must hold on every map preset, including maps without
+    /// expansions and maps with contested rich expansions.
+    /// </summary>
+    [Test]
+    public void RandomGames_AreValidOnEveryMapPreset()
+    {
+        GameSettings[] maps =
+        [
+            GameSettingsFactory.HexDisc(),
+            GameSettingsFactory.NoExpansion(),
+            GameSettingsFactory.RichExpansions()
+        ];
+        foreach (GameSettings gameSettings in maps)
+        {
+            for (int seed = 0; seed < 4; seed++)
+            {
+                var players = new Dictionary<string, IArtificialPlayer>()
+                {
+                    { "Player01", new RandomPlayer(seed) },
+                    { "Player02", new RandomPlayer(seed + 1000, RandomPlayerOptions.Aggressive) }
+                };
+                GameRunner.Run(gameSettings,
+                    players,
+                    maxTurns: 100,
+                    onTurnCompleted: state => state.IsValid().ShouldBeEmpty($"Invalid state with seed {seed} on turn {state.Turn}"));
+            }
         }
     }
 

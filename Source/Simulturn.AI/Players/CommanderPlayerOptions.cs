@@ -42,4 +42,10 @@ public record CommanderPlayerOptions : StateMachinePlayerOptions
     /// never blocked by missing space.
     /// </summary>
     public int SpaceBuffer { get; init; } = 12;
+
+    /// <summary>
+    /// Research upgrades only when at least this much matter is banked, so research
+    /// never starves the army production.
+    /// </summary>
+    public int ResearchMatterSurplus { get; init; } = 500;
 }

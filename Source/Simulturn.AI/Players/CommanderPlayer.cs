@@ -52,6 +52,9 @@ public class CommanderPlayer : IArtificialPlayer
         TrainWorkers(turn);
         // The economy mode sets the priority, it does not gate army production:
         // once the initial worker economy stands, the army grows continuously.
+        // Research before the army production: it is gated on banked matter, so it is
+        // only active when the income outruns the army spending anyway.
+        PlanResearch(turn);
         if (Economy != EconomyMode.Eco)
         {
             BuildArmy(turn);
@@ -477,6 +480,57 @@ public class CommanderPlayer : IArtificialPlayer
         }
     }
 
+    /// <summary>
+    /// Researches upgrades with banked matter. If no own dot stands on a researchable
+    /// hexagon yet, a single worker walks over (only while the economy is stable).
+    /// </summary>
+    private void PlanResearch(TurnPlan turn)
+    {
+        if (turn.View.PlayerState.Matter < _options.ResearchMatterSurplus)
+        {
+            return;
+        }
+        GameSettings gameSettings = turn.View.GameSettings;
+        PlayerState playerState = turn.View.PlayerState;
+        HashSet<Upgrade> pendingUpgrades = playerState.Researches
+            .Where(x => x.Key >= turn.View.Turn)
+            .SelectMany(x => x.Value.Values)
+            .ToHashSet();
+        var researchHexagons = gameSettings.HexagonSettings
+            .Where(x => !x.Value.ResearchableUpgrades.IsEmpty)
+            .Select(x => x.Key)
+            .OrderBy(x => x.DistanceTo(turn.MainBase))
+            .ThenBy(x => x.X).ThenBy(x => x.Y);
+        foreach (Hexagon hexagon in researchHexagons)
+        {
+            foreach (Upgrade upgrade in gameSettings.HexagonSettings[hexagon].ResearchableUpgrades.Distinct().OrderBy(x => x))
+            {
+                byte currentLevel = playerState.UpgradeLevels.GetValueOrDefault(upgrade);
+                int availableLevels = gameSettings.HexagonSettings[hexagon].ResearchableUpgrades.Count(x => x == upgrade);
+                if (pendingUpgrades.Contains(upgrade) ||
+                    currentLevel >= availableLevels ||
+                    currentLevel >= gameSettings.Upgrades[upgrade].Length)
+                {
+                    continue;
+                }
+                if (turn.Research(hexagon, upgrade))
+                {
+                    return;
+                }
+                // No dot on the hexagon yet: send a worker over, but only while not expanding
+                // (the expansion logic would redirect wandering workers anyway) and only to
+                // hexagons without visible enemies.
+                if (Economy == EconomyMode.BuildArmy &&
+                    turn.View.Observations[hexagon].OpponentUnitCounts.Values.Sum() == 0 &&
+                    turn.IdleWorkers(turn.MainBase) > 1)
+                {
+                    turn.Move(turn.MainBase, Navigation.StepToward(turn.View, turn.MainBase, hexagon), Army.FromUnit(_analysis!.Worker, 1));
+                    return;
+                }
+            }
+        }
+    }
+
     private void MarchFighters(TurnPlan turn, Hexagon target)
     {
         foreach (Hexagon hexagon in turn.OwnArmyHexagons)
@@ -528,14 +582,16 @@ public class CommanderPlayer : IArtificialPlayer
         {
             return _expansionTarget;
         }
-        // Expand away from the enemy first: exposed expansions just get razed.
+        // The richest hexagon first (contested wealth must be fought for), safety second:
+        // among equally rich spots, prefer the ones away from the enemy.
         List<Hexagon> knownEnemyCompounds = turn.View.Observations
             .Where(x => x.Value.OpponentCompounds.Any(y => !y.Value.IsEmpty))
             .Select(x => x.Key)
             .ToList();
         var candidates = turn.View.Observations.Keys
             .Where(x => IsExpansionCandidate(turn, x))
-            .OrderByDescending(x => knownEnemyCompounds.Count == 0 ? 0 : knownEnemyCompounds.Min(y => y.DistanceTo(x)))
+            .OrderByDescending(x => turn.View.Observations[x].RemainingMatter ?? turn.View.GameSettings.HexagonSettings[x].Matter)
+            .ThenByDescending(x => knownEnemyCompounds.Count == 0 ? 0 : knownEnemyCompounds.Min(y => y.DistanceTo(x)))
             .ThenBy(x => x.DistanceTo(turn.MainBase))
             .ThenBy(x => x.X).ThenBy(x => x.Y);
         return candidates.Cast<Hexagon?>().FirstOrDefault();

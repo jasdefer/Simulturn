@@ -33,10 +33,10 @@ public record PlayerState
     {
         // TODO: Extend upgrade exponent bonuses to support all unit-specific upgrades.
         Army bonus = Army.Empty;
-        Army player1Upgrades = Army.Empty;
-        if (UpgradeLevels.TryGetValue(Upgrade.DotUpgrade, out byte dotUpgradeLevel))
+        if (UpgradeLevels.TryGetValue(Upgrade.DotUpgrade, out byte dotUpgradeLevel) && dotUpgradeLevel > 0)
         {
-            player1Upgrades = player1Upgrades.AddUnit(Unit.Dot, ((DotUpgrade)gameSettings.Upgrades[Upgrade.DotUpgrade][dotUpgradeLevel]).ExponentBonus);
+            // A level of 1 means the first upgrade, which is at index 0.
+            bonus = bonus.AddUnit(Unit.Dot, ((DotUpgrade)gameSettings.Upgrades[Upgrade.DotUpgrade][dotUpgradeLevel - 1]).ExponentBonus);
         }
         return bonus;
     }

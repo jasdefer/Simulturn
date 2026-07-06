@@ -7,13 +7,74 @@ namespace Simulturn.AI.Evaluation;
 
 /// <summary>
 /// Creates standard game settings for evaluations until a real map generator exists.
+/// All maps are hexagon discs with two players starting on opposite edges; the presets
+/// differ in how matter and researchable upgrades are distributed.
 /// </summary>
 public static class GameSettingsFactory
 {
     /// <summary>
-    /// A symmetric hexagon disc with two players starting on opposite edges.
+    /// Matter on every hexagon, upgrades researchable in the center.
+    /// Expanding is always possible and never contested for long.
     /// </summary>
     public static GameSettings HexDisc(int radius = 3, int matterPerHexagon = 1500, int seed = 1)
+    {
+        Hexagon center = new(0, 0);
+        return Build(radius,
+            seed,
+            matterSelector: _ => matterPerHexagon,
+            researchSelector: hexagon => hexagon == center
+                ? [Upgrade.DotUpgrade, Upgrade.DotUpgrade]
+                : ImmutableArray<Upgrade>.Empty);
+    }
+
+    /// <summary>
+    /// All matter sits on the two starting hexagons, expanding is impossible.
+    /// Upgrades are researchable at home. A pure production and timing fight.
+    /// </summary>
+    public static GameSettings NoExpansion(int radius = 2, int startHexagonMatter = 12000, int seed = 1)
+    {
+        return Build(radius,
+            seed,
+            matterSelector: hexagon => IsStartingHexagon(radius, hexagon) ? startHexagonMatter : 0,
+            researchSelector: hexagon => IsStartingHexagon(radius, hexagon)
+                ? [Upgrade.DotUpgrade, Upgrade.DotUpgrade]
+                : ImmutableArray<Upgrade>.Empty);
+    }
+
+    /// <summary>
+    /// Small starting reserves, one safe home expansion per player and a rich contested
+    /// center where the upgrades are researchable. Expanding and fighting for the middle
+    /// is mandatory.
+    /// </summary>
+    public static GameSettings RichExpansions(int seed = 1)
+    {
+        const int radius = 3;
+        Hexagon center = new(0, 0);
+        var expansionMatter = new Dictionary<Hexagon, int>()
+        {
+            { new Hexagon(-2, 1), 4000 }, // home expansion of player 1
+            { new Hexagon(2, -1), 4000 }, // home expansion of player 2
+            { center, 6000 }
+        };
+        return Build(radius,
+            seed,
+            matterSelector: hexagon => IsStartingHexagon(radius, hexagon)
+                ? 2000
+                : expansionMatter.GetValueOrDefault(hexagon),
+            researchSelector: hexagon => hexagon == center
+                ? [Upgrade.DotUpgrade, Upgrade.DotUpgrade]
+                : ImmutableArray<Upgrade>.Empty);
+    }
+
+    private static bool IsStartingHexagon(int radius, Hexagon hexagon)
+    {
+        return hexagon.Y == 0 && Math.Abs(hexagon.X) == radius;
+    }
+
+    private static GameSettings Build(int radius,
+        int seed,
+        Func<Hexagon, int> matterSelector,
+        Func<Hexagon, ImmutableArray<Upgrade>> researchSelector)
     {
         Dictionary<Hexagon, HexagonSettings> hexagonSettings = [];
         for (short x = (short)-radius; x <= radius; x++)
@@ -27,9 +88,9 @@ public static class GameSettingsFactory
                 Hexagon hexagon = new(x, y);
                 hexagonSettings[hexagon] = new HexagonSettings()
                 {
-                    Matter = matterPerHexagon,
+                    Matter = matterSelector(hexagon),
                     MaxNumberOfUnitsGeneratingMatter = new Army() { Dot = 12 },
-                    ResearchableUpgrades = hexagon == new Hexagon(0, 0) ? [Upgrade.DotUpgrade, Upgrade.DotUpgrade] : [],
+                    ResearchableUpgrades = researchSelector(hexagon),
                     PlayerInitialization = hexagon switch
                     {
                         { Y: 0 } when hexagon.X == -radius => ("Player01", new Army() { Dot = 5 }, new Compound() { Plane = 1 }),

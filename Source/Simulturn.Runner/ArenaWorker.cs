@@ -21,12 +21,19 @@ public static class ArenaWorker
             MaxTurns = ushort.Parse(arguments.GetValueOrDefault("max-turns", "200")),
             Seed = int.Parse(arguments.GetValueOrDefault("seed", "0"))
         };
-        var gameSettings = GameSettingsFactory.HexDisc(
-            radius: int.Parse(arguments.GetValueOrDefault("radius", "3")),
-            matterPerHexagon: int.Parse(arguments.GetValueOrDefault("matter", "1500")));
+        string map = arguments.GetValueOrDefault("map", "disc").ToLowerInvariant();
+        var gameSettings = map switch
+        {
+            "disc" => GameSettingsFactory.HexDisc(
+                radius: int.Parse(arguments.GetValueOrDefault("radius", "3")),
+                matterPerHexagon: int.Parse(arguments.GetValueOrDefault("matter", "1500"))),
+            "noexpansion" => GameSettingsFactory.NoExpansion(),
+            "rich" => GameSettingsFactory.RichExpansions(),
+            _ => throw new ArgumentException($"Unknown map '{map}'. Known maps: disc, noexpansion, rich.")
+        };
 
         Console.WriteLine($"Arena: {players.Count} players, {options.GamesPerSeatPairing * 2} games per pairing, " +
-            $"max {options.MaxTurns} turns, map radius {arguments.GetValueOrDefault("radius", "3")}, seed {options.Seed}");
+            $"max {options.MaxTurns} turns, map {map}, seed {options.Seed}");
         Console.WriteLine();
 
         var stopwatch = Stopwatch.StartNew();

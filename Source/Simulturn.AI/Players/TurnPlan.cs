@@ -19,6 +19,7 @@ internal sealed class TurnPlan
     private readonly Dictionary<Hexagon, Army> _movedAway = [];
     private readonly Dictionary<Hexagon, int> _anchoredDots = [];
     private readonly Dictionary<Unit, int> _pendingUnitTrainings = [];
+    private (Hexagon Hexagon, Upgrade Upgrade)? _research;
     private int _reservedMatter;
 
     public PlayerGameState View { get; }
@@ -202,6 +203,50 @@ internal sealed class TurnPlan
         return count;
     }
 
+    /// <summary>
+    /// Researches an upgrade on the hexagon if it is affordable, a level is available there,
+    /// no research of the same upgrade is pending and a dot is present (one dot is anchored
+    /// to the hexagon, because the engine requires it for the whole research duration).
+    /// At most one research is issued per turn. Returns whether the research was issued.
+    /// </summary>
+    public bool Research(Hexagon hexagon, Upgrade upgrade)
+    {
+        if (_research is not null)
+        {
+            return false;
+        }
+        GameSettings gameSettings = View.GameSettings;
+        PlayerState playerState = View.PlayerState;
+        Army army = playerState.Armies.GetValueOrDefault(hexagon);
+        if (army.Dot - _movedAway.GetValueOrDefault(hexagon).Dot <= 0)
+        {
+            return false;
+        }
+        byte currentLevel = playerState.UpgradeLevels.GetValueOrDefault(upgrade);
+        int availableLevels = gameSettings.HexagonSettings[hexagon].ResearchableUpgrades.Count(x => x == upgrade);
+        if (currentLevel >= availableLevels || currentLevel >= gameSettings.Upgrades[upgrade].Length)
+        {
+            return false;
+        }
+        bool pending = playerState.Researches
+            .Where(x => x.Key >= View.Turn)
+            .SelectMany(x => x.Value.Values)
+            .Contains(upgrade);
+        if (pending)
+        {
+            return false;
+        }
+        short cost = gameSettings.Upgrades[upgrade][currentLevel].Cost;
+        if (Matter - _reservedMatter < cost)
+        {
+            return false;
+        }
+        _research = (hexagon, upgrade);
+        _anchoredDots[hexagon] = Math.Max(_anchoredDots.GetValueOrDefault(hexagon), 1);
+        Matter -= cost;
+        return true;
+    }
+
     public void Move(Hexagon from, Hexagon to, Army army)
     {
         if (army.IsEmpty || from == to)
@@ -229,6 +274,10 @@ internal sealed class TurnPlan
         IEnumerable<Hexagon> hexagons = _constructions.Keys
             .Union(_trainings.Keys)
             .Union(_movements.Keys);
+        if (_research is not null)
+        {
+            hexagons = hexagons.Union([_research.Value.Hexagon]);
+        }
         foreach (Hexagon hexagon in hexagons)
         {
             commands[hexagon] = new Command()
@@ -237,7 +286,8 @@ internal sealed class TurnPlan
                 Training = _trainings.GetValueOrDefault(hexagon),
                 MovementCommands = _movements.TryGetValue(hexagon, out var movements)
                     ? [.. movements]
-                    : []
+                    : [],
+                Upgrade = _research?.Hexagon == hexagon ? _research.Value.Upgrade : null
             };
         }
         return commands;

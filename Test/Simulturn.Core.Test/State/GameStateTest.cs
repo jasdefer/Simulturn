@@ -719,4 +719,26 @@ public class GameStateTest
         // Assert: training a dot on (0,0) is invalid (no plane there), but validation must report it instead of crashing
         validations.OfType<MissingBuildingForTraining>().ShouldHaveSingleItem();
     }
+
+    [Test]
+    public void ExponentBonusFromUpgradesAppliesResearchedLevels()
+    {
+        var gameState = new GameState(_gameSettings);
+        var playerState = gameState.PlayerStates["Player01"];
+
+        playerState.ExponentBonusFromUpgrades(_gameSettings).ShouldBe(Army.Empty);
+
+        var levelOne = playerState with
+        {
+            UpgradeLevels = new Dictionary<Upgrade, byte>() { { Upgrade.DotUpgrade, 1 } }.ToImmutableDictionary()
+        };
+        levelOne.ExponentBonusFromUpgrades(_gameSettings).ShouldBe(new Army() { Dot = 20 });
+
+        // The maximum level must use the last defined upgrade instead of indexing past the array.
+        var maxLevel = playerState with
+        {
+            UpgradeLevels = new Dictionary<Upgrade, byte>() { { Upgrade.DotUpgrade, 2 } }.ToImmutableDictionary()
+        };
+        maxLevel.ExponentBonusFromUpgrades(_gameSettings).ShouldBe(new Army() { Dot = 20 });
+    }
 }
