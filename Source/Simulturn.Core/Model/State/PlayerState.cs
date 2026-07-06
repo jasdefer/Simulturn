@@ -29,6 +29,13 @@ public record PlayerState
     /// </summary>
     public ImmutableDictionary<Hexagon, HexagonMemory> Memories { get; init; } = ImmutableDictionary<Hexagon, HexagonMemory>.Empty;
 
+    /// <summary>
+    /// The armies of other players this player fought against in the current turn, keyed by
+    /// hexagon and opponent id. Fighting reveals the full composition of the participating
+    /// armies (as they entered the fight, before losses).
+    /// </summary>
+    public ImmutableDictionary<Hexagon, ImmutableDictionary<string, Army>> RevealedArmies { get; init; } = ImmutableDictionary<Hexagon, ImmutableDictionary<string, Army>>.Empty;
+
     public Army ExponentBonusFromUpgrades(GameSettings gameSettings)
     {
         // TODO: Extend upgrade exponent bonuses to support all unit-specific upgrades.

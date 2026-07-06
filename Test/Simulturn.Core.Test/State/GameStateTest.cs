@@ -276,6 +276,16 @@ public class GameStateTest
             .ShouldBe(new Army() { Dot = 2 });
         turn1.PlayerStates["Player02"]
             .Armies.ShouldNotContainKey(new Hexagon(0, 0));
+
+        // Fighting reveals the pre-fight composition of the participating armies to each other.
+        turn1.PlayerStates["Player01"]
+            .RevealedArmies[new Hexagon(0, 0)]["Player02"].ShouldBe(new Army() { Dot = 3 });
+        turn1.PlayerStates["Player02"]
+            .RevealedArmies[new Hexagon(0, 0)]["Player01"].ShouldBe(new Army() { Dot = 5 });
+
+        // The revelation only lasts for the turn of the fight.
+        var turn2 = GetNextTurnAndValidate(turn1, _noCommands);
+        turn2.PlayerStates["Player01"].RevealedArmies.ShouldBeEmpty();
     }
 
     [Test]

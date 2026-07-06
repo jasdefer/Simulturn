@@ -19,8 +19,8 @@ public class CommanderPlayer : IArtificialPlayer
     public enum EconomyMode { Eco, Expand, BuildArmy }
     public enum MilitaryMode { Scout, Guard, Defend, Intercept, Attack, Raid, Sweep }
 
-    private readonly CommanderPlayerOptions _options;
-    private SettingsAnalysis? _analysis;
+    private protected readonly CommanderPlayerOptions _options;
+    private protected SettingsAnalysis? _analysis;
     private Hexagon? _expansionTarget;
     private int _lastObservedEnemyUnits = -1;
     private ushort _lastEnemyObservationTurn;
@@ -38,11 +38,29 @@ public class CommanderPlayer : IArtificialPlayer
     public IReadOnlyDictionary<Hexagon, Command> GetCommands(PlayerGameState playerGameState)
     {
         _analysis ??= GameSettingsAnalyzer.Analyze(playerGameState.GameSettings);
-        var turn = new TurnPlan(playerGameState, _analysis, _options);
         UpdateEnemyEstimate(playerGameState);
-        Economy = DecideEconomyMode(turn);
-        Military = DecideMilitaryMode(turn);
+        var probe = new TurnPlan(playerGameState, _analysis, _options);
+        Economy = DecideEconomyMode(probe);
+        Military = SelectMilitaryMode(playerGameState, probe);
+        return BuildTurnCommands(playerGameState, Military);
+    }
 
+    /// <summary>
+    /// Chooses the military mode. The base implementation applies the rules;
+    /// derived players may evaluate candidates differently.
+    /// </summary>
+    private protected virtual MilitaryMode SelectMilitaryMode(PlayerGameState view, TurnPlan probe)
+    {
+        return DecideMilitaryMode(probe);
+    }
+
+    /// <summary>
+    /// Produces the full command set of a turn for the given military mode.
+    /// Deterministic for the same view and mode, so candidate command sets can be generated repeatedly.
+    /// </summary>
+    private protected IReadOnlyDictionary<Hexagon, Command> BuildTurnCommands(PlayerGameState view, MilitaryMode militaryMode)
+    {
+        var turn = new TurnPlan(view, _analysis!, _options);
         if (Economy == EconomyMode.Expand)
         {
             Expand(turn);
@@ -61,17 +79,17 @@ public class CommanderPlayer : IArtificialPlayer
         }
         EnsureSpace(turn);
 
-        ExecuteMilitary(turn);
-        if (Military == MilitaryMode.Scout || IntelAge(turn) > _options.ScoutRefreshTurns)
+        ExecuteMilitary(turn, militaryMode);
+        if (militaryMode == MilitaryMode.Scout || IntelAge(turn) > _options.ScoutRefreshTurns)
         {
             SendScout(turn);
         }
         return turn.BuildCommands();
     }
 
-    private void ExecuteMilitary(TurnPlan turn)
+    private void ExecuteMilitary(TurnPlan turn, MilitaryMode militaryMode)
     {
-        switch (Military)
+        switch (militaryMode)
         {
             case MilitaryMode.Defend:
                 MarchFighters(turn, ThreatenedBase(turn) ?? turn.MainBase);
@@ -94,7 +112,7 @@ public class CommanderPlayer : IArtificialPlayer
         }
     }
 
-    private void UpdateEnemyEstimate(PlayerGameState view)
+    private protected virtual void UpdateEnemyEstimate(PlayerGameState view)
     {
         if (_lastObservedEnemyUnits < 0)
         {
@@ -126,7 +144,7 @@ public class CommanderPlayer : IArtificialPlayer
     /// with their count when defending; assuming the enemy runs a similar economy, up to the own
     /// worker count is modeled as workers and the remainder as a uniform fighter mix.
     /// </summary>
-    private Army EstimatedEnemyArmy(TurnPlan turn)
+    private protected virtual Army EstimatedEnemyArmy(TurnPlan turn)
     {
         int turnsSinceObservation = turn.View.Turn - _lastEnemyObservationTurn;
         int growth = Math.Min(_options.MaxAssumedEnemyGrowth, (int)(_options.EnemyGrowthPerTurn * turnsSinceObservation));
@@ -148,7 +166,7 @@ public class CommanderPlayer : IArtificialPlayer
         return EconomyMode.BuildArmy;
     }
 
-    private MilitaryMode DecideMilitaryMode(TurnPlan turn)
+    private protected MilitaryMode DecideMilitaryMode(TurnPlan turn)
     {
         if (ThreatenedBase(turn) is not null)
         {
@@ -215,7 +233,7 @@ public class CommanderPlayer : IArtificialPlayer
             turn.OwnCompoundHexagons.Any(x => x.DistanceTo(hexagon) <= 3);
     }
 
-    private Hexagon? IntruderHexagon(TurnPlan turn)
+    private protected Hexagon? IntruderHexagon(TurnPlan turn)
     {
         return turn.View.Observations.Keys
             .Where(x => IsIntruder(turn, x))
@@ -229,7 +247,7 @@ public class CommanderPlayer : IArtificialPlayer
     /// <summary>
     /// An outlying known enemy building hexagon, never the biggest known enemy base.
     /// </summary>
-    private Hexagon? RaidTarget(TurnPlan turn)
+    private protected Hexagon? RaidTarget(TurnPlan turn)
     {
         var known = turn.View.Observations
             .Where(x => x.Value.OpponentCompounds.Any(y => !y.Value.IsEmpty))
@@ -610,7 +628,7 @@ public class CommanderPlayer : IArtificialPlayer
             observation.OpponentUnitCounts.Values.Sum() == 0;
     }
 
-    private Hexagon? NearestKnownEnemyCompound(TurnPlan turn)
+    private protected Hexagon? NearestKnownEnemyCompound(TurnPlan turn)
     {
         return turn.View.Observations
             .Where(x => x.Value.OpponentCompounds.Any(y => !y.Value.IsEmpty))

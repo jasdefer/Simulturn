@@ -50,6 +50,19 @@ public record GameState
         PlayerIds = PlayerStates.Keys.ToHashSet();
     }
 
+    /// <summary>
+    /// Creates a game state from explicit parts. Intended for client side what-if simulation
+    /// of believed states (e.g. by AI players); real games only ever evolve through
+    /// <see cref="NextTurn"/>. The caller is responsible for the consistency of the parts.
+    /// </summary>
+    public static GameState FromParts(GameSettings gameSettings,
+        ushort turn,
+        ImmutableDictionary<string, PlayerState> playerStates,
+        ImmutableDictionary<Hexagon, int> remainingMatter)
+    {
+        return new GameState(gameSettings, turn, playerStates, remainingMatter);
+    }
+
     private GameState(GameSettings gameSettings,
         ushort turn,
         ImmutableDictionary<string, PlayerState> playerStates,
@@ -164,6 +177,24 @@ public record GameState
             {
                 continue;
             }
+
+            // Fighting reveals the participating armies to each other.
+            foreach ((string playerId, Army army) in armies)
+            {
+                if (!playerStates[playerId].RevealedArmies.TryGetValue(hexagon, out var revealed))
+                {
+                    revealed = [];
+                    playerStates[playerId].RevealedArmies[hexagon] = revealed;
+                }
+                foreach ((string otherPlayerId, Army otherArmy) in armies)
+                {
+                    if (otherPlayerId != playerId)
+                    {
+                        revealed[otherPlayerId] = otherArmy;
+                    }
+                }
+            }
+
             Dictionary<string, Army> losses = [];
             for (var i = 0; i < armies.Count - 1; i++)
             {
