@@ -691,4 +691,32 @@ public class GameStateTest
         (validations.ShouldHaveSingleItem()
              as InsufficientSpace)!.Required.ShouldBe(9 + 9);
     }
+
+    [Test]
+    public void ValidateHandlesPendingWorkOnOtherHexagons()
+    {
+        // Assign: a pending construction on the start hexagon and a dot on another hexagon
+        var gameState = new GameState(_gameSettings);
+        var commands = DictionaryExtensions.CommandsToDictionary([
+            ("Player01", _player1Start, new Command()
+            {
+                Construction = new Compound() { Pyramid = 1 },
+                MovementCommands = [new MovementCommand() { Army = new Army() { Dot = 1 }, Destination = new Hexagon(0, 0) }]
+            })
+        ]);
+        var turn1 = GetNextTurnAndValidate(gameState, commands);
+
+        // Act: commands on a hexagon without pending constructions or trainings must not throw
+        commands = DictionaryExtensions.CommandsToDictionary([
+            ("Player01", new Hexagon(0, 0), new Command()
+            {
+                Construction = new Compound() { Dome = 1 },
+                Training = new Army() { Dot = 1 }
+            })
+        ]);
+        var validations = turn1.Validate("Player01", commands["Player01"]).ToList();
+
+        // Assert: training a dot on (0,0) is invalid (no plane there), but validation must report it instead of crashing
+        validations.OfType<MissingBuildingForTraining>().ShouldHaveSingleItem();
+    }
 }

@@ -587,7 +587,7 @@ public record GameState
             {
                 Army trainings = playerState.Trainings
                     .Where(x => x.Key >= Turn)
-                    .Select(x => x.Value[hexagon])
+                    .Select(x => x.Value.GetValueOrDefault(hexagon))
                     .Sum();
                 trainings += command.Training;
                 foreach (var unit in _units)
@@ -606,12 +606,12 @@ public record GameState
             {
                 Compound constructions = playerState.Constructions
                     .Where(x => x.Key >= Turn)
-                    .Select(x => x.Value[hexagon])
+                    .Select(x => x.Value.GetValueOrDefault(hexagon))
                     .Sum();
                 constructions += command.Construction;
                 if (constructions.Sum() > playerState.Armies.GetValueOrDefault(hexagon)[Unit.Dot])
                 {
-                    yield return new MissingDotsForConstruction(playerId, hexagon, constructions, playerState.Armies[hexagon][Unit.Dot]);
+                    yield return new MissingDotsForConstruction(playerId, hexagon, constructions, playerState.Armies.GetValueOrDefault(hexagon)[Unit.Dot]);
                 }
             }
 
