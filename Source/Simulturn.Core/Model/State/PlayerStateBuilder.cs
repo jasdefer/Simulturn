@@ -20,6 +20,11 @@ public class PlayerStateBuilder
     /// </summary>
     public required ImmutableDictionary<Hexagon, HexagonMemory> Memories { get; init; }
 
+    /// <summary>
+    /// Reset every turn like the losses; filled during the fight resolution.
+    /// </summary>
+    public Dictionary<Hexagon, Dictionary<string, Army>> RevealedArmies { get; } = [];
+
     public PlayerState ToPlayerState(GameSettings gameSettings)
     {
         return new PlayerState()
@@ -44,7 +49,10 @@ public class PlayerStateBuilder
                 gameSettings.PartialVisibilityRange,
                 gameSettings.VisibilityRange),
             Losses = Losses.ToImmutableDictionary(),
-            Memories = Memories
+            Memories = Memories,
+            RevealedArmies = RevealedArmies.ToImmutableDictionary(
+                kvp => kvp.Key,
+                kvp => kvp.Value.ToImmutableDictionary())
         };
     }
 
