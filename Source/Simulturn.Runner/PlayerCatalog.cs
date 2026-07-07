@@ -21,7 +21,8 @@ public static class PlayerCatalog
             "statemachine" or "sm" => _ => new StateMachinePlayer(),
             "commander" => _ => new CommanderPlayer(),
             "simulator" => _ => new SimulatorPlayer(),
-            _ => throw new ArgumentException($"Unknown player '{specification}'. Known players: Idle, Random[:Uniform|Aggressive|Defensive|Expansive], StateMachine, Commander, Simulator.")
+            "tactician" => _ => new TacticianPlayer(),
+            _ => throw new ArgumentException($"Unknown player '{specification}'. Known players: Idle, Random[:Uniform|Aggressive|Defensive|Expansive], StateMachine, Commander, Simulator, Tactician.")
         };
         return new ArenaPlayer()
         {

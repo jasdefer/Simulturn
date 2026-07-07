@@ -1,4 +1,5 @@
 using Simulturn.AI.Analysis;
+using Simulturn.Core.Extensions;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
@@ -24,6 +25,12 @@ public class CommanderPlayer : IArtificialPlayer
     private Hexagon? _expansionTarget;
     private int _lastObservedEnemyUnits = -1;
     private ushort _lastEnemyObservationTurn;
+
+    /// <summary>
+    /// The composition of the enemy armies revealed by the last fight. Captured for all
+    /// commanders, but only successors use it to sharpen their estimates.
+    /// </summary>
+    private protected Army? RevealedEnemyComposition { get; private set; }
 
     public EconomyMode Economy { get; private set; } = EconomyMode.Eco;
     public MilitaryMode Military { get; private set; } = MilitaryMode.Scout;
@@ -114,6 +121,13 @@ public class CommanderPlayer : IArtificialPlayer
 
     private protected virtual void UpdateEnemyEstimate(PlayerGameState view)
     {
+        var revealed = view.PlayerState.RevealedArmies.Values
+            .SelectMany(x => x.Values)
+            .ToList();
+        if (revealed.Count > 0)
+        {
+            RevealedEnemyComposition = revealed.Sum();
+        }
         if (_lastObservedEnemyUnits < 0)
         {
             _lastObservedEnemyUnits = view.GameSettings.HexagonSettings.Values
@@ -151,6 +165,26 @@ public class CommanderPlayer : IArtificialPlayer
         int total = _lastObservedEnemyUnits + growth;
         int workers = Math.Min(total, turn.WorkerCount);
         return _analysis!.UniformFighterMix(total - workers).AddUnit(_analysis.Worker, (short)workers);
+    }
+
+    /// <summary>
+    /// Scales the last revealed enemy composition to the given estimated total count.
+    /// Returns the estimate unchanged when no fight revealed a composition yet.
+    /// </summary>
+    private protected Army ScaleToRevealedComposition(Army estimate)
+    {
+        if (RevealedEnemyComposition is not Army revealed || revealed.Total <= 0)
+        {
+            return estimate;
+        }
+        double scale = estimate.Total / (double)revealed.Total;
+        return new Army()
+        {
+            Dot = (short)Math.Round(revealed.Dot * scale),
+            Triangle = (short)Math.Round(revealed.Triangle * scale),
+            Circle = (short)Math.Round(revealed.Circle * scale),
+            Square = (short)Math.Round(revealed.Square * scale)
+        };
     }
 
     private EconomyMode DecideEconomyMode(TurnPlan turn)
@@ -413,7 +447,7 @@ public class CommanderPlayer : IArtificialPlayer
         }
     }
 
-    private void BuildArmy(TurnPlan turn)
+    private protected virtual void BuildArmy(TurnPlan turn)
     {
         GameSettings gameSettings = turn.View.GameSettings;
         foreach (Unit fighter in _analysis!.Fighters)

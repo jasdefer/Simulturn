@@ -16,7 +16,6 @@ namespace Simulturn.AI.Players;
 public class SimulatorPlayer : CommanderPlayer
 {
     private readonly SimulatorPlayerOptions _simulatorOptions;
-    private Army? _revealedEnemyComposition;
 
     public SimulatorPlayer(SimulatorPlayerOptions? options = null, string? name = null)
         : base(options ?? new SimulatorPlayerOptions(), name ?? "Simulator")
@@ -24,35 +23,10 @@ public class SimulatorPlayer : CommanderPlayer
         _simulatorOptions = options ?? new SimulatorPlayerOptions();
     }
 
-    private protected override void UpdateEnemyEstimate(PlayerGameState view)
-    {
-        base.UpdateEnemyEstimate(view);
-        // A fight reveals the true composition of the enemy army.
-        var revealed = view.PlayerState.RevealedArmies.Values
-            .SelectMany(x => x.Values)
-            .ToList();
-        if (revealed.Count > 0)
-        {
-            _revealedEnemyComposition = revealed.Sum();
-        }
-    }
-
     private protected override Army EstimatedEnemyArmy(TurnPlan turn)
     {
-        Army estimate = base.EstimatedEnemyArmy(turn);
-        if (_revealedEnemyComposition is not Army revealed || revealed.Total <= 0)
-        {
-            return estimate;
-        }
-        // Scale the last revealed composition to the currently estimated total count.
-        double scale = estimate.Total / (double)revealed.Total;
-        return new Army()
-        {
-            Dot = (short)Math.Round(revealed.Dot * scale),
-            Triangle = (short)Math.Round(revealed.Triangle * scale),
-            Circle = (short)Math.Round(revealed.Circle * scale),
-            Square = (short)Math.Round(revealed.Square * scale)
-        };
+        // A fight reveals the true composition of the enemy army.
+        return ScaleToRevealedComposition(base.EstimatedEnemyArmy(turn));
     }
 
     private protected override MilitaryMode SelectMilitaryMode(PlayerGameState view, TurnPlan probe)
