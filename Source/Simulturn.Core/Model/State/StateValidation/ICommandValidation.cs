@@ -17,6 +17,8 @@ public record MissingDotsForConstruction(string PlayerId, Hexagon Hexagon, Compo
 
 public record MissingArmyForMovement(string PlayerId, Hexagon Hexagon, Unit Unit, short MovingUnits, short AvailableUnits) : ICommandValidation;
 
+public record MovementExceedsRange(string PlayerId, Hexagon Hexagon, Hexagon Destination, Unit Unit, int Distance, short Range) : ICommandValidation;
+
 public record UpgradeExceedsAvailableLevel(string PlayerId, Hexagon Hexagon, Upgrade Upgrade, byte CurrentLevel, int AvailableLevel) : ICommandValidation, IPlayerStateValidation;
 
 public record UpgradeRequiresDot(string PlayerId, Hexagon Hexagon, Upgrade Upgrade) : ICommandValidation, IPlayerStateValidation;

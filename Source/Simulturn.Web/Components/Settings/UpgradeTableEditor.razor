@@ -1,0 +1,64 @@
+@* Upgrade level tables: each row is one researchable level of the upgrade. *@
+
+<MudText Typo="Typo.subtitle1" Style="font-weight: 600;" Class="mb-1">Dot upgrade (fight exponent bonus)</MudText>
+<MudSimpleTable Dense="true" Class="settings-table mb-2">
+    <thead>
+        <tr><th>Level</th><th>Cost ◈</th><th>Duration ↻</th><th>Exponent bonus (×100)</th><th></th></tr>
+    </thead>
+    <tbody>
+        @for (int i = 0; i < Draft.DotUpgrades.Count; i++)
+        {
+            int index = i;
+            var row = Draft.DotUpgrades[index];
+            <tr>
+                <td>@(index + 1)</td>
+                <td><MudNumericField T="int" @bind-Value="row.Cost" Min="0" Variant="Variant.Text" Margin="Margin.Dense" HideSpinButtons="true" /></td>
+                <td><MudNumericField T="int" @bind-Value="row.Duration" Min="1" Variant="Variant.Text" Margin="Margin.Dense" HideSpinButtons="true" /></td>
+                <td><MudNumericField T="int" @bind-Value="row.ExponentBonus" Min="0" Variant="Variant.Text" Margin="Margin.Dense" HideSpinButtons="true" /></td>
+                <td>
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small"
+                                   OnClick="() => Draft.DotUpgrades.RemoveAt(index)" />
+                </td>
+            </tr>
+        }
+    </tbody>
+</MudSimpleTable>
+<MudButton StartIcon="@Icons.Material.Filled.Add" Size="Size.Small"
+           OnClick="() => Draft.DotUpgrades.Add(new DotUpgradeDraft { Cost = 150, Duration = 3, ExponentBonus = 20 })">
+    Add level
+</MudButton>
+
+<MudText Typo="Typo.subtitle1" Style="font-weight: 600;" Class="mt-6 mb-1">Start matter upgrade</MudText>
+<MudText Typo="Typo.caption" Class="mud-text-secondary d-block mb-1">
+    Defined in the engine but not applied by turn resolution yet — editable for future use.
+</MudText>
+<MudSimpleTable Dense="true" Class="settings-table mb-2">
+    <thead>
+        <tr><th>Level</th><th>Cost ◈</th><th>Duration ↻</th><th>Matter</th><th></th></tr>
+    </thead>
+    <tbody>
+        @for (int i = 0; i < Draft.StartMatterUpgrades.Count; i++)
+        {
+            int index = i;
+            var row = Draft.StartMatterUpgrades[index];
+            <tr>
+                <td>@(index + 1)</td>
+                <td><MudNumericField T="int" @bind-Value="row.Cost" Min="0" Variant="Variant.Text" Margin="Margin.Dense" HideSpinButtons="true" /></td>
+                <td><MudNumericField T="int" @bind-Value="row.Duration" Min="1" Variant="Variant.Text" Margin="Margin.Dense" HideSpinButtons="true" /></td>
+                <td><MudNumericField T="int" @bind-Value="row.Matter" Min="0" Variant="Variant.Text" Margin="Margin.Dense" HideSpinButtons="true" /></td>
+                <td>
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small"
+                                   OnClick="() => Draft.StartMatterUpgrades.RemoveAt(index)" />
+                </td>
+            </tr>
+        }
+    </tbody>
+</MudSimpleTable>
+<MudButton StartIcon="@Icons.Material.Filled.Add" Size="Size.Small"
+           OnClick="() => Draft.StartMatterUpgrades.Add(new StartMatterUpgradeDraft { Cost = 100, Duration = 2, Matter = 200 })">
+    Add level
+</MudButton>
+
+@code {
+    [Parameter, EditorRequired] public SettingsDraft Draft { get; set; } = default!;
+}

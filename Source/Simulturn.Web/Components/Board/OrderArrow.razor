@@ -1,0 +1,36 @@
+@* A movement order: visible curved arrow, invisible wide hit path, and an army-label pill. *@
+
+<g class="order-arrow @(Arrow.Kind == ArrowKind.Staged ? "arrow-staged" : "arrow-executed")"
+   style="color: var(--player-@Arrow.PlayerIndex)">
+    <path class="arrow-path" d="@Path" stroke="var(--player-@Arrow.PlayerIndex)"
+          marker-end="url(#arrow-p@(Arrow.PlayerIndex))" />
+    @if (Arrow.Kind == ArrowKind.Staged && !ReadOnly)
+    {
+        <path class="arrow-hit" d="@Path"
+              @onclick="() => OnClick.InvokeAsync(Arrow)"
+              @onclick:stopPropagation="true" />
+    }
+    <g class="arrow-label-group" pointer-events="none">
+        <rect class="arrow-label-bg"
+              x="@HexLayout.Svg(Midpoint.X - LabelWidth / 2)"
+              y="@HexLayout.Svg(Midpoint.Y - 15)"
+              width="@HexLayout.Svg(LabelWidth)"
+              height="30" rx="8" />
+        @BoardSvg.Text("arrow-label", Midpoint.X, Midpoint.Y + 7, Label)
+    </g>
+</g>
+
+@code {
+    [Parameter, EditorRequired] public OrderArrowView Arrow { get; set; } = default!;
+    [Parameter] public double LaneOffset { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public EventCallback<OrderArrowView> OnClick { get; set; }
+
+    private string Path => HexLayout.ArrowPath(Arrow.From, Arrow.To, LaneOffset);
+
+    private (double X, double Y) Midpoint => HexLayout.ArrowMidpoint(Arrow.From, Arrow.To, LaneOffset);
+
+    private string Label => BoardGlyphs.CompactLabel(Arrow.Army);
+
+    private double LabelWidth => Math.Max(34, Label.Length * 11 + 16);
+}

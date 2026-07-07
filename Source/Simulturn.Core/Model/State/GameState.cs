@@ -587,7 +587,7 @@ public record GameState
             {
                 Army trainings = playerState.Trainings
                     .Where(x => x.Key >= Turn)
-                    .Select(x => x.Value[hexagon])
+                    .Select(x => x.Value.GetValueOrDefault(hexagon))
                     .Sum();
                 trainings += command.Training;
                 foreach (var unit in _units)
@@ -606,12 +606,12 @@ public record GameState
             {
                 Compound constructions = playerState.Constructions
                     .Where(x => x.Key >= Turn)
-                    .Select(x => x.Value[hexagon])
+                    .Select(x => x.Value.GetValueOrDefault(hexagon))
                     .Sum();
                 constructions += command.Construction;
                 if (constructions.Sum() > playerState.Armies.GetValueOrDefault(hexagon)[Unit.Dot])
                 {
-                    yield return new MissingDotsForConstruction(playerId, hexagon, constructions, playerState.Armies[hexagon][Unit.Dot]);
+                    yield return new MissingDotsForConstruction(playerId, hexagon, constructions, playerState.Armies.GetValueOrDefault(hexagon)[Unit.Dot]);
                 }
             }
 
@@ -623,6 +623,19 @@ public record GameState
                 if (departingArmy[unit] > availableArmy[unit])
                 {
                     yield return new MissingArmyForMovement(playerId, hexagon, unit, departingArmy[unit], availableArmy[unit]);
+                }
+            }
+
+            // Movement stays within each unit type's range
+            foreach (var movement in command.MovementCommands)
+            {
+                int distance = hexagon.DistanceTo(movement.Destination);
+                foreach (var unit in _units)
+                {
+                    if (movement.Army[unit] > 0 && distance > GameSettings.MovementRange[unit])
+                    {
+                        yield return new MovementExceedsRange(playerId, hexagon, movement.Destination, unit, distance, GameSettings.MovementRange[unit]);
+                    }
                 }
             }
 

@@ -1,0 +1,90 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+}
+
+.app-bar-blur {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.game-viewport {
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Player palette — matches Simulturn.Core Printer.cs conventions. */
+:root {
+    --player-0: #fbc02d;
+    --player-1: #2d67fb;
+    --player-2: #F44336;
+    --player-3: #4CAF50;
+}
+
+.game-over-banner {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--mud-palette-background) 55%, transparent);
+    backdrop-filter: blur(2px);
+    animation: fade-in 0.2s ease-out;
+}
+
+@keyframes fade-in {
+    from { opacity: 0; }
+}
+
+.player-chip-clickable {
+    cursor: pointer;
+    transition: box-shadow 0.12s ease, background 0.12s ease;
+}
+
+.player-chip-clickable:hover {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--mud-palette-text-primary) 20%, transparent);
+}
+
+.handoff-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: var(--mud-palette-background);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.settings-table th {
+    text-align: left;
+    white-space: nowrap;
+}
+
+.settings-table td {
+    max-width: 130px;
+}
+
+#blazor-error-ui {
+    background: lightyellow;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+}

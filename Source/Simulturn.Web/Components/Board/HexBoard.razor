@@ -1,0 +1,101 @@
+@* The game board: a single SVG scaled entirely by its viewBox. Controlled component —
+   selection and highlights come down as parameters, click intents go up as events. *@
+
+<svg class="hex-board"
+     viewBox="@Board.Bounds.ViewBox"
+     preserveAspectRatio="xMidYMid meet"
+     tabindex="0"
+     @onclick="HandleBackgroundClick"
+     @onkeydown="HandleKeyDown"
+     @oncontextmenu="HandleCancel"
+     @oncontextmenu:preventDefault="true">
+
+    <BoardDefs />
+
+    <g class="tile-layer">
+        @foreach (var hex in Board.Hexes)
+        {
+            <HexTile @key="hex.Hex"
+                     View="hex"
+                     IsSelected="SelectedHex == hex.Hex"
+                     IsCandidate="DestinationCandidates.Contains(hex.Hex)"
+                     IsHovered="HoveredHex == hex.Hex"
+                     ReadOnly="ReadOnly"
+                     OnClick="OnHexClicked" />
+        }
+    </g>
+
+    <g class="arrow-layer">
+        @foreach (var (arrow, laneOffset) in ArrowsWithLanes())
+        {
+            <OrderArrow @key="arrow.Id"
+                        Arrow="arrow"
+                        LaneOffset="laneOffset"
+                        ReadOnly="ReadOnly"
+                        OnClick="OnArrowClicked" />
+        }
+    </g>
+
+    @if (OverlayAnchor is { } anchor && OverlayEditor is not null)
+    {
+        var (x, y) = OverlayPosition(anchor);
+        <foreignObject x="@HexLayout.Svg(x)" y="@HexLayout.Svg(y)"
+                       width="@HexLayout.Svg(OverlayWidth)" height="@HexLayout.Svg(OverlayHeight)"
+                       @onclick:stopPropagation="true">
+            <div xmlns="http://www.w3.org/1999/xhtml" class="board-overlay-editor">
+                @OverlayEditor
+            </div>
+        </foreignObject>
+    }
+</svg>
+
+@code {
+    private const double OverlayWidth = 340;
+    private const double OverlayHeight = 330;
+
+    [Parameter, EditorRequired] public BoardView Board { get; set; } = default!;
+    [Parameter] public Hexagon? SelectedHex { get; set; }
+    [Parameter] public IReadOnlySet<Hexagon> DestinationCandidates { get; set; } = ImmutableHashSet<Hexagon>.Empty;
+    [Parameter] public Hexagon? HoveredHex { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public EventCallback<Hexagon> OnHexClicked { get; set; }
+    [Parameter] public EventCallback<OrderArrowView> OnArrowClicked { get; set; }
+    [Parameter] public EventCallback OnCancelRequested { get; set; }
+    [Parameter] public RenderFragment? OverlayEditor { get; set; }
+    [Parameter] public Hexagon? OverlayAnchor { get; set; }
+
+    /// <summary>Assigns lane offsets so multiple players' arrows on the same directed pair don't overlap.</summary>
+    private IEnumerable<(OrderArrowView Arrow, double LaneOffset)> ArrowsWithLanes()
+    {
+        foreach (var group in Board.Arrows.GroupBy(arrow => (arrow.From, arrow.To)))
+        {
+            var arrows = group.ToList();
+            for (int lane = 0; lane < arrows.Count; lane++)
+            {
+                yield return (arrows[lane], (lane - (arrows.Count - 1) / 2.0) * 16);
+            }
+        }
+    }
+
+    /// <summary>Overlay editor position: flipped toward the board center so it never clips the viewBox edge.</summary>
+    private (double X, double Y) OverlayPosition(Hexagon anchor)
+    {
+        (double anchorX, double anchorY) = HexLayout.Center(anchor);
+        double x = anchorX < Board.Bounds.MinX + Board.Bounds.Width / 2
+            ? anchorX + 80
+            : anchorX - 80 - OverlayWidth;
+        double y = anchorY < Board.Bounds.MinY + Board.Bounds.Height / 2
+            ? anchorY - 40
+            : anchorY + 40 - OverlayHeight;
+        return (x, y);
+    }
+
+    private Task HandleBackgroundClick() =>
+        ReadOnly ? Task.CompletedTask : OnCancelRequested.InvokeAsync();
+
+    private Task HandleKeyDown(KeyboardEventArgs args) =>
+        args.Key == "Escape" && !ReadOnly ? OnCancelRequested.InvokeAsync() : Task.CompletedTask;
+
+    private Task HandleCancel() =>
+        ReadOnly ? Task.CompletedTask : OnCancelRequested.InvokeAsync();
+}

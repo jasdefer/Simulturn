@@ -1,0 +1,62 @@
+@inject GameSession Session
+
+@* Research tab: pick the upgrade to research on this hex (one per hex per turn).
+   Requires a dot on the hex; levels are limited by the hex's researchable upgrades. *@
+
+@{
+    var settings = Session.Current.GameSettings;
+    var playerState = Session.Current.PlayerStates[PlayerId];
+    var researchable = settings.HexagonSettings[Hexagon].ResearchableUpgrades;
+    var draft = Session.GetDraft(PlayerId, Hexagon);
+    Upgrade? selected = draft?.Upgrade;
+}
+
+@if (researchable.IsEmpty)
+{
+    <MudAlert Severity="Severity.Info" Dense="true">Nothing can be researched on this hex.</MudAlert>
+}
+else
+{
+    @foreach (var upgrade in researchable.Distinct())
+    {
+        byte currentLevel = playerState.UpgradeLevels.GetValueOrDefault(upgrade);
+        int availableLevels = researchable.Count(entry => entry == upgrade);
+        bool maxed = currentLevel >= availableLevels;
+        var nextLevel = maxed ? null : settings.Upgrades[upgrade][currentLevel];
+        <MudPaper Elevation="0" Outlined="true" Class="pa-3 mb-2" Style="border-radius: 8px;">
+            <div class="d-flex align-center gap-2">
+                <MudCheckBox T="bool"
+                             Value="selected == upgrade"
+                             ValueChanged="isChecked => Set(upgrade, isChecked)"
+                             Disabled="maxed"
+                             Dense="true" />
+                <div>
+                    <MudText Typo="Typo.body2" Style="font-weight: 600;">@UpgradeInfo.DisplayName(upgrade)</MudText>
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary d-block">
+                        @UpgradeInfo.Describe(upgrade)
+                    </MudText>
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                        Level @currentLevel / @availableLevels
+                        @if (nextLevel is not null)
+                        {
+                            <span> · next: @UpgradeInfo.DescribeLevel(nextLevel) · ◈ @nextLevel.Cost · ↻ @nextLevel.Duration turn(s)</span>
+                        }
+                        else
+                        {
+                            <span> · fully researched here</span>
+                        }
+                    </MudText>
+                </div>
+            </div>
+        </MudPaper>
+    }
+    <MudText Typo="Typo.caption" Class="mud-text-secondary">Research requires a dot (•) on the hex.</MudText>
+}
+
+@code {
+    [Parameter, EditorRequired] public string PlayerId { get; set; } = default!;
+    [Parameter, EditorRequired] public Hexagon Hexagon { get; set; }
+
+    private void Set(Upgrade upgrade, bool isChecked) =>
+        Session.UpdateDraft(PlayerId, Hexagon, draft => draft.Upgrade = isChecked ? upgrade : null);
+}

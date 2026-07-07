@@ -1,0 +1,85 @@
+@page "/board-preview"
+@inject BoardProjector Projector
+
+@* Dev tool: renders the board for a freshly generated default game without needing a session.
+   Handy for visually checking board rendering and map generation (?seed=&radius=&players=). *@
+
+<PageTitle>Simulturn — Board preview</PageTitle>
+
+<div style="height: calc(100vh - 70px); padding: 12px;">
+    <HexBoard Board="_board" ReadOnly="true" />
+</div>
+
+@code {
+    [SupplyParameterFromQuery] public int? Seed { get; set; }
+    [SupplyParameterFromQuery] public int? Radius { get; set; }
+    [SupplyParameterFromQuery] public int? Players { get; set; }
+
+    /// <summary>?orders=1 stages sample orders and an in-progress queue to preview arrows and ghosts.</summary>
+    [SupplyParameterFromQuery] public int? Orders { get; set; }
+
+    /// <summary>?viewer=N renders the board fog-filtered through player N's eyes (1-based).</summary>
+    [SupplyParameterFromQuery] public int? Viewer { get; set; }
+
+    private BoardView _board = default!;
+
+    protected override void OnParametersSet()
+    {
+        int seed = Seed ?? 1;
+        var playerNames = Enumerable.Range(1, Math.Clamp(Players ?? 2, 1, 4)).Select(i => $"Player {i}").ToList();
+        var settings = DefaultSettings.Standard(playerNames, seed) with
+        {
+            HexagonSettings = MapGeneratorService.Generate(
+                new MapGeneratorOptions
+                {
+                    Seed = seed,
+                    Radius = Radius ?? 4,
+                    StartRingRadius = Math.Max(1, (Radius ?? 4) - 1),
+                },
+                playerNames),
+        };
+        var state = new GameState(settings);
+
+        if (Viewer is { } viewerNumber)
+        {
+            string viewerId = playerNames[Math.Clamp(viewerNumber, 1, playerNames.Count) - 1];
+            _board = Projector.ProjectPlayerView(state.GetPlayerGameState(viewerId));
+            return;
+        }
+
+        if (Orders is not 1)
+        {
+            _board = Projector.ProjectGodMode(state);
+            return;
+        }
+
+        // Advance one turn with a queued construction so an in-progress ghost is visible...
+        var starts = playerNames.ToDictionary(
+            player => player,
+            player => state.PlayerStates[player].Compounds.Keys.Single());
+        var firstTurn = new Dictionary<string, Dictionary<Hexagon, Command>>
+        {
+            [playerNames[0]] = new()
+            {
+                [starts[playerNames[0]]] = new Command { Construction = new Compound { Axis = 1 } },
+            },
+        };
+        state = state.NextTurn(firstTurn);
+
+        // ...then stage draft orders on top: movements, a training, a construction.
+        var drafts = new Dictionary<string, Dictionary<Hexagon, DraftCommand>>();
+        foreach (var player in playerNames)
+        {
+            var start = starts[player];
+            var draft = new DraftCommand();
+            draft.UpsertMovement(new Hexagon(0, 0), new ArmyDraft { Dot = 2 });
+            draft.Training.Dot = 2;
+            if (player == playerNames[0])
+            {
+                draft.Construction.Dome = 1;
+            }
+            drafts[player] = new Dictionary<Hexagon, DraftCommand> { [start] = draft };
+        }
+        _board = Projector.ProjectGodMode(state, drafts);
+    }
+}

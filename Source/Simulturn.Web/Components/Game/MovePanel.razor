@@ -1,0 +1,62 @@
+@inject GameSession Session
+@inject GameViewState ViewState
+
+@* Movement tab: staged movement orders from this hex + starting a new one (click-click flow). *@
+
+@{
+    var available = Session.AvailableArmyForMovement(PlayerId, Hexagon);
+    var movements = Session.GetDraft(PlayerId, Hexagon)?.Movements ?? [];
+    bool awaitingDestination = ViewState.MovementSource == Hexagon && ViewState.MovementDestination is null;
+}
+
+<div class="d-flex align-center gap-2 mb-2">
+    <MudText Typo="Typo.body2" Class="mud-text-secondary">Available:</MudText>
+    <ArmyDisplay Army="available" />
+</div>
+
+@if (movements.Count > 0)
+{
+    <MudText Typo="Typo.overline" Class="mud-text-secondary">Staged movements</MudText>
+    @foreach (var movement in movements)
+    {
+        <div class="d-flex align-center gap-2 mb-1">
+            <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small" />
+            <MudText Typo="Typo.body2">(@movement.Destination.X, @movement.Destination.Y)</MudText>
+            <ArmyDisplay Army="movement.Army.ToArmy()" />
+            <MudSpacer />
+            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                           OnClick="() => ViewState.EditMovement(Hexagon, movement.Destination)" />
+            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small"
+                           OnClick="() => RemoveMovement(movement.Destination)" />
+        </div>
+    }
+}
+
+@if (awaitingDestination)
+{
+    <MudAlert Severity="Severity.Info" Dense="true" Class="mt-2">
+        Click a destination hex on the board — or press Escape to cancel.
+    </MudAlert>
+}
+else
+{
+    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
+               StartIcon="@Icons.Material.Filled.OpenWith"
+               Class="mt-2"
+               Disabled="available.IsEmpty"
+               OnClick="() => ViewState.BeginMovement(Hexagon)">
+        Move units
+    </MudButton>
+    @if (available.IsEmpty && movements.Count == 0)
+    {
+        <MudText Typo="Typo.body2" Class="mud-text-secondary mt-2">No units on this hex.</MudText>
+    }
+}
+
+@code {
+    [Parameter, EditorRequired] public string PlayerId { get; set; } = default!;
+    [Parameter, EditorRequired] public Hexagon Hexagon { get; set; }
+
+    private void RemoveMovement(Hexagon destination) =>
+        Session.UpdateDraft(PlayerId, Hexagon, draft => draft.UpsertMovement(destination, new ArmyDraft()));
+}

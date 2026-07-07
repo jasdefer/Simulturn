@@ -1,0 +1,36 @@
+@* One table edits all six per-unit settings vectors at once: rows = units, columns = knobs. *@
+
+<MudSimpleTable Dense="true" Class="settings-table">
+    <thead>
+        <tr>
+            <th>Unit</th>
+            <th><MudTooltip Text="Matter cost per unit">Cost ◈</MudTooltip></th>
+            <th><MudTooltip Text="Supply used per unit">Space ⌂</MudTooltip></th>
+            <th><MudTooltip Text="Turns to train">Training ↻</MudTooltip></th>
+            <th><MudTooltip Text="Max hexagons moved per turn">Move range</MudTooltip></th>
+            <th><MudTooltip Text="Matter harvested per turn (needs a Plane on the hex)">Income</MudTooltip></th>
+            <th><MudTooltip Text="Damage against enemy buildings">Structure dmg</MudTooltip></th>
+            <th><MudTooltip Text="Fight exponent ×100 (120 = 1.2)">Fight exp</MudTooltip></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var unit in BoardGlyphs.Units)
+        {
+            var row = Draft.Units[unit];
+            <tr>
+                <td>@BoardGlyphs.TextGlyph(unit) @BoardGlyphs.DisplayName(unit)</td>
+                <td><MudNumericField T="int" @bind-Value="row.Cost" Min="0" Variant="Variant.Text" Margin="Margin.Dense" HideSpinButtons="true" /></td>
+                <td><MudNumericField T="int" @bind-Value="row.RequiredSpace" Min="0" Variant="Variant.Text" Margin="Margin.Dense" HideSpinButtons="true" /></td>
+                <td><MudNumericField T="int" @bind-Value="row.TrainingDuration" Min="1" Variant="Variant.Text" Margin="Margin.Dense" HideSpinButtons="true" /></td>
+                <td><MudNumericField T="int" @bind-Value="row.MovementRange" Min="0" Variant="Variant.Text" Margin="Margin.Dense" HideSpinButtons="true" /></td>
+                <td><MudNumericField T="int" @bind-Value="row.Income" Min="0" Variant="Variant.Text" Margin="Margin.Dense" HideSpinButtons="true" /></td>
+                <td><MudNumericField T="int" @bind-Value="row.StructureDamage" Min="0" Variant="Variant.Text" Margin="Margin.Dense" HideSpinButtons="true" /></td>
+                <td><MudNumericField T="int" @bind-Value="row.FightExponent" Min="0" Variant="Variant.Text" Margin="Margin.Dense" HideSpinButtons="true" /></td>
+            </tr>
+        }
+    </tbody>
+</MudSimpleTable>
+
+@code {
+    [Parameter, EditorRequired] public SettingsDraft Draft { get; set; } = default!;
+}

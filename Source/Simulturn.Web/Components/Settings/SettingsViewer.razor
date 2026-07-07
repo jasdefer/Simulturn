@@ -1,0 +1,95 @@
+@using Simulturn.Core.Model.Upgrades
+
+@* Read-only overview of a GameSettings instance — linked from the game screen so the active
+   rules are always inspectable. Reusable anywhere a settings summary is needed. *@
+
+<MudText Typo="Typo.subtitle1" Style="font-weight: 600;" Class="mb-1">General</MudText>
+<div class="d-flex gap-6 flex-wrap mb-4" style="font-variant-numeric: tabular-nums;">
+    <MudText Typo="Typo.body2">Start matter: ◈ @Settings.StartMatter</MudText>
+    <MudText Typo="Typo.body2">Seed: @Settings.Seed</MudText>
+    <MudText Typo="Typo.body2">Visibility range: @Settings.VisibilityRange</MudText>
+    <MudText Typo="Typo.body2">Partial visibility range: @Settings.PartialVisibilityRange</MudText>
+    <MudText Typo="Typo.body2">Hexagons: @Settings.HexagonSettings.Count</MudText>
+</div>
+
+<MudText Typo="Typo.subtitle1" Style="font-weight: 600;" Class="mb-1">Units</MudText>
+<MudSimpleTable Dense="true" Class="settings-table mb-4">
+    <thead>
+        <tr>
+            <th>Unit</th><th>Cost ◈</th><th>Space ⌂</th><th>Training ↻</th>
+            <th>Move range</th><th>Income</th><th>Structure dmg</th><th>Fight exp (×100)</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var unit in BoardGlyphs.Units)
+        {
+            <tr style="font-variant-numeric: tabular-nums;">
+                <td>@BoardGlyphs.TextGlyph(unit) @BoardGlyphs.DisplayName(unit)</td>
+                <td>@Settings.ArmyCost[unit]</td>
+                <td>@Settings.RequiredSpace[unit]</td>
+                <td>@Settings.TrainingDuration[unit]</td>
+                <td>@Settings.MovementRange[unit]</td>
+                <td>@Settings.Income[unit]</td>
+                <td>@Settings.StructureDamage[unit]</td>
+                <td>@Settings.FightExponent[unit]</td>
+            </tr>
+        }
+    </tbody>
+</MudSimpleTable>
+
+<MudText Typo="Typo.subtitle1" Style="font-weight: 600;" Class="mb-1">Buildings</MudText>
+<MudSimpleTable Dense="true" Class="settings-table mb-4">
+    <thead>
+        <tr><th>Building</th><th>Cost ◈</th><th>Space ⌂</th><th>Build ↻</th><th>Armor</th><th>Role</th></tr>
+    </thead>
+    <tbody>
+        @foreach (var building in BoardGlyphs.Buildings)
+        {
+            <tr style="font-variant-numeric: tabular-nums;">
+                <td>@BoardGlyphs.DisplayName(building)</td>
+                <td>@Settings.CompoundCost[building]</td>
+                <td>@Settings.ProvidedSpace[building]</td>
+                <td>@Settings.ConstructionDuration[building]</td>
+                <td>@Settings.Armor[building]</td>
+                <td class="mud-text-secondary">@BuildingRole(building)</td>
+            </tr>
+        }
+    </tbody>
+</MudSimpleTable>
+
+<MudText Typo="Typo.subtitle1" Style="font-weight: 600;" Class="mb-1">Upgrades</MudText>
+@foreach (var (upgrade, levels) in Settings.Upgrades.OrderBy(pair => pair.Key))
+{
+    <MudText Typo="Typo.body2" Style="font-weight: 600;" Class="mt-2">@UpgradeInfo.DisplayName(upgrade)</MudText>
+    <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mb-1">@UpgradeInfo.Describe(upgrade)</MudText>
+    <MudSimpleTable Dense="true" Class="settings-table">
+        <thead>
+            <tr><th>Level</th><th>Effect</th><th>Cost ◈</th><th>Duration ↻</th></tr>
+        </thead>
+        <tbody>
+            @for (int level = 0; level < levels.Length; level++)
+            {
+                <tr style="font-variant-numeric: tabular-nums;">
+                    <td>@(level + 1)</td>
+                    <td>@UpgradeInfo.DescribeLevel(levels[level])</td>
+                    <td>@levels[level].Cost</td>
+                    <td>@levels[level].Duration</td>
+                </tr>
+            }
+        </tbody>
+    </MudSimpleTable>
+}
+
+@code {
+    [Parameter, EditorRequired] public GameSettings Settings { get; set; } = default!;
+
+    private static string BuildingRole(Building building) => building switch
+    {
+        Building.Plane => "HQ — trains dots, enables harvesting",
+        Building.Axis => "Provides supply space",
+        Building.Dome => "Trains circles ○",
+        Building.Pyramid => "Trains triangles △",
+        Building.Cube => "Trains squares □",
+        _ => string.Empty,
+    };
+}

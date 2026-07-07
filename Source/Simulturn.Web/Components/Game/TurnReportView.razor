@@ -1,0 +1,95 @@
+@* Renders a turn report: per player, what happened during the resolution. *@
+
+<MudText Typo="Typo.subtitle2" Class="mud-text-secondary mb-2">
+    Turn @Report.FromTurn → @Report.ToTurn
+</MudText>
+
+@foreach (var player in Players)
+{
+    byte index = PlayerIndex(player.PlayerId);
+    <MudPaper Elevation="0" Class="pa-3 mb-2"
+              Style="@($"border-left: 3px solid var(--player-{index}); border-radius: 6px; background: color-mix(in srgb, var(--player-{index}) 5%, transparent);")">
+        <div class="d-flex align-center gap-3 mb-1">
+            <MudText Typo="Typo.subtitle2" Style="font-weight: 600;">@player.PlayerId</MudText>
+            <MudText Typo="Typo.caption" Class="mud-text-secondary" Style="font-variant-numeric: tabular-nums;">
+                ◈ @player.MatterBefore → @player.MatterAfter
+                (@(player.MatterAfter >= player.MatterBefore ? "+" : "")@(player.MatterAfter - player.MatterBefore))
+            </MudText>
+        </div>
+
+        @if (player.IsEmpty)
+        {
+            <MudText Typo="Typo.body2" Class="mud-text-secondary">Nothing happened.</MudText>
+        }
+
+        @foreach (var battle in player.Battles)
+        {
+            <ReportLine Icon="@Icons.Material.Filled.LocalFireDepartment" Color="Color.Error">
+                Lost <ArmyDisplay Army="battle.Losses" /> in battle at @Coords(battle.Hexagon)
+            </ReportLine>
+        }
+        @foreach (var loss in player.StructuresLost)
+        {
+            <ReportLine Icon="@Icons.Material.Filled.Cancel" Color="Color.Error">
+                Buildings destroyed at @Coords(loss.Hexagon): <CompoundDisplay Compound="loss.Compound" />
+            </ReportLine>
+        }
+        @foreach (var movement in player.Movements)
+        {
+            <ReportLine Icon="@Icons.Material.Filled.ArrowForward" Color="Color.Info">
+                Moved <ArmyDisplay Army="movement.Army" /> @Coords(movement.From) → @Coords(movement.To)
+            </ReportLine>
+        }
+        @foreach (var training in player.CompletedTrainings)
+        {
+            <ReportLine Icon="@Icons.Material.Filled.School" Color="Color.Success">
+                Trained <ArmyDisplay Army="training.Army" /> at @Coords(training.Hexagon)
+            </ReportLine>
+        }
+        @foreach (var construction in player.CompletedConstructions)
+        {
+            <ReportLine Icon="@Icons.Material.Filled.Construction" Color="Color.Success">
+                Completed <CompoundDisplay Compound="construction.Compound" /> at @Coords(construction.Hexagon)
+            </ReportLine>
+        }
+        @foreach (var research in player.CompletedResearch)
+        {
+            <ReportLine Icon="@Icons.Material.Filled.Science" Color="Color.Secondary">
+                @research.Upgrade researched — now level @research.NewLevel
+            </ReportLine>
+        }
+        @if (player.Income.Length > 0)
+        {
+            <ReportLine Icon="@Icons.Material.Filled.Diamond" Color="Color.Default">
+                Harvested ◈@player.Income.Sum(income => income.Amount)
+                (@string.Join(", ", player.Income.Select(income => $"{income.Amount} at {Coords(income.Hexagon)}")))
+            </ReportLine>
+        }
+    </MudPaper>
+}
+
+@code {
+    [Parameter, EditorRequired] public TurnReport Report { get; set; } = default!;
+
+    /// <summary>Restrict to one player's own report (hot seat); null shows everyone.</summary>
+    [Parameter] public string? ViewerId { get; set; }
+
+    private IEnumerable<PlayerTurnReport> Players =>
+        ViewerId is null ? Report.Players : Report.Players.Where(player => player.PlayerId == ViewerId);
+
+    private byte PlayerIndex(string playerId)
+    {
+        byte index = 0;
+        foreach (var player in Report.Players.Select(player => player.PlayerId).Order())
+        {
+            if (player == playerId)
+            {
+                return index;
+            }
+            index++;
+        }
+        return 0;
+    }
+
+    private static string Coords(Hexagon hexagon) => $"({hexagon.X}, {hexagon.Y})";
+}

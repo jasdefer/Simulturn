@@ -1,0 +1,154 @@
+@page "/new-game"
+@inject GameSession Session
+@inject NavigationManager Navigation
+
+<PageTitle>Simulturn — New game</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="pt-6 pb-8">
+    <div class="d-flex align-center gap-3 mb-4">
+        <MudText Typo="Typo.h4">New game</MudText>
+        <MudSpacer />
+        <MudButton Variant="Variant.Text" OnClick="ResetDefaults">Reset to defaults</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                   StartIcon="@Icons.Material.Filled.PlayArrow"
+                   Disabled="_problems.Count > 0"
+                   OnClick="Start">
+            Start game
+        </MudButton>
+    </div>
+
+    @foreach (var problem in _problems)
+    {
+        <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-1">@problem</MudAlert>
+    }
+
+    <MudPaper Elevation="2" Class="pa-4 mt-2">
+        <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" KeepPanelsAlive="true">
+
+            <MudTabPanel Text="Players & Mode" Icon="@Icons.Material.Filled.Group">
+                <div class="pt-4" style="max-width: 460px;">
+                    @for (int i = 0; i < _draft.PlayerNames.Count; i++)
+                    {
+                        int index = i;
+                        <div class="d-flex align-center gap-2 mb-2">
+                            <div style="@($"width: 11px; height: 11px; border-radius: 50%; background: var(--player-{index}); flex-shrink: 0;")"></div>
+                            <MudTextField T="string"
+                                          Value="_draft.PlayerNames[index]"
+                                          ValueChanged="value => SetPlayerName(index, value)"
+                                          Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small"
+                                           Disabled="_draft.PlayerNames.Count <= 1"
+                                           OnClick="() => RemovePlayer(index)" />
+                        </div>
+                    }
+                    <MudButton StartIcon="@Icons.Material.Filled.Add" Size="Size.Small"
+                               Disabled="_draft.PlayerNames.Count >= 4"
+                               OnClick="AddPlayer">
+                        Add player
+                    </MudButton>
+
+                    <MudText Typo="Typo.subtitle1" Class="mt-6 mb-2" Style="font-weight: 600;">Mode</MudText>
+                    <MudRadioGroup T="GameMode" @bind-Value="_draft.Mode">
+                        <MudRadio T="GameMode" Value="GameMode.God" Color="Color.Primary">
+                            God mode — see everything, play all players (testing)
+                        </MudRadio>
+                        <MudRadio T="GameMode" Value="GameMode.HotSeat" Color="Color.Primary">
+                            Hot seat — pass and play with fog of war
+                        </MudRadio>
+                    </MudRadioGroup>
+                </div>
+            </MudTabPanel>
+
+            <MudTabPanel Text="General" Icon="@Icons.Material.Filled.Settings">
+                <div class="pt-4 d-flex flex-column gap-1" style="max-width: 380px;">
+                    <MudNumericField T="int" @bind-Value="_draft.StartMatter" @bind-Value:after="Revalidate"
+                                     Label="Start matter" Min="0"
+                                     Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    <MudNumericField T="int" @bind-Value="_draft.VisibilityRange" @bind-Value:after="Revalidate"
+                                     Label="Visibility range" Min="0" Max="255"
+                                     Variant="Variant.Outlined" Margin="Margin.Dense"
+                                     HelperText="Hexes within this range of a unit are fully visible" />
+                    <MudNumericField T="int" @bind-Value="_draft.PartialVisibilityRange" @bind-Value:after="Revalidate"
+                                     Label="Partial visibility range" Min="0" Max="255"
+                                     Variant="Variant.Outlined" Margin="Margin.Dense"
+                                     HelperText="Hexes within this range are partially visible (edge of vision)" />
+                </div>
+            </MudTabPanel>
+
+            <MudTabPanel Text="Units" Icon="@Icons.Material.Filled.ChangeHistory">
+                <div class="pt-4"><UnitTableEditor Draft="_draft" /></div>
+            </MudTabPanel>
+
+            <MudTabPanel Text="Buildings" Icon="@Icons.Material.Filled.Domain">
+                <div class="pt-4"><BuildingTableEditor Draft="_draft" /></div>
+            </MudTabPanel>
+
+            <MudTabPanel Text="Upgrades" Icon="@Icons.Material.Filled.Science">
+                <div class="pt-4"><UpgradeTableEditor Draft="_draft" /></div>
+            </MudTabPanel>
+
+            <MudTabPanel Text="Map" Icon="@Icons.Material.Filled.Map">
+                <MudGrid Class="pt-4">
+                    <MudItem xs="12" md="4">
+                        <MapGeneratorPanel Map="_draft.Map" OnChanged="RefreshPreview" />
+                    </MudItem>
+                    <MudItem xs="12" md="8">
+                        <MapPreview @ref="_preview" Draft="_draft" />
+                    </MudItem>
+                </MudGrid>
+            </MudTabPanel>
+
+        </MudTabs>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private SettingsDraft _draft = SettingsDraft.FromDefaults();
+    private List<string> _problems = [];
+    private MapPreview? _preview;
+
+    protected override void OnInitialized() => _problems = _draft.Validate();
+
+    private void Revalidate() => _problems = _draft.Validate();
+
+    private void RefreshPreview()
+    {
+        Revalidate();
+        _preview?.Regenerate();
+    }
+
+    private void SetPlayerName(int index, string value)
+    {
+        _draft.PlayerNames[index] = value;
+        RefreshPreview();
+    }
+
+    private void AddPlayer()
+    {
+        _draft.PlayerNames.Add($"Player {_draft.PlayerNames.Count + 1}");
+        RefreshPreview();
+    }
+
+    private void RemovePlayer(int index)
+    {
+        _draft.PlayerNames.RemoveAt(index);
+        RefreshPreview();
+    }
+
+    private void ResetDefaults()
+    {
+        _draft = SettingsDraft.FromDefaults();
+        RefreshPreview();
+    }
+
+    private void Start()
+    {
+        _problems = _draft.Validate();
+        if (_problems.Count > 0)
+        {
+            return;
+        }
+        Session.StartNewGame(_draft.Build(), _draft.Mode);
+        Navigation.NavigateTo("/game");
+    }
+}

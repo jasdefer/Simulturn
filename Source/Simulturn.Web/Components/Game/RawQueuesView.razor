@@ -1,0 +1,62 @@
+@* Raw pending queues per player, keyed by completion turn — for debugging queue timing. *@
+
+@foreach (var (playerId, playerState) in State.PlayerStates.OrderBy(pair => pair.Key))
+{
+    <MudText Typo="Typo.subtitle2" Style="font-weight: 600;" Class="mt-3 mb-1">@playerId</MudText>
+    <MudSimpleTable Dense="true" Bordered="true">
+        <thead>
+            <tr>
+                <th>Kind</th>
+                <th>Completion turn</th>
+                <th>Hex</th>
+                <th>Payload</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var (turn, trainings) in playerState.Trainings.OrderBy(pair => pair.Key))
+            {
+                foreach (var (hexagon, army) in trainings)
+                {
+                    <tr class="@(turn < State.Turn ? "mud-text-secondary" : null)">
+                        <td>Training</td>
+                        <td>@turn</td>
+                        <td>(@hexagon.X, @hexagon.Y)</td>
+                        <td><ArmyDisplay Army="army" /></td>
+                    </tr>
+                }
+            }
+            @foreach (var (turn, constructions) in playerState.Constructions.OrderBy(pair => pair.Key))
+            {
+                foreach (var (hexagon, compound) in constructions)
+                {
+                    <tr class="@(turn < State.Turn ? "mud-text-secondary" : null)">
+                        <td>Construction</td>
+                        <td>@turn</td>
+                        <td>(@hexagon.X, @hexagon.Y)</td>
+                        <td><CompoundDisplay Compound="compound" /></td>
+                    </tr>
+                }
+            }
+            @foreach (var (turn, researches) in playerState.Researches.OrderBy(pair => pair.Key))
+            {
+                foreach (var (hexagon, upgrade) in researches)
+                {
+                    <tr class="@(turn < State.Turn ? "mud-text-secondary" : null)">
+                        <td>Research</td>
+                        <td>@turn</td>
+                        <td>(@hexagon.X, @hexagon.Y)</td>
+                        <td>@upgrade</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </MudSimpleTable>
+}
+<MudText Typo="Typo.caption" Class="mud-text-secondary d-block mt-2">
+    Grayed rows completed in earlier turns (keys &lt; current turn stay in the dictionaries).
+    Completion turn = issue turn + duration − 1.
+</MudText>
+
+@code {
+    [Parameter, EditorRequired] public GameState State { get; set; } = default!;
+}

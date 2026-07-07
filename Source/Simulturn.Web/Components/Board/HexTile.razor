@@ -1,0 +1,352 @@
+@* One board tile: hex path, fog treatment, matter badge, army chips, building rows.
+   Pure presentation — all content decisions were made by the BoardProjector,
+   all coordinate math happens in the @code block. *@
+
+<g transform="@HexLayout.Translate(View.Hex)"
+   class="@TileClass"
+   style="@TileStyle"
+   @onclick="HandleClick"
+   @onclick:stopPropagation="true">
+
+    @if (IsSelected)
+    {
+        <path class="hex-glow" d="@HexLayout.UnitHexPath" transform="scale(1.05)" />
+    }
+
+    <path class="hex" d="@HexLayout.UnitHexPath" />
+
+    @if (View.Visibility == Visibility.Mapped)
+    {
+        <path class="hex-hatch" d="@HexLayout.UnitHexPath" fill="url(#fog-hatch)" />
+    }
+
+    @if (IsCandidate)
+    {
+        <path class="hex-candidate" d="@HexLayout.UnitHexPath" />
+    }
+
+    @if (IsHovered)
+    {
+        <path class="hex-hover-ring" d="@HexLayout.UnitHexPath" transform="scale(0.92)" />
+    }
+
+    @* Matter badge (top). *@
+    @if (MatterToShow > 0)
+    {
+        <g class="matter-badge @(View.MatterStale || View.RemainingMatter is null ? "matter-stale" : null)">
+            <use href="#matter" x="@HexLayout.Svg(MatterBadgeOffset - 11)" y="-73" width="22" height="22" />
+            @BoardSvg.Text("matter-text", MatterBadgeOffset + 14, -61, MatterToShow.ToString())
+        </g>
+    }
+
+    @* Research marker (top right). *@
+    @if (View.HasResearchableUpgrades)
+    {
+        <use class="research-marker" href="#research" x="34" y="-76" width="24" height="24" />
+    }
+
+    @* Unknown presence: "something is here" (fog edge). *@
+    @if (View.UnknownPresence)
+    {
+        <g class="presence-unknown">
+            <circle r="16" cy="15" />
+            @BoardSvg.Text("presence-text", 0, 23, "?")
+        </g>
+    }
+
+    @* Content rows: army chips and building rows per occupant. *@
+    @foreach (var row in LayoutRows())
+    {
+        <g class="chip @(row.IsBuildingRow ? "chip-buildings" : null)"
+           style="color: var(--player-@row.PlayerIndex)"
+           @key="row.Key">
+            @if (!row.IsBuildingRow)
+            {
+                <rect class="chip-bg" x="@HexLayout.Svg(-row.Width / 2)" y="@HexLayout.Svg(row.Y - ChipHeight / 2)"
+                      width="@HexLayout.Svg(row.Width)" height="@HexLayout.Svg(ChipHeight)" rx="7" />
+            }
+            @foreach (var entry in row.Entries)
+            {
+                <g class="@(entry.Ghost ? "entry-ghost" : null)">
+                    @if (entry.SymbolId is not null)
+                    {
+                        <use href="#@entry.SymbolId"
+                             x="@HexLayout.Svg(entry.SymbolX)" y="@HexLayout.Svg(row.Y - GlyphSize / 2)"
+                             width="@HexLayout.Svg(GlyphSize)" height="@HexLayout.Svg(GlyphSize)" />
+                    }
+                    @if (entry.Text.Length > 0)
+                    {
+                        @BoardSvg.Text("count-text", entry.TextX, row.Y + 7, entry.Text)
+                    }
+                </g>
+            }
+        </g>
+    }
+</g>
+
+@code {
+    private const double ChipHeight = 27;
+    private const double ChipPadding = 9;
+    private const double GlyphSize = 18;
+    private const double DigitWidth = 11.5;
+    private const double EntryGap = 5;
+    private const double RowHeight = 31;
+    private const double MaxChipWidth = 155;
+    private const int MaxRows = 4;
+
+    [Parameter, EditorRequired] public HexView View { get; set; } = default!;
+    [Parameter] public bool IsSelected { get; set; }
+    [Parameter] public bool IsCandidate { get; set; }
+    [Parameter] public bool IsHovered { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public EventCallback<Hexagon> OnClick { get; set; }
+
+    private HexView? _renderedView;
+    private (bool, bool, bool, bool) _renderedFlags;
+
+    protected override bool ShouldRender()
+    {
+        var flags = (IsSelected, IsCandidate, IsHovered, ReadOnly);
+        if (ReferenceEquals(_renderedView, View) && flags == _renderedFlags)
+        {
+            return false;
+        }
+        _renderedView = View;
+        _renderedFlags = flags;
+        return true;
+    }
+
+    private int MatterToShow => View.RemainingMatter ?? View.InitialMatter;
+
+    private double MatterBadgeOffset => -(MatterToShow.ToString().Length * DigitWidth + 24) / 2;
+
+    private string TileClass
+    {
+        get
+        {
+            string visibility = $"vis-{View.Visibility.ToString().ToLowerInvariant()}";
+            string interactive = ReadOnly ? "" : " hex-interactive";
+            string owned = SingleOwnerIndex is not null ? " hex-owned" : "";
+            string selected = IsSelected ? " hex-selected" : "";
+            return $"hex-tile {visibility}{interactive}{owned}{selected}";
+        }
+    }
+
+    private string? TileStyle =>
+        SingleOwnerIndex is byte owner ? $"--tile-owner: var(--player-{owner})" : null;
+
+    private byte? SingleOwnerIndex
+    {
+        get
+        {
+            var withContent = View.Occupants.Where(occupant => occupant.HasArmyContent || occupant.HasBuildingContent).ToList();
+            return withContent.Count == 1 ? withContent[0].PlayerIndex : null;
+        }
+    }
+
+    private Task HandleClick() => ReadOnly ? Task.CompletedTask : OnClick.InvokeAsync(View.Hex);
+
+    // ----- Row layout -----
+
+    private sealed record PositionedEntry(string? SymbolId, string Text, bool Ghost, double SymbolX, double TextX);
+
+    private sealed record RenderRow(byte PlayerIndex, bool IsBuildingRow, string Kind, double Y, double Width, List<PositionedEntry> Entries)
+    {
+        public string Key => $"{PlayerIndex}:{(IsBuildingRow ? "b" : "a")}:{Kind}";
+    }
+
+    private sealed record ContentEntry(string? SymbolId, string Text, bool Ghost);
+
+    private sealed record ContentRow(byte PlayerIndex, bool IsBuildingRow, List<ContentEntry> Entries, string Kind = "");
+
+    private List<RenderRow> LayoutRows()
+    {
+        var rows = BuildRows();
+        var positioned = new List<RenderRow>(rows.Count);
+        for (int i = 0; i < rows.Count; i++)
+        {
+            var row = rows[i];
+            double y = 14 + (i - (rows.Count - 1) / 2.0) * RowHeight;
+            double width = ChipWidth(row);
+            double cursor = -width / 2 + ChipPadding;
+            var entries = new List<PositionedEntry>(row.Entries.Count);
+            foreach (var entry in row.Entries)
+            {
+                double symbolX = cursor;
+                if (entry.SymbolId is not null)
+                {
+                    cursor += GlyphSize + 2;
+                }
+                double textX = cursor;
+                cursor += entry.Text.Length * DigitWidth + EntryGap;
+                entries.Add(new PositionedEntry(entry.SymbolId, entry.Text, entry.Ghost, symbolX, textX));
+            }
+            positioned.Add(new RenderRow(row.PlayerIndex, row.IsBuildingRow, row.Kind, y, width, entries));
+        }
+        return positioned;
+    }
+
+    private List<ContentRow> BuildRows()
+    {
+        List<ContentRow> rows = [];
+        foreach (var occupant in View.Occupants)
+        {
+            if (occupant.HasArmyContent)
+            {
+                rows.Add(new ContentRow(occupant.PlayerIndex, false, ArmyEntries(occupant)));
+            }
+            if (occupant.HasBuildingContent)
+            {
+                rows.Add(new ContentRow(occupant.PlayerIndex, true, BuildingEntries(occupant)));
+            }
+        }
+
+        // Level-of-detail: too many rows → one summary chip per occupant.
+        if (rows.Count + View.Losses.Length > MaxRows)
+        {
+            rows = View.Occupants
+                .Where(occupant => occupant.HasArmyContent || occupant.HasBuildingContent)
+                .Select(occupant => new ContentRow(occupant.PlayerIndex, false, SummaryEntries(occupant)))
+                .ToList();
+        }
+
+        // Last-turn loss markers (report overlay) — never collapsed away.
+        foreach (var loss in View.Losses)
+        {
+            rows.Add(new ContentRow(loss.PlayerIndex, true,
+                [new ContentEntry(null, $"✕ {BoardGlyphs.CompactLabel(loss.Losses)}", false)], "loss"));
+        }
+
+        // Level-of-detail: over-wide chip → total count only.
+        for (int i = 0; i < rows.Count; i++)
+        {
+            if (ChipWidth(rows[i]) > MaxChipWidth)
+            {
+                rows[i] = rows[i] with { Entries = CollapsedEntries(rows[i]) };
+            }
+        }
+        return rows;
+    }
+
+    private static double ChipWidth(ContentRow row)
+    {
+        double width = 2 * ChipPadding;
+        foreach (var entry in row.Entries)
+        {
+            if (entry.SymbolId is not null)
+            {
+                width += GlyphSize + 2;
+            }
+            width += entry.Text.Length * DigitWidth + EntryGap;
+        }
+        return width - EntryGap;
+    }
+
+    private static List<ContentEntry> ArmyEntries(HexOccupantView occupant)
+    {
+        List<ContentEntry> entries = [];
+        if (occupant.ArmyCountOnly is int countOnly)
+        {
+            entries.Add(new ContentEntry(null, $"Σ{countOnly}", false));
+            return entries;
+        }
+        if (occupant.Army is { } army)
+        {
+            foreach (var unit in BoardGlyphs.Units)
+            {
+                if (army[unit] > 0)
+                {
+                    entries.Add(new ContentEntry(BoardGlyphs.SymbolId(unit), army[unit].ToString(), false));
+                }
+            }
+        }
+        foreach (var unit in BoardGlyphs.Units)
+        {
+            if (occupant.GhostTraining[unit] > 0)
+            {
+                entries.Add(new ContentEntry(BoardGlyphs.SymbolId(unit), $"+{occupant.GhostTraining[unit]}", true));
+            }
+        }
+        foreach (var item in occupant.InProgress.Where(item => item.Kind == QueueKind.Training && item.Unit is not null))
+        {
+            entries.Add(new ContentEntry(BoardGlyphs.SymbolId(item.Unit!.Value), $"{item.Count}↻{item.TurnsRemaining}", true));
+        }
+        if (!occupant.GhostInboundArmy.IsEmpty)
+        {
+            entries.Add(new ContentEntry(null, $"→{occupant.GhostInboundArmy.Total}", true));
+        }
+        return entries;
+    }
+
+    private static List<ContentEntry> BuildingEntries(HexOccupantView occupant)
+    {
+        List<ContentEntry> entries = [];
+        foreach (var building in BoardGlyphs.Buildings)
+        {
+            if (occupant.Compound[building] > 0)
+            {
+                // Stale memories (fog of war) render like ghosts: this is what the viewer
+                // remembers, not necessarily what is still there.
+                entries.Add(new ContentEntry(
+                    BoardGlyphs.SymbolId(building),
+                    occupant.Compound[building] > 1 ? occupant.Compound[building].ToString() : string.Empty,
+                    occupant.CompoundStale));
+            }
+        }
+        foreach (var building in BoardGlyphs.Buildings)
+        {
+            if (occupant.GhostConstruction[building] > 0)
+            {
+                entries.Add(new ContentEntry(BoardGlyphs.SymbolId(building), $"+{occupant.GhostConstruction[building]}", true));
+            }
+        }
+        foreach (var item in occupant.InProgress.Where(item => item.Kind == QueueKind.Construction && item.Building is not null))
+        {
+            entries.Add(new ContentEntry(BoardGlyphs.SymbolId(item.Building!.Value), $"{item.Count}↻{item.TurnsRemaining}", true));
+        }
+        foreach (var item in occupant.InProgress.Where(item => item.Kind == QueueKind.Research))
+        {
+            entries.Add(new ContentEntry("research", $"↻{item.TurnsRemaining}", true));
+        }
+        return entries;
+    }
+
+    private static List<ContentEntry> SummaryEntries(HexOccupantView occupant)
+    {
+        int armyTotal = occupant.ArmyCountOnly ?? occupant.Army?.Total ?? 0;
+        List<ContentEntry> entries = [];
+        if (armyTotal > 0)
+        {
+            entries.Add(new ContentEntry(null, $"Σ{armyTotal}", false));
+        }
+        if (!occupant.Compound.IsEmpty)
+        {
+            entries.Add(new ContentEntry("b-plane", occupant.Compound.Sum().ToString(), false));
+        }
+        bool hasGhosts = !occupant.GhostTraining.IsEmpty || !occupant.GhostConstruction.IsEmpty ||
+                         !occupant.GhostInboundArmy.IsEmpty || !occupant.InProgress.IsEmpty;
+        if (hasGhosts)
+        {
+            entries.Add(new ContentEntry(null, "↻", true));
+        }
+        return entries;
+    }
+
+    private static List<ContentEntry> CollapsedEntries(ContentRow row)
+    {
+        int total = 0;
+        foreach (var entry in row.Entries)
+        {
+            var digits = new string(entry.Text.Where(char.IsDigit).ToArray());
+            if (int.TryParse(digits, out int value))
+            {
+                total += value;
+            }
+            else if (entry.SymbolId is not null && entry.Text.Length == 0)
+            {
+                total += 1;
+            }
+        }
+        return [new ContentEntry(null, $"Σ{total}", false)];
+    }
+}

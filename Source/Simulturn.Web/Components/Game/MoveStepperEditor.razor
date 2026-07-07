@@ -1,0 +1,102 @@
+@* Movement order editor shown in the board overlay after picking a destination.
+   Works on a local ArmyDraft copy; the order is committed on confirm. *@
+
+<MudPaper Elevation="8" Class="pa-4" Style="border-radius: 12px;">
+    <MudText Typo="Typo.subtitle1" Style="font-weight: 600;" Class="mb-1">
+        Move to (@Destination.X, @Destination.Y)
+    </MudText>
+    <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mb-2">
+        from (@Source.X, @Source.Y) · distance @Source.DistanceTo(Destination)
+    </MudText>
+
+    @if (HasOutOfRangeUnits)
+    {
+        <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mb-1">
+            Out of range here: @OutOfRangeHint
+        </MudText>
+    }
+
+    <ArmyStepperGroup Value="_army" Max="AvailableArmy" OnChanged="StateHasChanged" />
+
+    <div class="d-flex gap-2 mt-3">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                   Disabled="_army.IsEmpty && !IsExistingOrder"
+                   OnClick="Confirm">
+            @(IsExistingOrder && _army.IsEmpty ? "Remove order" : "Confirm")
+        </MudButton>
+        <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="() => OnCancel.InvokeAsync()">
+            Cancel
+        </MudButton>
+    </div>
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired] public GameSession Session { get; set; } = default!;
+    [Parameter, EditorRequired] public string PlayerId { get; set; } = default!;
+    [Parameter, EditorRequired] public Hexagon Source { get; set; }
+    [Parameter, EditorRequired] public Hexagon Destination { get; set; }
+    [Parameter] public EventCallback OnCommitted { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private ArmyDraft _army = new();
+    private (string, Hexagon, Hexagon)? _initializedFor;
+
+    private bool IsExistingOrder =>
+        Session.GetDraft(PlayerId, Source)?.Movements.Any(movement => movement.Destination == Destination) == true;
+
+    /// <summary>Units still available at the source AND fast enough to cover the distance.</summary>
+    private Army AvailableArmy => MovementRange.ReachableArmy(
+        Session.Current.GameSettings,
+        Session.AvailableArmyForMovement(PlayerId, Source, Destination),
+        Source.DistanceTo(Destination));
+
+    private bool HasOutOfRangeUnits =>
+        Session.AvailableArmyForMovement(PlayerId, Source, Destination) != AvailableArmy;
+
+    private string OutOfRangeHint
+    {
+        get
+        {
+            var settings = Session.Current.GameSettings;
+            var atSource = Session.AvailableArmyForMovement(PlayerId, Source, Destination);
+            var reachable = AvailableArmy;
+            var parts = BoardGlyphs.Units
+                .Where(unit => atSource[unit] > 0 && reachable[unit] == 0)
+                .Select(unit => $"{BoardGlyphs.TextGlyph(unit)} (range {settings.MovementRange[unit]})");
+            return string.Join(", ", parts);
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        var key = (PlayerId, Source, Destination);
+        if (_initializedFor == key)
+        {
+            return;
+        }
+        _initializedFor = key;
+        var existing = Session.GetDraft(PlayerId, Source)?
+            .Movements.FirstOrDefault(movement => movement.Destination == Destination);
+        if (existing is not null)
+        {
+            _army = new ArmyDraft
+            {
+                Triangle = existing.Army.Triangle,
+                Circle = existing.Army.Circle,
+                Square = existing.Army.Square,
+                Dot = existing.Army.Dot,
+            };
+        }
+        else
+        {
+            // Default: everything still available at the source.
+            _army = ArmyDraft.From(AvailableArmy);
+        }
+    }
+
+    private Task Confirm()
+    {
+        Session.UpdateDraft(PlayerId, Source, draft => draft.UpsertMovement(Destination, _army));
+        return OnCommitted.InvokeAsync();
+    }
+}

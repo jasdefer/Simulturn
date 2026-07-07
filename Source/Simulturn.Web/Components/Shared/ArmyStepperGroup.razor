@@ -1,0 +1,52 @@
+@* Per-unit-type numeric steppers for composing an army, capped at what is available.
+   Uses plain inputs + buttons (safe inside the board's foreignObject overlay). *@
+
+<div class="army-stepper-group">
+    @foreach (var unit in BoardGlyphs.Units)
+    {
+        if (Max[unit] <= 0 && Value[unit] <= 0)
+        {
+            continue;
+        }
+        int max = Max[unit];
+        <div class="d-flex align-center gap-2 mb-1">
+            <span style="width: 26px; text-align: center; font-size: 1.1rem;" title="@BoardGlyphs.DisplayName(unit)">
+                @BoardGlyphs.TextGlyph(unit)
+            </span>
+            <MudIconButton Icon="@Icons.Material.Filled.Remove" Size="Size.Small"
+                           Disabled="Value[unit] <= 0"
+                           OnClick="() => Set(unit, Value[unit] - 1)" />
+            <MudNumericField T="int"
+                             Value="Value[unit]"
+                             ValueChanged="value => Set(unit, value)"
+                             Min="0" Max="max"
+                             HideSpinButtons="true"
+                             Variant="Variant.Outlined" Margin="Margin.Dense"
+                             Style="width: 72px;" />
+            <MudIconButton Icon="@Icons.Material.Filled.Add" Size="Size.Small"
+                           Disabled="Value[unit] >= max"
+                           OnClick="() => Set(unit, Value[unit] + 1)" />
+            <MudButton Size="Size.Small" Variant="Variant.Text"
+                       Disabled="Value[unit] >= max"
+                       OnClick="() => Set(unit, max)">
+                all @max
+            </MudButton>
+        </div>
+    }
+    @if (BoardGlyphs.Units.All(unit => Max[unit] <= 0 && Value[unit] <= 0))
+    {
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">No units available.</MudText>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ArmyDraft Value { get; set; } = default!;
+    [Parameter, EditorRequired] public Army Max { get; set; }
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private Task Set(Unit unit, int value)
+    {
+        Value[unit] = Math.Clamp(value, 0, Max[unit]);
+        return OnChanged.InvokeAsync();
+    }
+}

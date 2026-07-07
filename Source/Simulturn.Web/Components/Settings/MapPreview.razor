@@ -1,0 +1,47 @@
+@inject BoardProjector Projector
+
+@* Live map preview: builds a throwaway turn-0 GameState from the draft and renders it with
+   the real board component, so the preview matches the game exactly. *@
+
+@if (_error is not null)
+{
+    <MudAlert Severity="Severity.Warning" Dense="true">@_error</MudAlert>
+}
+else if (_board is not null)
+{
+    <div style="height: 480px;">
+        <HexBoard Board="_board" ReadOnly="true" />
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public SettingsDraft Draft { get; set; } = default!;
+
+    private BoardView? _board;
+    private string? _error;
+
+    protected override void OnParametersSet() => Regenerate();
+
+    /// <summary>Called by the parent when any draft value changes.</summary>
+    public void Regenerate()
+    {
+        try
+        {
+            var problems = Draft.Validate();
+            if (problems.Count > 0)
+            {
+                _error = problems[0];
+                _board = null;
+                return;
+            }
+            _board = Projector.ProjectGodMode(new GameState(Draft.Build()));
+            _error = null;
+        }
+        catch (Exception exception)
+        {
+            _error = $"Map generation failed: {exception.Message}";
+            _board = null;
+        }
+        StateHasChanged();
+    }
+}

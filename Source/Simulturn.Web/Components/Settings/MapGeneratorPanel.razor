@@ -1,0 +1,45 @@
+@* Parametric map generation knobs; the preview next to it re-renders live. *@
+
+<div class="d-flex flex-column gap-1" style="max-width: 380px;">
+    <MudNumericField T="int" @bind-Value="Map.Radius" @bind-Value:after="Notify" Label="Map radius" Min="1" Max="10"
+                     Variant="Variant.Outlined" Margin="Margin.Dense"
+                     HelperText="@($"{3 * Map.Radius * Map.Radius + 3 * Map.Radius + 1} hexes")" />
+    <MudNumericField T="int" @bind-Value="Map.StartRingRadius" @bind-Value:after="Notify" Label="Start ring radius" Min="1" Max="Map.Radius"
+                     Variant="Variant.Outlined" Margin="Margin.Dense"
+                     HelperText="Player starts are evenly spaced on this ring" />
+    <div class="d-flex align-center gap-2">
+        <MudNumericField T="int" @bind-Value="Map.Seed" @bind-Value:after="Notify" Label="Seed"
+                         Variant="Variant.Outlined" Margin="Margin.Dense" />
+        <MudIconButton Icon="@Icons.Material.Filled.Casino" title="Random seed"
+                       OnClick="RandomizeSeed" />
+    </div>
+    <MudNumericField T="int" @bind-Value="Map.StartDots" @bind-Value:after="Notify" Label="Starting dots per player" Min="1"
+                     Variant="Variant.Outlined" Margin="Margin.Dense" />
+    <MudNumericField T="int" @bind-Value="Map.StartHexMatter" @bind-Value:after="Notify" Label="Matter on start hex" Min="0"
+                     Variant="Variant.Outlined" Margin="Margin.Dense" />
+    <MudNumericField T="int" @bind-Value="Map.MatterPilesPerPlayer" @bind-Value:after="Notify" Label="Matter piles per player" Min="0"
+                     Variant="Variant.Outlined" Margin="Margin.Dense"
+                     HelperText="Placed symmetrically so every player has the same economy" />
+    <MudNumericField T="int" @bind-Value="Map.MatterPerPile" @bind-Value:after="Notify" Label="Matter per pile" Min="0"
+                     Variant="Variant.Outlined" Margin="Margin.Dense" />
+    <MudNumericField T="int" @bind-Value="Map.MaxHarvestersPerHex" @bind-Value:after="Notify" Label="Max harvesters per hex" Min="1"
+                     Variant="Variant.Outlined" Margin="Margin.Dense" />
+    <MudNumericField T="int" @bind-Value="Map.DotUpgradeLevelsAtCenter" @bind-Value:after="Notify" Label="DotUpgrade levels at center" Min="0"
+                     Variant="Variant.Outlined" Margin="Margin.Dense"
+                     HelperText="Contested research objective on the center hex" />
+</div>
+
+@code {
+    [Parameter, EditorRequired] public MapGeneratorOptions Map { get; set; } = default!;
+
+    /// <summary>Raised after any knob changes so the parent can refresh the preview.</summary>
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private Task Notify() => OnChanged.InvokeAsync();
+
+    private Task RandomizeSeed()
+    {
+        Map.Seed = Random.Shared.Next(1, 1_000_000);
+        return Notify();
+    }
+}

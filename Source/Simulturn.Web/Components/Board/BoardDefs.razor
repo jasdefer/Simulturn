@@ -1,0 +1,67 @@
+@* SVG defs shared by all board elements: unit/building symbols, arrow markers, fog pattern.
+   Symbols draw in a -10..10 box and use currentColor so the player color cascades from the <use>. *@
+
+<defs>
+    @* Units — filled geometric primitives matching their names. *@
+    <symbol id="u-triangle" viewBox="-10 -10 20 20">
+        <polygon points="0,-9 8.5,6.5 -8.5,6.5" fill="currentColor" />
+    </symbol>
+    <symbol id="u-circle" viewBox="-10 -10 20 20">
+        <circle r="7.5" fill="currentColor" />
+    </symbol>
+    <symbol id="u-square" viewBox="-10 -10 20 20">
+        <rect x="-7" y="-7" width="14" height="14" rx="1.5" fill="currentColor" />
+    </symbol>
+    <symbol id="u-dot" viewBox="-10 -10 20 20">
+        <circle r="4.5" fill="currentColor" />
+    </symbol>
+
+    @* Buildings — outline style distinguishes them from the filled units. *@
+    <symbol id="b-plane" viewBox="-10 -10 20 20">
+        @* Headquarters: platform slab. *@
+        <path d="M -9 5 L 9 5 L 5.5 -2 L -5.5 -2 Z" fill="currentColor" />
+        <rect x="-2" y="-7" width="4" height="5" fill="currentColor" />
+    </symbol>
+    <symbol id="b-axis" viewBox="-10 -10 20 20">
+        @* Supply: vertical bar with cross tick. *@
+        <rect x="-1.75" y="-8" width="3.5" height="16" rx="1" fill="currentColor" />
+        <rect x="-6.5" y="-1.75" width="13" height="3.5" rx="1" fill="currentColor" />
+    </symbol>
+    <symbol id="b-dome" viewBox="-10 -10 20 20">
+        <path d="M -8 6 A 8 8 0 0 1 8 6 Z" fill="currentColor" />
+    </symbol>
+    <symbol id="b-pyramid" viewBox="-10 -10 20 20">
+        <polygon points="0,-8 8,6 -8,6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" />
+    </symbol>
+    <symbol id="b-cube" viewBox="-10 -10 20 20">
+        <path d="M 0 -8.5 L 7.4 -4.25 L 7.4 4.25 L 0 8.5 L -7.4 4.25 L -7.4 -4.25 Z M -7.4 -4.25 L 0 0 L 7.4 -4.25 M 0 0 L 0 8.5"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+    </symbol>
+
+    @* Matter pile: rhombus crystal. *@
+    <symbol id="matter" viewBox="-10 -10 20 20">
+        <polygon points="0,-8 6,0 0,8 -6,0" fill="currentColor" />
+        <polygon points="0,-8 6,0 0,8 -6,0" fill="none" stroke="currentColor" stroke-opacity="0.4" stroke-width="2" />
+    </symbol>
+
+    @* Research: flask. *@
+    <symbol id="research" viewBox="-10 -10 20 20">
+        <path d="M -2.5 -8 L -2.5 -2 L -7.5 6 A 1.6 1.6 0 0 0 -6 8.5 L 6 8.5 A 1.6 1.6 0 0 0 7.5 6 L 2.5 -2 L 2.5 -8 Z"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+        <path d="M -4.9 2 L 4.9 2 L 6.5 5.2 A 1 1 0 0 1 5.6 6.6 L -5.6 6.6 A 1 1 0 0 1 -6.5 5.2 Z" fill="currentColor" />
+    </symbol>
+
+    @* Arrowheads — one static marker per player color slot. *@
+    @for (int player = 0; player < 4; player++)
+    {
+        <marker id="@($"arrow-p{player}")" viewBox="0 0 10 10" refX="7" refY="5"
+                markerWidth="16" markerHeight="16" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+            <path d="M 0 1 L 8 5 L 0 9 Z" fill="var(--player-@player)" />
+        </marker>
+    }
+
+    @* Staleness hatch for fogged (Mapped) tiles. *@
+    <pattern id="fog-hatch" patternUnits="userSpaceOnUse" width="14" height="14" patternTransform="rotate(45)">
+        <line x1="0" y1="0" x2="0" y2="14" stroke="currentColor" stroke-opacity="0.06" stroke-width="7" />
+    </pattern>
+</defs>

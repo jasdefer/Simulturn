@@ -1,0 +1,74 @@
+@inject GameSession Session
+@inject IDialogService DialogService
+@implements IDisposable
+
+@* Time travel: browse any past turn read-only, branch from it (discarding the future),
+   and toggle the last-turn overlay (executed arrows + losses). *@
+
+<MudPaper Elevation="2" Square="true" Class="d-flex align-center gap-3 px-4 py-1">
+    <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft" Size="Size.Small"
+                   Disabled="Session.ViewedIndex <= 0"
+                   OnClick="() => Session.ViewTurn(Session.ViewedIndex - 1)" />
+    <MudSlider T="int"
+               Value="Session.ViewedIndex"
+               ValueChanged="Session.ViewTurn"
+               Min="0" Max="Math.Max(0, Session.History.Count - 1)"
+               Style="max-width: 320px;"
+               Disabled="Session.History.Count <= 1" />
+    <MudIconButton Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small"
+                   Disabled="!Session.IsViewingPast"
+                   OnClick="() => Session.ViewTurn(Session.ViewedIndex + 1)" />
+
+    <MudText Typo="Typo.body2" Style="font-variant-numeric: tabular-nums; min-width: 110px;">
+        Turn @Session.Viewed.Turn / @Session.Current.Turn
+    </MudText>
+
+    @if (Session.IsViewingPast)
+    {
+        <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Filled">Viewing history</MudChip>
+        <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Primary"
+                   OnClick="() => Session.ViewTurn(Session.History.Count - 1)">
+            Back to live
+        </MudButton>
+        <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Warning"
+                   StartIcon="@Icons.Material.Filled.CallSplit"
+                   OnClick="Branch">
+            Branch from here
+        </MudButton>
+    }
+
+    <MudSpacer />
+
+    <MudSwitch T="bool"
+               Value="ShowLastTurn"
+               ValueChanged="value => ShowLastTurnChanged.InvokeAsync(value)"
+               Size="Size.Small" Color="Color.Info"
+               Label="Last turn overlay"
+               Disabled="Session.ViewedIndex == 0" />
+</MudPaper>
+
+@code {
+    [Parameter] public bool ShowLastTurn { get; set; }
+    [Parameter] public EventCallback<bool> ShowLastTurnChanged { get; set; }
+
+    // Subscribe directly so the turn indicator always reflects resolutions,
+    // independent of the parent's render cascade.
+    protected override void OnInitialized() => Session.Changed += HandleChanged;
+
+    private void HandleChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Session.Changed -= HandleChanged;
+
+    private async Task Branch()
+    {
+        int discarded = Session.History.Count - 1 - Session.ViewedIndex;
+        bool? confirmed = await DialogService.ShowMessageBoxAsync(
+            "Branch from this turn?",
+            $"This discards the {discarded} turn(s) after turn {Session.Viewed.Turn} and continues the game from here.",
+            yesText: "Branch", cancelText: "Cancel");
+        if (confirmed == true)
+        {
+            Session.BranchFromViewed();
+        }
+    }
+}

@@ -1,0 +1,50 @@
+@inject GameSession Session
+
+@* Construction tab: how many of each building to start constructing on this hex.
+   Each building under construction requires a dot (worker) on the hex. *@
+
+@{
+    var settings = Session.Current.GameSettings;
+    var draft = Session.GetDraft(PlayerId, Hexagon);
+    bool buildable = settings.HexagonSettings[Hexagon].IsBuildable;
+    short dots = Session.Current.PlayerStates[PlayerId].Armies.GetValueOrDefault(Hexagon, Army.Empty).Dot;
+}
+
+@if (!buildable)
+{
+    <MudAlert Severity="Severity.Warning" Dense="true">This hex is not buildable.</MudAlert>
+}
+else
+{
+    <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mb-2">
+        Each construction needs a dot (•) on the hex — @dots available here.
+    </MudText>
+    @foreach (var building in BoardGlyphs.Buildings)
+    {
+        int value = draft?.Construction[building] ?? 0;
+        <div class="d-flex align-center gap-2 mb-1">
+            <MudText Typo="Typo.body2" Style="width: 110px;">@BoardGlyphs.DisplayName(building)</MudText>
+            <MudNumericField T="int"
+                             Value="value"
+                             ValueChanged="newValue => Set(building, newValue)"
+                             Min="0" Max="999"
+                             Variant="Variant.Outlined" Margin="Margin.Dense"
+                             Style="width: 84px;" />
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                ◈ @settings.CompoundCost[building] · ↻ @settings.ConstructionDuration[building]
+                @if (settings.ProvidedSpace[building] > 0)
+                {
+                    <span> · +@settings.ProvidedSpace[building] space</span>
+                }
+            </MudText>
+        </div>
+    }
+}
+
+@code {
+    [Parameter, EditorRequired] public string PlayerId { get; set; } = default!;
+    [Parameter, EditorRequired] public Hexagon Hexagon { get; set; }
+
+    private void Set(Building building, int value) =>
+        Session.UpdateDraft(PlayerId, Hexagon, draft => draft.Construction[building] = Math.Max(0, value));
+}

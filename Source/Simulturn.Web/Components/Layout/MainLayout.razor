@@ -1,0 +1,51 @@
+@inherits LayoutComponentBase
+
+<MudThemeProvider @ref="_themeProvider" @bind-IsDarkMode="_isDarkMode" Theme="Theme" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="0" Dense="true" Color="Color.Transparent" Class="app-bar-blur">
+        <MudLink Href="/" Underline="Underline.None" Class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Hexagon" Color="Color.Primary" />
+            <MudText Typo="Typo.h6" Color="Color.Primary" Style="font-weight: 600; letter-spacing: 0.02em;">Simulturn</MudText>
+        </MudLink>
+        <MudSpacer />
+        <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                       Color="Color.Inherit"
+                       OnClick="() => _isDarkMode = !_isDarkMode" />
+    </MudAppBar>
+    <MudMainContent Class="pt-14">
+        @Body
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private MudThemeProvider _themeProvider = default!;
+    private bool _isDarkMode = true;
+
+    public static readonly MudTheme Theme = new()
+    {
+        PaletteLight = new PaletteLight()
+        {
+            Primary = "#2d67fb",
+            Secondary = "#fbc02d",
+            AppbarBackground = "rgba(255,255,255,0.8)",
+            AppbarText = "#424242",
+        },
+        PaletteDark = new PaletteDark()
+        {
+            Primary = "#5c8aff",
+            Secondary = "#fbc02d",
+            Surface = "#1e2228",
+            Background = "#14171c",
+            AppbarBackground = "rgba(20,23,28,0.8)",
+            DrawerBackground = "#1a1e24",
+        },
+        LayoutProperties = new LayoutProperties()
+        {
+            DefaultBorderRadius = "10px",
+        },
+    };
+}

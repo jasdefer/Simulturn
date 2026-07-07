@@ -1,0 +1,30 @@
+@* One table edits all four per-building settings vectors: rows = buildings, columns = knobs. *@
+
+<MudSimpleTable Dense="true" Class="settings-table">
+    <thead>
+        <tr>
+            <th>Building</th>
+            <th><MudTooltip Text="Matter cost">Cost ◈</MudTooltip></th>
+            <th><MudTooltip Text="Supply provided">Space ⌂</MudTooltip></th>
+            <th><MudTooltip Text="Turns to construct">Build ↻</MudTooltip></th>
+            <th><MudTooltip Text="Damage needed to destroy one">Armor</MudTooltip></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var building in BoardGlyphs.Buildings)
+        {
+            var row = Draft.Buildings[building];
+            <tr>
+                <td>@BoardGlyphs.DisplayName(building)</td>
+                <td><MudNumericField T="int" @bind-Value="row.Cost" Min="0" Variant="Variant.Text" Margin="Margin.Dense" HideSpinButtons="true" /></td>
+                <td><MudNumericField T="int" @bind-Value="row.ProvidedSpace" Min="0" Variant="Variant.Text" Margin="Margin.Dense" HideSpinButtons="true" /></td>
+                <td><MudNumericField T="int" @bind-Value="row.ConstructionDuration" Min="1" Variant="Variant.Text" Margin="Margin.Dense" HideSpinButtons="true" /></td>
+                <td><MudNumericField T="int" @bind-Value="row.Armor" Min="1" Variant="Variant.Text" Margin="Margin.Dense" HideSpinButtons="true" /></td>
+            </tr>
+        }
+    </tbody>
+</MudSimpleTable>
+
+@code {
+    [Parameter, EditorRequired] public SettingsDraft Draft { get; set; } = default!;
+}

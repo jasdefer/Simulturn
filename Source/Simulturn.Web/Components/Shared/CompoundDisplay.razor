@@ -1,0 +1,21 @@
+@* Compact inline building list: "Plane 1 · Axis 2". Empty compound renders a muted dash. *@
+
+@if (Compound.IsEmpty)
+{
+    <span class="mud-text-secondary">—</span>
+}
+else
+{
+    <span class="compound-display" style="font-variant-numeric: tabular-nums;">
+        @string.Join(" · ", Parts)
+    </span>
+}
+
+@code {
+    [Parameter, EditorRequired] public Compound Compound { get; set; }
+
+    private IEnumerable<string> Parts =>
+        BoardGlyphs.Buildings
+            .Where(building => Compound[building] > 0)
+            .Select(building => $"{building} {Compound[building]}");
+}

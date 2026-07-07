@@ -1,0 +1,64 @@
+@inject GameSession Session
+@inject IJSRuntime JS
+@inject ISnackbar Snackbar
+
+@* God-mode debug tools: state/settings JSON dumps, raw queues, consistency check, seed restart. *@
+
+<MudMenu Icon="@Icons.Material.Filled.BugReport" Size="Size.Small" Dense="true"
+         AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+    <MudMenuItem Icon="@Icons.Material.Filled.ContentCopy" OnClick="CopyState">Copy state JSON</MudMenuItem>
+    <MudMenuItem Icon="@Icons.Material.Filled.Download" OnClick="DownloadState">Download state JSON</MudMenuItem>
+    <MudMenuItem Icon="@Icons.Material.Filled.Tune" OnClick="CopySettings">Copy settings JSON</MudMenuItem>
+    <MudDivider />
+    <MudMenuItem Icon="@Icons.Material.Filled.TableRows" OnClick="() => _showQueues = true">Raw queues</MudMenuItem>
+    <MudMenuItem Icon="@Icons.Material.Filled.FactCheck" OnClick="RunConsistencyCheck">Run IsValid() now</MudMenuItem>
+    <MudDivider />
+    <MudMenuItem Icon="@Icons.Material.Filled.Replay" OnClick="RestartSameSeed">Restart (same settings + seed)</MudMenuItem>
+</MudMenu>
+
+<MudDialog @bind-Visible="_showQueues" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">Raw queues — turn @Session.Viewed.Turn</MudText>
+    </TitleContent>
+    <DialogContent>
+        <RawQueuesView State="Session.Viewed" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => _showQueues = false">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private bool _showQueues;
+    private readonly DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true };
+
+    private async Task CopyState()
+    {
+        await JS.InvokeVoidAsync("simulturn.copyText", GameStateSerializer.ToJson(Session.Viewed));
+        Snackbar.Add("Game state copied to clipboard.", Severity.Success);
+    }
+
+    private async Task DownloadState()
+    {
+        string fileName = $"simulturn-turn-{Session.Viewed.Turn}.json";
+        await JS.InvokeVoidAsync("simulturn.downloadFile", fileName, GameStateSerializer.ToJson(Session.Viewed));
+    }
+
+    private async Task CopySettings()
+    {
+        await JS.InvokeVoidAsync("simulturn.copyText", GameStateSerializer.ToJson(Session.Viewed.GameSettings));
+        Snackbar.Add("Game settings copied to clipboard.", Severity.Success);
+    }
+
+    private void RunConsistencyCheck()
+    {
+        var issues = Session.Viewed.IsValid().ToList();
+        Snackbar.Add(
+            issues.Count == 0
+                ? "State is consistent — no issues found."
+                : $"{issues.Count} consistency issue(s): {string.Join("; ", issues.Take(3))}",
+            issues.Count == 0 ? Severity.Success : Severity.Error);
+    }
+
+    private void RestartSameSeed() => Session.RestartSameSettings();
+}

@@ -1,0 +1,32 @@
+@inherits LayoutComponentBase
+
+@* Edge-to-edge layout for the game screen: no page padding, board fills the viewport. *@
+
+<MudThemeProvider IsDarkMode="_isDarkMode" Theme="MainLayout.Theme" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<div class="game-viewport">
+    <CascadingValue Value="this">
+        @Body
+    </CascadingValue>
+</div>
+
+@code {
+    private bool _isDarkMode = true;
+
+    public bool IsDarkMode
+    {
+        get => _isDarkMode;
+        set
+        {
+            if (_isDarkMode == value)
+            {
+                return;
+            }
+            _isDarkMode = value;
+            StateHasChanged();
+        }
+    }
+}

@@ -1,0 +1,65 @@
+@* Per-player summary chips: color, name, matter (+projected income), space, army total.
+   In god mode the chips switch which player's orders are being edited. *@
+
+<div class="d-flex align-center gap-2 flex-wrap">
+    @foreach (var (playerId, index) in Players)
+    {
+        var playerState = State.PlayerStates[playerId];
+        bool isActive = Session.ActivePlayerId == playerId;
+        string borderStyle = Interactive && isActive
+            ? $"border: 2px solid var(--player-{index}); background: color-mix(in srgb, var(--player-{index}) 16%, transparent);"
+            : $"border: 1.5px solid color-mix(in srgb, var(--player-{index}) 55%, transparent);";
+        <MudTooltip Text="@(Interactive ? (isActive ? $"You are issuing orders for {playerId}" : $"Click to issue orders for {playerId}") : null)">
+            <MudPaper Elevation="0"
+                      Class="@($"player-chip d-flex align-center gap-3 px-3 py-1 {(Interactive ? "player-chip-clickable" : null)}")"
+                      Style="@($"{borderStyle} border-radius: 10px;")"
+                      @onclick="() => HandleClick(playerId)">
+                <div style="@($"width: 11px; height: 11px; border-radius: 50%; background: var(--player-{index});")"></div>
+                <MudText Typo="Typo.subtitle2" Style="font-weight:600;">@playerId</MudText>
+                @if (Interactive && isActive)
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Style="@($"color: var(--player-{index});")" title="Issuing orders" />
+                }
+                <MudTooltip Text="Matter · projected income next turn">
+                    <span style="font-variant-numeric: tabular-nums;">
+                        ◈ @playerState.Matter@(ShowIncome ? $" +{Session.ProjectedIncome(playerId)}" : null)
+                    </span>
+                </MudTooltip>
+                <MudTooltip Text="Space used / available">
+                    <span style="font-variant-numeric: tabular-nums;">⌂ @playerState.UsedSpace/@playerState.AvailableSpace</span>
+                </MudTooltip>
+                <MudTooltip Text="Total units on the map">
+                    <span style="font-variant-numeric: tabular-nums;">Σ @playerState.Armies.Values.Sum(army => army.Total)</span>
+                </MudTooltip>
+            </MudPaper>
+        </MudTooltip>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public GameSession Session { get; set; } = default!;
+    [Parameter, EditorRequired] public GameState State { get; set; } = default!;
+
+    /// <summary>Whether chips select the active player (god mode, live view only).</summary>
+    [Parameter] public bool Interactive { get; set; }
+
+    /// <summary>Hot seat: only this player's summary is shown (matter/space are private).</summary>
+    [Parameter] public string? ViewerId { get; set; }
+
+    /// <summary>Projected income only makes sense on the live state, not while browsing history.</summary>
+    private bool ShowIncome => ReferenceEquals(State, Session.HasGame ? Session.Current : null);
+
+    private IEnumerable<(string PlayerId, byte Index)> Players =>
+        BoardProjector.GetPlayerIndices(State)
+            .OrderBy(pair => pair.Value)
+            .Where(pair => ViewerId is null || pair.Key == ViewerId)
+            .Select(pair => (pair.Key, pair.Value));
+
+    private void HandleClick(string playerId)
+    {
+        if (Interactive)
+        {
+            Session.SetActivePlayer(playerId);
+        }
+    }
+}

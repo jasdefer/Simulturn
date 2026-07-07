@@ -1,0 +1,74 @@
+@using Simulturn.Core.Model.State.StateValidation
+@inject GameViewState ViewState
+
+@* Friendly rendering of engine validation results; hex-anchored entries select the hex on click. *@
+
+@if (Session.ValidationCrash is not null)
+{
+    <MudAlert Severity="Severity.Error" Dense="true" Class="mb-1">
+        @Session.ValidationCrash
+    </MudAlert>
+}
+
+@foreach (var validation in Validations)
+{
+    var hexagon = HexagonOf(validation);
+    <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-1"
+              Style="@(hexagon is not null ? "cursor: pointer;" : null)"
+              @onclick="() => HandleClick(hexagon)">
+        @Message(validation)
+    </MudAlert>
+}
+
+@code {
+    [Parameter, EditorRequired] public GameSession Session { get; set; } = default!;
+
+    /// <summary>Player whose validation results are shown; null = all players.</summary>
+    [Parameter] public string? PlayerId { get; set; }
+
+    private IEnumerable<ICommandValidation> Validations =>
+        Session.ValidationResults
+            .Where(pair => PlayerId is null || pair.Key == PlayerId)
+            .SelectMany(pair => pair.Value);
+
+    private static Hexagon? HexagonOf(ICommandValidation validation) => validation switch
+    {
+        MissingBuildingForTraining v => v.Hexagon,
+        MissingDotsForConstruction v => v.Hexagon,
+        MissingArmyForMovement v => v.Hexagon,
+        MovementExceedsRange v => v.Hexagon,
+        UpgradeExceedsAvailableLevel v => v.Hexagon,
+        UpgradeRequiresDot v => v.Hexagon,
+        _ => null,
+    };
+
+    private static string Message(ICommandValidation validation) => validation switch
+    {
+        InsufficientMatter v =>
+            $"{v.PlayerId}: not enough matter — orders cost ◈{v.Required}, only ◈{v.Available} available.",
+        InsufficientSpace v =>
+            $"{v.PlayerId}: not enough space — training needs ⌂{v.Required}, only ⌂{v.Available} available. Build an Axis or Plane.",
+        MissingBuildingForTraining v =>
+            $"{v.PlayerId}: {v.TrainedCount}× {BoardGlyphs.TextGlyph(v.Unit)} training at ({v.Hexagon.X}, {v.Hexagon.Y}) but only {v.BuildingCount}× {GameSettings.TrainingBuildingPerUnit[v.Unit]} there.",
+        MissingDotsForConstruction v =>
+            $"{v.PlayerId}: constructions at ({v.Hexagon.X}, {v.Hexagon.Y}) need more dots — only {v.AvailableDots} • available.",
+        MissingArmyForMovement v =>
+            $"{v.PlayerId}: moving {v.MovingUnits}× {BoardGlyphs.TextGlyph(v.Unit)} from ({v.Hexagon.X}, {v.Hexagon.Y}) but only {v.AvailableUnits} there.",
+        MovementExceedsRange v =>
+            $"{v.PlayerId}: {BoardGlyphs.TextGlyph(v.Unit)} cannot move {v.Distance} hexes from ({v.Hexagon.X}, {v.Hexagon.Y}) to ({v.Destination.X}, {v.Destination.Y}) — range is {v.Range}.",
+        UpgradeExceedsAvailableLevel v =>
+            $"{v.PlayerId}: {v.Upgrade} at ({v.Hexagon.X}, {v.Hexagon.Y}) already at level {v.CurrentLevel} of {v.AvailableLevel}.",
+        UpgradeRequiresDot v =>
+            $"{v.PlayerId}: researching {v.Upgrade} at ({v.Hexagon.X}, {v.Hexagon.Y}) requires a dot (•) on the hex.",
+        InvalidPlayerId v => $"Unknown player: {v.PlayerId}.",
+        _ => validation.ToString() ?? "Unknown validation issue.",
+    };
+
+    private void HandleClick(Hexagon? hexagon)
+    {
+        if (hexagon is { } hex)
+        {
+            ViewState.SelectHex(hex);
+        }
+    }
+}

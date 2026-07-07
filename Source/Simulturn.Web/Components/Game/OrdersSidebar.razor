@@ -1,0 +1,128 @@
+@inject GameSession Session
+@inject GameViewState ViewState
+
+@* All staged orders of the active player, grouped by hex. Hovering highlights the hex on the
+   board, clicking selects it, and every order can be deleted from here. *@
+
+@{
+    var orders = BuildOrderGroups();
+}
+
+<div class="pa-3">
+    <div class="d-flex align-center">
+        <MudText Typo="Typo.overline" Class="mud-text-secondary">
+            Orders (@orders.Sum(group => group.Rows.Count))
+        </MudText>
+        <MudSpacer />
+        @if (orders.Count > 0)
+        {
+            <MudTooltip Text="Discard all staged orders and start the turn over">
+                <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Error"
+                           StartIcon="@Icons.Material.Filled.DeleteSweep"
+                           OnClick="() => Session.ClearDrafts(PlayerId)">
+                    Clear all
+                </MudButton>
+            </MudTooltip>
+        }
+    </div>
+
+    @if (orders.Count == 0)
+    {
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">
+            No orders staged. Select a hex to issue commands.
+        </MudText>
+    }
+
+    @foreach (var group in orders)
+    {
+        <div class="order-group mb-2"
+             @onmouseover="() => ViewState.SetHoveredHex(group.Hexagon)"
+             @onmouseout="() => ViewState.SetHoveredHex(null)">
+            <MudLink Typo="Typo.body2" Underline="Underline.Hover"
+                     OnClick="() => ViewState.SelectHex(group.Hexagon)">
+                <b>(@group.Hexagon.X, @group.Hexagon.Y)</b>
+            </MudLink>
+            @foreach (var row in group.Rows)
+            {
+                <div class="d-flex align-center gap-2 pl-2">
+                    <MudIcon Icon="@row.Icon" Size="Size.Small" Class="mud-text-secondary" />
+                    <MudText Typo="Typo.body2">@row.Text</MudText>
+                    <MudSpacer />
+                    <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small"
+                                   OnClick="row.Delete" />
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string PlayerId { get; set; } = default!;
+
+    private sealed record OrderRow(string Icon, string Text, Action Delete);
+
+    private sealed record OrderGroup(Hexagon Hexagon, List<OrderRow> Rows);
+
+    private List<OrderGroup> BuildOrderGroups()
+    {
+        List<OrderGroup> groups = [];
+        if (!Session.Drafts.TryGetValue(PlayerId, out var playerDrafts))
+        {
+            return groups;
+        }
+        foreach (var (hexagon, draft) in playerDrafts
+            .OrderBy(pair => pair.Key.Z).ThenBy(pair => pair.Key.X))
+        {
+            List<OrderRow> rows = [];
+            foreach (var movement in draft.Movements.Where(movement => !movement.Army.IsEmpty))
+            {
+                var destination = movement.Destination;
+                rows.Add(new OrderRow(
+                    Icons.Material.Filled.ArrowForward,
+                    $"Move {BoardGlyphs.CompactLabel(movement.Army.ToArmy())} → ({destination.X}, {destination.Y})",
+                    () => Session.UpdateDraft(PlayerId, hexagon, d => d.UpsertMovement(destination, new ArmyDraft()))));
+            }
+            if (!draft.Construction.IsEmpty)
+            {
+                var parts = BoardGlyphs.Buildings
+                    .Where(building => draft.Construction[building] > 0)
+                    .Select(building => $"{building} ×{draft.Construction[building]}");
+                rows.Add(new OrderRow(
+                    Icons.Material.Filled.Construction,
+                    $"Build {string.Join(", ", parts)}",
+                    () => Session.UpdateDraft(PlayerId, hexagon, d =>
+                    {
+                        foreach (var building in BoardGlyphs.Buildings)
+                        {
+                            d.Construction[building] = 0;
+                        }
+                    })));
+            }
+            if (!draft.Training.IsEmpty)
+            {
+                rows.Add(new OrderRow(
+                    Icons.Material.Filled.School,
+                    $"Train {BoardGlyphs.CompactLabel(draft.Training.ToArmy())}",
+                    () => Session.UpdateDraft(PlayerId, hexagon, d =>
+                    {
+                        foreach (var unit in BoardGlyphs.Units)
+                        {
+                            d.Training[unit] = 0;
+                        }
+                    })));
+            }
+            if (draft.Upgrade is { } upgrade)
+            {
+                rows.Add(new OrderRow(
+                    Icons.Material.Filled.Science,
+                    $"Research {upgrade}",
+                    () => Session.UpdateDraft(PlayerId, hexagon, d => d.Upgrade = null)));
+            }
+            if (rows.Count > 0)
+            {
+                groups.Add(new OrderGroup(hexagon, rows));
+            }
+        }
+        return groups;
+    }
+}

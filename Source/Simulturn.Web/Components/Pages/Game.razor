@@ -1,0 +1,455 @@
+@page "/game"
+@layout Simulturn.Web.Components.Layout.GameLayout
+@implements IDisposable
+@inject GameSession Session
+@inject GameViewState ViewState
+@inject BoardProjector Projector
+@inject NavigationManager Navigation
+
+<PageTitle>Simulturn — Game</PageTitle>
+
+@if (!Session.HasGame)
+{
+    @* Circuit was refreshed or the page was opened directly; redirect handled in OnInitialized. *@
+    return;
+}
+
+<div class="d-flex flex-column" style="height: 100%;">
+
+    @* --- Top bar --- *@
+    <MudPaper Elevation="1" Square="true" Class="d-flex align-center gap-4 px-4 py-2" Style="z-index: 10;">
+        <MudLink Href="/" Underline="Underline.None" Class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Hexagon" Color="Color.Primary" Size="Size.Small" />
+            <MudText Typo="Typo.subtitle1" Color="Color.Primary" Style="font-weight:600;">Simulturn</MudText>
+        </MudLink>
+        <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Default">
+            Turn @Session.Viewed.Turn
+        </MudChip>
+        <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Info">@Session.Mode</MudChip>
+
+        <PlayerSummaryBar Session="Session" State="Session.Viewed"
+                          Interactive="Session.Mode == GameMode.God && !Session.IsViewingPast"
+                          ViewerId="@FogViewerId" />
+
+        <MudSpacer />
+
+        @if (Session.Viewed.IsGameOver)
+        {
+            <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Filled">Game over</MudChip>
+        }
+
+        @if (CommandPlayerId is { } resetPlayer && HasDraftedOrders(resetPlayer))
+        {
+            <MudTooltip Text="Discard all orders staged this turn and start over">
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Error"
+                           Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.DeleteSweep"
+                           OnClick="() => Session.ClearDrafts(resetPlayer)">
+                    Reset orders
+                </MudButton>
+            </MudTooltip>
+        }
+
+        <MudBadge Content="ValidationCount" Visible="ValidationCount > 0" Color="Color.Warning" Overlap="true">
+            @if (Session.Mode == GameMode.HotSeat)
+            {
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Check"
+                           Disabled="!Session.CanSubmitActivePlayer"
+                           OnClick="SubmitOrders">
+                    Submit orders
+                </MudButton>
+            }
+            else
+            {
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.PlayArrow"
+                           Disabled="!Session.CanEndTurn"
+                           OnClick="EndTurn">
+                    End Turn
+                </MudButton>
+            }
+        </MudBadge>
+
+        <MudIconButton Icon="@Icons.Material.Filled.MenuBook"
+                       Size="Size.Small"
+                       title="Game rules & settings"
+                       OnClick="() => _showSettings = true" />
+
+        <MudIconButton Icon="@Icons.Material.Filled.Summarize"
+                       Size="Size.Small"
+                       title="Last turn report"
+                       Disabled="Session.Reports.Count == 0"
+                       OnClick="() => _showReport = true" />
+
+        @if (Session.Mode == GameMode.God)
+        {
+            <DebugMenu />
+        }
+
+        <MudIconButton Icon="@(Layout?.IsDarkMode == true ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                       Size="Size.Small"
+                       OnClick="ToggleDarkMode" />
+    </MudPaper>
+
+    @if (Session.StateIssues.Count > 0)
+    {
+        <MudAlert Severity="Severity.Error" Dense="true" Square="true">
+            Engine consistency check failed after the last turn (@Session.StateIssues.Count issue(s)) —
+            this indicates a bug in the game logic: @string.Join("; ", Session.StateIssues.Take(3))
+        </MudAlert>
+    }
+
+    @* --- Board + side panel --- *@
+    <div class="d-flex flex-grow-1" style="min-height: 0;">
+        <div class="flex-grow-1 pa-3" style="min-width: 0; position: relative;">
+            @if (ShowGameOverBanner)
+            {
+                <div class="game-over-banner">
+                    <MudPaper Elevation="8" Class="pa-6 d-flex flex-column align-center gap-2" Style="border-radius: 14px; max-width: 420px;">
+                        <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Color="Color.Warning" Style="font-size: 3rem;" />
+                        <MudText Typo="Typo.h5" Align="Align.Center">
+                            @(Winner is { } winner ? $"{winner} wins!" : "Draw — no bases left")
+                        </MudText>
+                        <MudText Typo="Typo.body2" Align="Align.Center" Class="mud-text-secondary">
+                            Turn @Session.Current.Turn · the game ends when at most one player still has buildings.
+                        </MudText>
+                        <div class="d-flex gap-2 mt-2 flex-wrap justify-center">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                                       StartIcon="@Icons.Material.Filled.Replay"
+                                       OnClick="Session.RestartSameSettings">
+                                Rematch (same settings)
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined" Size="Size.Small" Href="/new-game">New game</MudButton>
+                            <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="DismissGameOver">
+                                Keep exploring
+                            </MudButton>
+                        </div>
+                    </MudPaper>
+                </div>
+            }
+            <HexBoard Board="BoardView"
+                      SelectedHex="ViewState.SelectedHex"
+                      DestinationCandidates="DestinationCandidates"
+                      HoveredHex="ViewState.HoveredHex"
+                      ReadOnly="Session.IsViewingPast"
+                      OnHexClicked="HandleHexClicked"
+                      OnArrowClicked="HandleArrowClicked"
+                      OnCancelRequested="HandleCancel"
+                      OverlayAnchor="StepperAnchor"
+                      OverlayEditor="StepperEditor" />
+        </div>
+
+        <MudPaper Elevation="2" Square="true" Class="d-flex flex-column"
+                  Style="width: 400px; overflow-y: auto; flex-shrink: 0;">
+            @if (ViewState.SelectedHex is { } selected)
+            {
+                <HexDetailPanel State="Session.Viewed"
+                                Hexagon="selected"
+                                CommandPlayerId="@CommandPlayerId"
+                                PlayerView="PlayerView"
+                                OnClose="() => ViewState.SelectHex(null)" />
+                <MudDivider />
+            }
+            @if (CommandPlayerId is { } commandPlayer)
+            {
+                <div class="pa-3 pb-0">
+                    <ValidationList Session="Session" PlayerId="@commandPlayer" />
+                </div>
+                <OrdersSidebar PlayerId="@commandPlayer" />
+            }
+        </MudPaper>
+    </div>
+
+    @if (Session.Mode == GameMode.God)
+    {
+        @* Time travel reveals everything — god mode only. *@
+        <TimelineBar @bind-ShowLastTurn="_showLastTurn" />
+    }
+</div>
+
+@if (Session.Mode == GameMode.HotSeat && Session.ShowHandoff)
+{
+    <HandoffInterstitial />
+}
+
+<MudDialog @bind-Visible="_showSettings" Options="_reportDialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">Game rules & settings</MudText>
+    </TitleContent>
+    <DialogContent>
+        <SettingsViewer Settings="Session.Viewed.GameSettings" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => _showSettings = false">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+<MudDialog @bind-Visible="_showReport" Options="_reportDialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">Turn report</MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (ViewedReport is { } report)
+        {
+            <TurnReportView Report="report" ViewerId="@FogViewerId" />
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Class="mud-text-secondary">No resolution to report for this turn.</MudText>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => _showReport = false">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] public Simulturn.Web.Components.Layout.GameLayout? Layout { get; set; }
+
+    private BoardView? _boardView;
+    private GameState? _boardViewState;
+    private int _boardViewDraftsVersion = -1;
+    private bool _boardViewShowedLastTurn;
+    private bool _showLastTurn;
+    private bool _showReport;
+    private bool _showSettings;
+    private GameState? _gameOverDismissedFor;
+    private readonly DialogOptions _reportDialogOptions = new() { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true };
+
+    /// <summary>Report of the resolution that produced the currently viewed state.</summary>
+    private TurnReport? ViewedReport =>
+        Session.ViewedIndex > 0 && Session.ViewedIndex - 1 < Session.Reports.Count
+            ? Session.Reports[Session.ViewedIndex - 1]
+            : null;
+
+    private string? _boardViewViewer;
+    private PlayerGameState? _playerView;
+    private GameState? _playerViewState;
+    private string? _playerViewViewer;
+
+    /// <summary>The engine's fog-of-war view for the active hot-seat player; null in god mode.</summary>
+    private PlayerGameState? PlayerView
+    {
+        get
+        {
+            if (FogViewerId is not { } viewer)
+            {
+                return null;
+            }
+            if (_playerView is null ||
+                !ReferenceEquals(_playerViewState, Session.Viewed) ||
+                _playerViewViewer != viewer)
+            {
+                _playerView = Session.Viewed.GetPlayerGameState(viewer);
+                _playerViewState = Session.Viewed;
+                _playerViewViewer = viewer;
+            }
+            return _playerView;
+        }
+    }
+
+    private BoardView BoardView
+    {
+        get
+        {
+            if (_boardView is null ||
+                !ReferenceEquals(_boardViewState, Session.Viewed) ||
+                _boardViewDraftsVersion != Session.DraftsVersion ||
+                _boardViewShowedLastTurn != _showLastTurn ||
+                _boardViewViewer != FogViewerId)
+            {
+                if (PlayerView is { } playerView)
+                {
+                    _boardView = Projector.ProjectPlayerView(playerView, Session.Drafts);
+                }
+                else
+                {
+                    var lastTurn = _showLastTurn ? ViewedReport : null;
+                    _boardView = Session.IsViewingPast
+                        ? Projector.ProjectGodMode(Session.Viewed, lastTurn: lastTurn)
+                        : Projector.ProjectGodMode(Session.Viewed, Session.Drafts, lastTurn);
+                }
+                _boardViewState = Session.Viewed;
+                _boardViewDraftsVersion = Session.DraftsVersion;
+                _boardViewShowedLastTurn = _showLastTurn;
+                _boardViewViewer = FogViewerId;
+            }
+            return _boardView;
+        }
+    }
+
+    /// <summary>Player whose orders are edited right now; null while viewing history.</summary>
+    private string? CommandPlayerId =>
+        Session.IsViewingPast ? null : Session.ActivePlayerId;
+
+    /// <summary>Fog-of-war viewer: the active player in hot seat, nobody (all-seeing) in god mode.</summary>
+    private string? FogViewerId =>
+        Session.Mode == GameMode.HotSeat ? Session.ActivePlayerId : null;
+
+    private int ValidationCount =>
+        Session.Mode == GameMode.HotSeat && Session.ActivePlayerId is { } active
+            ? Session.ValidationResults.GetValueOrDefault(active, []).Count + (Session.ValidationCrash is null ? 0 : 1)
+            : Session.ValidationResults.Values.Sum(results => results.Count) + (Session.ValidationCrash is null ? 0 : 1);
+
+    private IReadOnlySet<Hexagon> DestinationCandidates =>
+        ViewState.MovementSource is { } source && ViewState.MovementDestination is null && CommandPlayerId is { } player
+            ? MovementRange.GetDestinations(Session.Viewed, source, Session.AvailableArmyForMovement(player, source))
+            : ImmutableHashSet<Hexagon>.Empty;
+
+    private Hexagon? StepperAnchor =>
+        ViewState.MovementSource is not null ? ViewState.MovementDestination : null;
+
+    private RenderFragment? StepperEditor =>
+        ViewState.MovementSource is { } source && ViewState.MovementDestination is { } destination && CommandPlayerId is { } player
+            ? @<MoveStepperEditor Session="Session"
+                                  PlayerId="@player"
+                                  Source="source"
+                                  Destination="destination"
+                                  OnCommitted="ViewState.CancelMovement"
+                                  OnCancel="ViewState.CancelMovement" />
+            : null;
+
+    protected override void OnInitialized()
+    {
+        if (!Session.HasGame)
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+        Session.Changed += HandleChanged;
+        ViewState.Changed += HandleChanged;
+    }
+
+    private void HandleChanged() => InvokeAsync(StateHasChanged);
+
+    private void EndTurn()
+    {
+        ViewState.Reset();
+        Session.ResolveTurn();
+        _showReport = true;
+        _showLastTurn = true;
+    }
+
+    private void SubmitOrders()
+    {
+        ViewState.Reset();
+        Session.SubmitActivePlayer();
+    }
+
+    private void HandleHexClicked(Hexagon hexagon)
+    {
+        // Awaiting a movement destination: highlighted (in-range) hexes are targets,
+        // anything else is a normal re-selection.
+        if (ViewState.MovementSource is { } source && ViewState.MovementDestination is null)
+        {
+            if (hexagon == source)
+            {
+                ViewState.CancelMovement();
+            }
+            else if (DestinationCandidates.Contains(hexagon))
+            {
+                // A single movable unit needs no stepper — stage it immediately.
+                if (CommandPlayerId is { } player)
+                {
+                    var reachable = MovementRange.ReachableArmy(
+                        Session.Viewed.GameSettings,
+                        Session.AvailableArmyForMovement(player, source),
+                        source.DistanceTo(hexagon));
+                    if (reachable.Total == 1)
+                    {
+                        Session.UpdateDraft(player, source, draft => draft.UpsertMovement(hexagon, ArmyDraft.From(reachable)));
+                        ViewState.CancelMovement();
+                        return;
+                    }
+                }
+                ViewState.PickDestination(hexagon);
+            }
+            else
+            {
+                ViewState.SelectHex(hexagon);
+            }
+            return;
+        }
+
+        if (ViewState.SelectedHex == hexagon)
+        {
+            ViewState.SelectHex(null);
+        }
+        else
+        {
+            ViewState.SelectHex(hexagon);
+        }
+    }
+
+    private void HandleArrowClicked(OrderArrowView arrow)
+    {
+        if (CommandPlayerId is not { } player)
+        {
+            return;
+        }
+        // Only the active player's own staged arrows are editable.
+        var indices = BoardProjector.GetPlayerIndices(Session.Viewed);
+        if (indices.TryGetValue(player, out byte index) && index == arrow.PlayerIndex)
+        {
+            ViewState.EditMovement(arrow.From, arrow.To);
+        }
+    }
+
+    private void HandleCancel()
+    {
+        if (ViewState.MovementDestination is not null)
+        {
+            ViewState.CancelMovement();
+        }
+        else if (ViewState.MovementSource is not null)
+        {
+            ViewState.CancelMovement();
+        }
+        else
+        {
+            ViewState.SelectHex(null);
+        }
+    }
+
+    /// <summary>Game-over overlay: live view only, dismissible per final state ("keep exploring").</summary>
+    private bool ShowGameOverBanner =>
+        Session.Current.IsGameOver &&
+        !Session.IsViewingPast &&
+        !ReferenceEquals(_gameOverDismissedFor, Session.Current) &&
+        Session.History.Count > 1; // a 1-player sandbox is "over" from turn 0 — don't block it
+
+    private string? Winner
+    {
+        get
+        {
+            var alive = Session.Current.PlayerStates
+                .Where(pair => pair.Value.Compounds.Any(compound => !compound.Value.IsEmpty))
+                .Select(pair => pair.Key)
+                .ToList();
+            return alive.Count == 1 ? alive[0] : null;
+        }
+    }
+
+    private void DismissGameOver() => _gameOverDismissedFor = Session.Current;
+
+    private bool HasDraftedOrders(string playerId) =>
+        Session.Drafts.TryGetValue(playerId, out var drafts) && drafts.Count > 0;
+
+    private void ToggleDarkMode()
+    {
+        if (Layout is not null)
+        {
+            Layout.IsDarkMode = !Layout.IsDarkMode;
+        }
+    }
+
+    public void Dispose()
+    {
+        Session.Changed -= HandleChanged;
+        ViewState.Changed -= HandleChanged;
+    }
+}

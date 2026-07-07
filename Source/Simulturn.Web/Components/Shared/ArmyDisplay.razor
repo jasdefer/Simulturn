@@ -1,0 +1,22 @@
+@* Compact inline army composition: "△3 ○2 •5". Empty army renders a muted dash. *@
+
+@if (Army.IsEmpty)
+{
+    <span class="mud-text-secondary">—</span>
+}
+else
+{
+    <span class="army-display" style="font-variant-numeric: tabular-nums; white-space: nowrap;">
+        @foreach (var unit in BoardGlyphs.Units)
+        {
+            if (Army[unit] > 0)
+            {
+                <span class="mr-2" title="@BoardGlyphs.DisplayName(unit)">@BoardGlyphs.TextGlyph(unit)@Army[unit]</span>
+            }
+        }
+    </span>
+}
+
+@code {
+    [Parameter, EditorRequired] public Army Army { get; set; }
+}

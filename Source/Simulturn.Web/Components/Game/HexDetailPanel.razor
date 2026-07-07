@@ -1,0 +1,188 @@
+@* Details of the selected hexagon: matter, per-player armies, buildings, and pending queues,
+   plus the command tabs (Move/Build/Train/Research) for the active player. *@
+
+<div class="pa-4">
+    <div class="d-flex align-center justify-space-between mb-2">
+        <MudText Typo="Typo.h6">Hex (@Hexagon.X, @Hexagon.Y, @Hexagon.Z)</MudText>
+        <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" OnClick="OnClose" />
+    </div>
+
+    <div class="d-flex align-center gap-4 mb-3">
+        <MudTooltip Text="@MatterTooltip">
+            <MudText Typo="Typo.body2" Style="font-variant-numeric: tabular-nums;">
+                ◈ @MatterDisplay / @HexagonSettings.Matter
+            </MudText>
+        </MudTooltip>
+        @if (Observation is { } observation && observation.LastSeenTurn is { } lastSeen && lastSeen < State.Turn)
+        {
+            <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Default">
+                Last seen turn @lastSeen
+            </MudChip>
+        }
+        @if (!HexagonSettings.IsBuildable)
+        {
+            <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Text">Not buildable</MudChip>
+        }
+        @if (!HexagonSettings.ResearchableUpgrades.IsEmpty)
+        {
+            <MudTooltip Text="Researchable upgrades at this hex">
+                <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Variant="Variant.Text">
+                    ⚗ @HexagonSettings.ResearchableUpgrades.Length
+                </MudChip>
+            </MudTooltip>
+        }
+    </div>
+
+    @foreach (var (playerId, index) in Players)
+    {
+        var playerState = State.PlayerStates[playerId];
+        bool isEnemy = PlayerView is not null && playerId != PlayerView.PlayerId;
+        var army = playerState.Armies.GetValueOrDefault(Hexagon, Army.Empty);
+        var compound = playerState.Compounds.GetValueOrDefault(Hexagon, Compound.Empty);
+        int? enemyArmyCountOnly = null;
+        if (isEnemy)
+        {
+            // Fog of war (engine-defined): buildings from possibly stale memories, unit counts
+            // only while fully visible, composition never, enemy queues never.
+            army = Army.Empty;
+            compound = Observation?.OpponentCompounds.GetValueOrDefault(playerId, Compound.Empty) ?? Compound.Empty;
+            enemyArmyCountOnly = Observation is { } enemyObservation &&
+                                 enemyObservation.OpponentUnitCounts.TryGetValue(playerId, out int unitCount)
+                ? unitCount
+                : null;
+        }
+        var pendingTrainings = PendingQueue(playerState.Trainings, item => !item.IsEmpty);
+        var pendingConstructions = PendingQueue(playerState.Constructions, item => !item.IsEmpty);
+        var pendingResearch = playerState.Researches
+            .Where(entry => entry.Key >= State.Turn && entry.Value.ContainsKey(Hexagon))
+            .Select(entry => (CompletionTurn: entry.Key, Upgrade: entry.Value[Hexagon]))
+            .ToList();
+        if (isEnemy)
+        {
+            pendingTrainings.Clear();
+            pendingConstructions.Clear();
+            pendingResearch.Clear();
+        }
+        bool hasContent = !army.IsEmpty || !compound.IsEmpty || enemyArmyCountOnly is not null ||
+                          pendingTrainings.Count > 0 || pendingConstructions.Count > 0 || pendingResearch.Count > 0;
+        if (!hasContent)
+        {
+            continue;
+        }
+        <MudPaper Elevation="0" Class="pa-3 mb-2"
+                  Style="@($"border-left: 3px solid var(--player-{index}); border-radius: 6px; background: color-mix(in srgb, var(--player-{index}) 6%, transparent);")">
+            <MudText Typo="Typo.subtitle2" Style="font-weight:600;" Class="mb-1">@playerId</MudText>
+            @if (!army.IsEmpty)
+            {
+                <div class="d-flex align-center gap-2">
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary" Style="width: 76px;">Army</MudText>
+                    <ArmyDisplay Army="army" />
+                    <MudTooltip Text="Total units — matches the Σ shown on crowded board tiles">
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary" Style="font-variant-numeric: tabular-nums;">
+                            (Σ @army.Total)
+                        </MudText>
+                    </MudTooltip>
+                </div>
+            }
+            @if (enemyArmyCountOnly is { } countOnly)
+            {
+                <div class="d-flex align-center gap-2">
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary" Style="width: 76px;">Army</MudText>
+                    <MudText Typo="Typo.body2">Σ @countOnly units (composition unknown)</MudText>
+                </div>
+            }
+            @if (!compound.IsEmpty)
+            {
+                <div class="d-flex align-center gap-2">
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary" Style="width: 76px;">Buildings</MudText>
+                    <CompoundDisplay Compound="compound" />
+                </div>
+            }
+            @foreach (var (completionTurn, training) in pendingTrainings)
+            {
+                <div class="d-flex align-center gap-2">
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary" Style="width: 76px;">Training</MudText>
+                    <ArmyDisplay Army="training" />
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">↻ @(completionTurn - State.Turn + 1) turn(s)</MudText>
+                </div>
+            }
+            @foreach (var (completionTurn, construction) in pendingConstructions)
+            {
+                <div class="d-flex align-center gap-2">
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary" Style="width: 76px;">Building</MudText>
+                    <CompoundDisplay Compound="construction" />
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">↻ @(completionTurn - State.Turn + 1) turn(s)</MudText>
+                </div>
+            }
+            @foreach (var (completionTurn, upgrade) in pendingResearch)
+            {
+                <div class="d-flex align-center gap-2">
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary" Style="width: 76px;">Research</MudText>
+                    <MudText Typo="Typo.body2">@upgrade</MudText>
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">↻ @(completionTurn - State.Turn + 1) turn(s)</MudText>
+                </div>
+            }
+        </MudPaper>
+    }
+
+    @if (CommandPlayerId is { } commandPlayer)
+    {
+        <MudDivider Class="my-3" />
+        <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" MinimumTabWidth="70px">
+            <MudTabPanel Text="Move">
+                <div class="pt-3"><MovePanel PlayerId="@commandPlayer" Hexagon="Hexagon" /></div>
+            </MudTabPanel>
+            <MudTabPanel Text="Build">
+                <div class="pt-3"><BuildPanel PlayerId="@commandPlayer" Hexagon="Hexagon" /></div>
+            </MudTabPanel>
+            <MudTabPanel Text="Train">
+                <div class="pt-3"><TrainPanel PlayerId="@commandPlayer" Hexagon="Hexagon" /></div>
+            </MudTabPanel>
+            <MudTabPanel Text="Research">
+                <div class="pt-3"><ResearchPanel PlayerId="@commandPlayer" Hexagon="Hexagon" /></div>
+            </MudTabPanel>
+        </MudTabs>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public GameState State { get; set; } = default!;
+    [Parameter, EditorRequired] public Hexagon Hexagon { get; set; }
+
+    /// <summary>Player issuing commands here; null renders the panel read-only (history, hot-seat lock).</summary>
+    [Parameter] public string? CommandPlayerId { get; set; }
+
+    /// <summary>Hot seat: the engine's fog-of-war view of the active player; null = god mode.</summary>
+    [Parameter] public PlayerGameState? PlayerView { get; set; }
+
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private HexagonObservation? Observation => PlayerView?.Observations.GetValueOrDefault(Hexagon);
+
+    private HexagonSettings HexagonSettings => State.GameSettings.HexagonSettings[Hexagon];
+
+    private string MatterDisplay =>
+        PlayerView is null
+            ? State.RemainingMatter.GetValueOrDefault(Hexagon).ToString()
+            : Observation?.RemainingMatter?.ToString() ?? "?";
+
+    private string MatterTooltip =>
+        PlayerView is null
+            ? "Remaining / initial matter"
+            : "Last known / initial matter (? = never seen up close)";
+
+    private IEnumerable<(string PlayerId, byte Index)> Players =>
+        BoardProjector.GetPlayerIndices(State).OrderBy(pair => pair.Value).Select(pair => (pair.Key, pair.Value));
+
+    private List<(ushort CompletionTurn, T Item)> PendingQueue<T>(
+        ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, T>> queue,
+        Func<T, bool> hasContent)
+    {
+        return queue
+            .Where(entry => entry.Key >= State.Turn)
+            .OrderBy(entry => entry.Key)
+            .Where(entry => entry.Value.ContainsKey(Hexagon) && hasContent(entry.Value[Hexagon]))
+            .Select(entry => (entry.Key, entry.Value[Hexagon]))
+            .ToList();
+    }
+}

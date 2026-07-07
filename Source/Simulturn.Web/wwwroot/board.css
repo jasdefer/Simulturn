@@ -1,0 +1,220 @@
+/* ============ Simulturn board ============
+   All geometry lives in viewBox units; these styles handle color, motion, and interaction.
+   Neutrals derive from MudBlazor palette variables so dark/light theming is automatic. */
+
+.hex-board {
+    width: 100%;
+    height: 100%;
+    display: block;
+    outline: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* --- Tile --- */
+
+.hex-tile .hex {
+    fill: var(--mud-palette-surface);
+    stroke: var(--mud-palette-lines-default);
+    stroke-width: 2.5;
+    stroke-linejoin: round;
+    transition: fill 0.12s ease, stroke 0.12s ease;
+}
+
+.hex-tile.hex-owned .hex {
+    fill: color-mix(in srgb, var(--tile-owner) 9%, var(--mud-palette-surface));
+}
+
+.hex-tile.hex-interactive {
+    cursor: pointer;
+}
+
+.hex-tile.hex-interactive:hover .hex {
+    fill: color-mix(in srgb, var(--mud-palette-text-primary) 7%, var(--mud-palette-surface));
+    stroke: var(--mud-palette-text-secondary);
+}
+
+.hex-tile.hex-owned.hex-interactive:hover .hex {
+    fill: color-mix(in srgb, var(--tile-owner) 16%, var(--mud-palette-surface));
+}
+
+.hex-tile.hex-selected .hex {
+    stroke: var(--mud-palette-primary);
+    stroke-width: 4;
+}
+
+.hex-glow {
+    fill: color-mix(in srgb, var(--mud-palette-primary) 22%, transparent);
+    stroke: none;
+    animation: fade-in 0.15s ease-out;
+}
+
+.hex-candidate {
+    fill: var(--mud-palette-primary);
+    stroke: none;
+    pointer-events: none;
+    animation: candidate-pulse 1.6s ease-in-out infinite;
+}
+
+.hex-tile.hex-interactive:hover .hex-candidate {
+    animation: none;
+    fill-opacity: 0.3;
+}
+
+.hex-hover-ring {
+    fill: none;
+    stroke: var(--mud-palette-secondary);
+    stroke-width: 4;
+    stroke-dasharray: 14 9;
+    pointer-events: none;
+}
+
+/* --- Fog levels --- */
+
+.hex-tile.vis-unknown .hex {
+    fill: color-mix(in srgb, var(--mud-palette-text-primary) 12%, var(--mud-palette-background));
+    stroke: color-mix(in srgb, var(--mud-palette-lines-default) 60%, transparent);
+}
+
+.hex-tile.vis-mapped .hex {
+    fill: color-mix(in srgb, var(--mud-palette-background) 45%, var(--mud-palette-surface));
+}
+
+.hex-hatch {
+    color: var(--mud-palette-text-primary);
+    pointer-events: none;
+}
+
+.hex-tile.vis-partiallyvisible .hex {
+    fill: color-mix(in srgb, var(--mud-palette-background) 20%, var(--mud-palette-surface));
+}
+
+.presence-unknown circle {
+    fill: var(--mud-palette-text-secondary);
+    fill-opacity: 0.35;
+    animation: presence-pulse 2s ease-in-out infinite;
+}
+
+.presence-unknown .presence-text {
+    font: 600 24px Roboto, sans-serif;
+    fill: var(--mud-palette-text-primary);
+    text-anchor: middle;
+}
+
+/* --- Tile content --- */
+
+.matter-badge {
+    color: var(--mud-palette-text-secondary);
+}
+
+.matter-badge .matter-text {
+    font: 500 21px Roboto, sans-serif;
+    font-variant-numeric: tabular-nums;
+    fill: var(--mud-palette-text-secondary);
+}
+
+.matter-badge.matter-stale {
+    opacity: 0.5;
+}
+
+.research-marker {
+    color: var(--mud-palette-secondary);
+}
+
+.chip {
+    animation: fade-scale-in 0.18s ease-out;
+}
+
+.chip .chip-bg {
+    fill: currentColor;
+    fill-opacity: 0.16;
+    stroke: currentColor;
+    stroke-width: 1.5;
+}
+
+.chip .count-text {
+    font: 500 21px Roboto, sans-serif;
+    font-variant-numeric: tabular-nums;
+    fill: var(--mud-palette-text-primary);
+    paint-order: stroke;
+    stroke: var(--mud-palette-surface);
+    stroke-width: 3;
+}
+
+.entry-ghost {
+    opacity: 0.55;
+}
+
+/* --- Order arrows --- */
+
+.order-arrow .arrow-path {
+    fill: none;
+    stroke-width: 4.5;
+    stroke-linecap: round;
+}
+
+.order-arrow.arrow-staged .arrow-path {
+    stroke-dasharray: 10 8;
+    animation: arrow-march 1.4s linear infinite;
+}
+
+.order-arrow.arrow-executed {
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+.order-arrow .arrow-hit {
+    fill: none;
+    stroke: transparent;
+    stroke-width: 24;
+    pointer-events: stroke;
+    cursor: pointer;
+}
+
+.order-arrow .arrow-label-bg {
+    fill: var(--mud-palette-surface);
+    fill-opacity: 0.88;
+    stroke: currentColor;
+    stroke-width: 1.2;
+}
+
+.order-arrow .arrow-label {
+    font: 500 19px Roboto, sans-serif;
+    font-variant-numeric: tabular-nums;
+    fill: var(--mud-palette-text-primary);
+    text-anchor: middle;
+}
+
+/* --- Overlay editor (foreignObject) --- */
+
+.board-overlay-editor {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: flex-start;
+    animation: fade-in 0.15s ease-out;
+}
+
+/* --- Animations --- */
+
+@keyframes fade-in {
+    from { opacity: 0; }
+}
+
+@keyframes fade-scale-in {
+    from { opacity: 0; }
+}
+
+@keyframes candidate-pulse {
+    0%, 100% { fill-opacity: 0.10; }
+    50% { fill-opacity: 0.22; }
+}
+
+@keyframes presence-pulse {
+    0%, 100% { fill-opacity: 0.2; }
+    50% { fill-opacity: 0.45; }
+}
+
+@keyframes arrow-march {
+    to { stroke-dashoffset: -18; }
+}

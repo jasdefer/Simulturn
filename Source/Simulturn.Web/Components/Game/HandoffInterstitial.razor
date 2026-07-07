@@ -1,0 +1,54 @@
+@inject GameSession Session
+
+@* Full-screen pass-the-device screen. Completely opaque: it must hide the board before the
+   incoming player's view renders. Shows the incoming player's private last-turn summary. *@
+
+<div class="handoff-screen">
+    <div class="d-flex flex-column align-center" style="max-width: 640px; width: 100%;">
+        <MudIcon Icon="@Icons.Material.Filled.SwapHoriz" Style="font-size: 3.5rem;" Class="mb-2" />
+        <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-1">
+            Pass the device to
+        </MudText>
+        <MudText Typo="Typo.h3" Align="Align.Center"
+                 Style="@($"color: var(--player-{PlayerIndex}); font-weight: 700;")" Class="mb-4">
+            @Session.ActivePlayerId
+        </MudText>
+
+        @if (LastReport is { } report && Session.ActivePlayerId is { } viewer)
+        {
+            <MudPaper Elevation="0" Outlined="true" Class="pa-4 mb-4"
+                      Style="max-height: 45vh; overflow-y: auto; width: 100%; border-radius: 12px;">
+                <MudText Typo="Typo.overline" Class="mud-text-secondary">Since your last orders</MudText>
+                <TurnReportView Report="report" ViewerId="@viewer" />
+            </MudPaper>
+        }
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                   StartIcon="@Icons.Material.Filled.Visibility"
+                   OnClick="Session.BeginPlayerTurn">
+            I am @Session.ActivePlayerId — show my turn
+        </MudButton>
+    </div>
+</div>
+
+@code {
+    private TurnReport? LastReport =>
+        Session.Reports.Count > 0 ? Session.Reports[^1] : null;
+
+    private byte PlayerIndex
+    {
+        get
+        {
+            byte index = 0;
+            foreach (var playerId in Session.PlayerIds)
+            {
+                if (playerId == Session.ActivePlayerId)
+                {
+                    return index;
+                }
+                index++;
+            }
+            return 0;
+        }
+    }
+}

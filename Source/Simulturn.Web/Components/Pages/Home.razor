@@ -1,0 +1,88 @@
+@page "/"
+@inject GameSession Session
+@inject NavigationManager Navigation
+
+<PageTitle>Simulturn</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="pt-12">
+    <div class="d-flex flex-column align-center mb-10">
+        <MudText Typo="Typo.h3" Align="Align.Center" Style="font-weight: 700;">Simulturn</MudText>
+        <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="mud-text-secondary">
+            Simultaneous-turn strategy — built for thinkers, not grinders.
+        </MudText>
+        <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Warning" Class="mt-2">
+            Development build — for testing the game logic
+        </MudChip>
+    </div>
+
+    <MudGrid Justify="Justify.Center" Spacing="4">
+        <MudItem xs="12" sm="4">
+            <MudCard Elevation="3" Class="pa-2" Style="height: 100%;">
+                <MudCardContent>
+                    <MudIcon Icon="@Icons.Material.Filled.Bolt" Color="Color.Primary" Size="Size.Large" />
+                    <MudText Typo="Typo.h6" Class="mt-2">Quick start</MudText>
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                        Jump straight into a 2-player god-mode game with default settings and a random map.
+                    </MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" OnClick="QuickStart">
+                        Start
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" sm="4">
+            <MudCard Elevation="3" Class="pa-2" Style="height: 100%;">
+                <MudCardContent>
+                    <MudIcon Icon="@Icons.Material.Filled.Tune" Color="Color.Secondary" Size="Size.Large" />
+                    <MudText Typo="Typo.h6" Class="mt-2">New game</MudText>
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                        Configure players, game mode, map generation, and every rule of the game.
+                    </MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" FullWidth="true" Href="/new-game">
+                        Configure
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" sm="4">
+            <MudCard Elevation="3" Class="pa-2" Style="height: 100%; opacity: 0.6;">
+                <MudCardContent>
+                    <MudIcon Icon="@Icons.Material.Filled.FolderOpen" Size="Size.Large" />
+                    <MudText Typo="Typo.h6" Class="mt-2">Load game</MudText>
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                        Continue a saved game. Not available yet.
+                    </MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Outlined" FullWidth="true" Disabled="true">Load</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+
+    @if (Session.HasGame)
+    {
+        <div class="d-flex justify-center mt-8">
+            <MudButton Variant="Variant.Text" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.PlayCircle" Href="/game">
+                Return to running game (turn @Session.Current.Turn)
+            </MudButton>
+        </div>
+    }
+</MudContainer>
+
+@code {
+    private void QuickStart()
+    {
+        int seed = Random.Shared.Next();
+        var settings = DefaultSettings.Standard(DefaultSettings.DefaultPlayers, seed);
+        Session.StartNewGame(settings, GameMode.God);
+        Navigation.NavigateTo("/game");
+    }
+}
