@@ -57,7 +57,7 @@
         MovementExceedsRange v =>
             $"{v.PlayerId}: {BoardGlyphs.TextGlyph(v.Unit)} cannot move {v.Distance} hexes from ({v.Hexagon.X}, {v.Hexagon.Y}) to ({v.Destination.X}, {v.Destination.Y}) — range is {v.Range}.",
         UpgradeExceedsAvailableLevel v =>
-            $"{v.PlayerId}: {v.Upgrade} at ({v.Hexagon.X}, {v.Hexagon.Y}) already at level {v.CurrentLevel} of {v.AvailableLevel}.",
+            $"{v.PlayerId}: {v.Upgrade} at ({v.Hexagon.X}, {v.Hexagon.Y}) already researched or queued to level {v.CurrentLevel} of {v.AvailableLevel}.",
         UpgradeRequiresDot v =>
             $"{v.PlayerId}: researching {v.Upgrade} at ({v.Hexagon.X}, {v.Hexagon.Y}) requires a dot (•) on the hex.",
         InvalidPlayerId v => $"Unknown player: {v.PlayerId}.",

@@ -50,6 +50,12 @@ public sealed class GameSession
     /// <summary>Engine consistency violations found by IsValid() after the last resolution — engine bugs.</summary>
     public List<IStateValidation> StateIssues { get; private set; } = [];
 
+    /// <summary>
+    /// Set when the engine threw during the last resolution attempt. The game state and all
+    /// staged drafts are kept, so the session stays usable (adjust orders, export the state).
+    /// </summary>
+    public string? ResolutionCrash { get; private set; }
+
     /// <summary>Which AI (if any) controls each player id. Absent = human.</summary>
     private readonly Dictionary<string, AiKind> _aiAssignments = [];
 
@@ -109,6 +115,7 @@ public sealed class GameSession
         ValidationResults.Clear();
         ValidationCrash = null;
         StateIssues = [];
+        ResolutionCrash = null;
         SubmittedPlayers.Clear();
         // The active player is always a human; AI players never take a seat.
         ActivePlayerId = HumanPlayerIds.FirstOrDefault();
@@ -153,7 +160,8 @@ public sealed class GameSession
         if (next is null)
         {
             ResolveTurn(); // resets ActivePlayerId to the first human and clears submissions
-            ShowHandoff = ActivePlayerId is not null;
+            // On a resolution crash the board stays as-is; show the error instead of a hand-off.
+            ShowHandoff = ActivePlayerId is not null && ResolutionCrash is null;
             RaiseChanged();
         }
         else
@@ -266,11 +274,31 @@ public sealed class GameSession
         }
         var commands = BuildCommands();
         var before = Current;
-        var next = before.NextTurn(commands);
-        Reports.Add(TurnReportService.Build(before, commands, next));
+        GameState next;
+        TurnReport report;
+        List<IStateValidation> stateIssues;
+        try
+        {
+            next = before.NextTurn(commands);
+            report = TurnReportService.Build(before, commands, next);
+            stateIssues = [.. next.IsValid()];
+        }
+        catch (Exception exception)
+        {
+            // An engine crash must not take down the circuit and lose the game: keep the
+            // pre-resolution state and all staged drafts so the orders can be adjusted and
+            // resubmitted, or the state exported for a bug report.
+            ResolutionCrash = $"Turn resolution failed with {exception.GetType().Name}: {exception.Message}";
+            SubmittedPlayers.Clear();
+            ActivePlayerId = HumanPlayerIds.FirstOrDefault();
+            RaiseChanged();
+            return;
+        }
+        ResolutionCrash = null;
+        Reports.Add(report);
         History.Add(next);
         ViewedIndex = History.Count - 1;
-        StateIssues = [.. next.IsValid()];
+        StateIssues = stateIssues;
         Drafts.Clear();
         DraftsVersion++;
         ValidationResults.Clear();
@@ -303,6 +331,7 @@ public sealed class GameSession
         ValidationResults.Clear();
         ValidationCrash = null;
         StateIssues = [];
+        ResolutionCrash = null;
         SubmittedPlayers.Clear();
         RaiseChanged();
     }

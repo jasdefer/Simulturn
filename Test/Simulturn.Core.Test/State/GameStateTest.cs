@@ -445,6 +445,141 @@ public class GameStateTest
         turn4.PlayerStates["Player01"].UpgradeLevels.ShouldHaveSingleItem().Value.ShouldBe((byte)1);
     }
 
+    /// <summary>
+    /// Regression: researches still in progress must count toward the level checked by Validate.
+    /// Queueing the same upgrade on consecutive turns (each validated against the lagging
+    /// completed level) used to overshoot the upgrade table and crash the next fight in
+    /// <see cref="PlayerState.ExponentBonusFromUpgrades"/>.
+    /// </summary>
+    [Test]
+    public void ThirdQueuedResearchIsRejectedWhileFirstTwoAreStillInProgress()
+    {
+        var gameState = new GameState(_gameSettings);
+        var commands = DictionaryExtensions.MovementsToDictionary([
+            ("Player01", new Hexagon(-1,0), new Hexagon(0,0), new Army() { Dot = 1 })
+        ]);
+        var turn1 = GetNextTurnAndValidate(gameState, commands);
+
+        var research = DictionaryExtensions.CommandsToDictionary([
+            ("Player01", new Hexagon(0,0), new Command() { Upgrade = Upgrade.DotUpgrade })
+        ]);
+        var turn2 = GetNextTurnAndValidate(turn1, research);
+        var turn3 = GetNextTurnAndValidate(turn2, research);
+
+        // Both defined levels are already queued; a third research must be rejected.
+        var validation = turn3.Validate("Player01", research["Player01"])
+            .ShouldHaveSingleItem()
+            .ShouldBeOfType<UpgradeExceedsAvailableLevel>();
+        validation.CurrentLevel.ShouldBe(2);
+        validation.AvailableLevel.ShouldBe(2);
+    }
+
+    /// <summary>
+    /// A research queued while another is still in progress starts at the next level and must use
+    /// that level's duration and land on the next level exactly once.
+    /// </summary>
+    [Test]
+    public void QueuedResearchUsesNextLevelDuration()
+    {
+        var gameState = new GameState(_gameSettings);
+        var commands = DictionaryExtensions.MovementsToDictionary([
+            ("Player01", new Hexagon(-1,0), new Hexagon(0,0), new Army() { Dot = 1 })
+        ]);
+        var turn1 = GetNextTurnAndValidate(gameState, commands);
+
+        var research = DictionaryExtensions.CommandsToDictionary([
+            ("Player01", new Hexagon(0,0), new Command() { Upgrade = Upgrade.DotUpgrade })
+        ]);
+        var turn2 = GetNextTurnAndValidate(turn1, research); // level 1 research: duration 3, completes turn 3
+        turn2.PlayerStates["Player01"].Matter.ShouldBe(turn1.PlayerStates["Player01"].Matter + 40 - 150); // 4 harvesting dots, level 1 cost
+        var turn3 = GetNextTurnAndValidate(turn2, research); // level 2 research: duration 4, completes turn 5
+        turn3.PlayerStates["Player01"].Matter.ShouldBe(turn2.PlayerStates["Player01"].Matter + 40 - 175); // level 2 cost
+        var turn4 = GetNextTurnAndValidate(turn3, _noCommands);
+        turn4.PlayerStates["Player01"].UpgradeLevels[Upgrade.DotUpgrade].ShouldBe((byte)1);
+        var turn5 = GetNextTurnAndValidate(turn4, _noCommands);
+        turn5.PlayerStates["Player01"].UpgradeLevels[Upgrade.DotUpgrade].ShouldBe((byte)1);
+        var turn6 = GetNextTurnAndValidate(turn5, _noCommands);
+        turn6.PlayerStates["Player01"].UpgradeLevels[Upgrade.DotUpgrade].ShouldBe((byte)2);
+
+        // The fully researched level reads the last entry of the upgrade table without crashing.
+        turn6.PlayerStates["Player01"].ExponentBonusFromUpgrades(_gameSettings)
+            .ShouldBe(new Army() { Dot = 20 });
+    }
+
+    /// <summary>
+    /// Researching the same upgrade on two hexagons in the same turn shares one level pool:
+    /// the second command must not slip past the remaining defined levels.
+    /// </summary>
+    [Test]
+    public void SameTurnResearchesOnDifferentHexagonsShareTheLevelPool()
+    {
+        var hexagonSettings = _gameSettings.HexagonSettings.ToBuilder();
+        hexagonSettings[new Hexagon(0, 0)] = HexagonSettings.Empty with { ResearchableUpgrades = [Upgrade.DotUpgrade] };
+        hexagonSettings[new Hexagon(0, 1)] = HexagonSettings.Empty with { ResearchableUpgrades = [Upgrade.DotUpgrade] };
+        var gameSettings = _gameSettings with
+        {
+            Upgrades = new IUpgrade[]
+            {
+                new DotUpgrade() { Cost = 150, Duration = 3, ExponentBonus = 20 }
+            }.ToDictionary(),
+            HexagonSettings = hexagonSettings.ToImmutableDictionary(),
+        };
+        var gameState = new GameState(gameSettings);
+        var commands = DictionaryExtensions.CommandsToDictionary([
+            ("Player01", new Hexagon(-1,0), new Command()
+            {
+                MovementCommands = [
+                    new MovementCommand() { Destination = new Hexagon(0, 0), Army = new Army() { Dot = 1 } },
+                    new MovementCommand() { Destination = new Hexagon(0, 1), Army = new Army() { Dot = 1 } }
+                ]
+            })
+        ]);
+        var turn1 = GetNextTurnAndValidate(gameState, commands);
+
+        var research = DictionaryExtensions.CommandsToDictionary([
+            ("Player01", new Hexagon(0,0), new Command() { Upgrade = Upgrade.DotUpgrade }),
+            ("Player01", new Hexagon(0,1), new Command() { Upgrade = Upgrade.DotUpgrade })
+        ]);
+        var validation = turn1.Validate("Player01", research["Player01"])
+            .ShouldHaveSingleItem()
+            .ShouldBeOfType<UpgradeExceedsAvailableLevel>();
+        validation.CurrentLevel.ShouldBe(1);
+        validation.AvailableLevel.ShouldBe(1);
+    }
+
+    /// <summary>
+    /// Regression: a map can offer more researchable copies of an upgrade than the settings define
+    /// levels for; Validate must reject researches beyond the defined upgrade table.
+    /// </summary>
+    [Test]
+    public void ResearchBeyondDefinedUpgradeLevelsIsRejected()
+    {
+        var hexagonSettings = _gameSettings.HexagonSettings.ToBuilder();
+        hexagonSettings[new Hexagon(0, 0)] = HexagonSettings.Empty with
+        {
+            ResearchableUpgrades = [Upgrade.DotUpgrade, Upgrade.DotUpgrade, Upgrade.DotUpgrade]
+        };
+        var gameSettings = _gameSettings with { HexagonSettings = hexagonSettings.ToImmutableDictionary() };
+        var gameState = new GameState(gameSettings);
+        var commands = DictionaryExtensions.MovementsToDictionary([
+            ("Player01", new Hexagon(-1,0), new Hexagon(0,0), new Army() { Dot = 1 })
+        ]);
+        var turn1 = GetNextTurnAndValidate(gameState, commands);
+
+        var research = DictionaryExtensions.CommandsToDictionary([
+            ("Player01", new Hexagon(0,0), new Command() { Upgrade = Upgrade.DotUpgrade })
+        ]);
+        var turn2 = GetNextTurnAndValidate(turn1, research);
+        var turn3 = GetNextTurnAndValidate(turn2, research);
+
+        // The hexagon still offers a third copy, but the settings only define two levels.
+        var validation = turn3.Validate("Player01", research["Player01"])
+            .ShouldHaveSingleItem()
+            .ShouldBeOfType<UpgradeExceedsAvailableLevel>();
+        validation.CurrentLevel.ShouldBe(2);
+        validation.AvailableLevel.ShouldBe(2);
+    }
+
     [Test]
     public void CancelConstructionsAfterDotKill()
     {

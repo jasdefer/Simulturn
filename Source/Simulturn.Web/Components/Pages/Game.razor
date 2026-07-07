@@ -85,7 +85,8 @@
                        Disabled="Session.Reports.Count == 0"
                        OnClick="() => _showReport = true" />
 
-        @if (Session.Mode == GameMode.God)
+        @* Also shown after a resolution crash so the state can be exported for a bug report. *@
+        @if (Session.Mode == GameMode.God || Session.ResolutionCrash is not null)
         {
             <DebugMenu />
         }
@@ -94,6 +95,14 @@
                        Size="Size.Small"
                        OnClick="ToggleDarkMode" />
     </MudPaper>
+
+    @if (Session.ResolutionCrash is not null)
+    {
+        <MudAlert Severity="Severity.Error" Dense="true" Square="true">
+            @Session.ResolutionCrash — the game state is unchanged and your staged orders were kept.
+            Adjust the orders and end the turn again, or export the state via the debug menu for a bug report.
+        </MudAlert>
+    }
 
     @if (Session.StateIssues.Count > 0)
     {

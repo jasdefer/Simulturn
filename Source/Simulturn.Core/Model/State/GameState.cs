@@ -1,6 +1,7 @@
 using Simulturn.Core.Extensions;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State.StateValidation;
+using Simulturn.Core.Model.Upgrades;
 
 namespace Simulturn.Core.Model.State;
 
@@ -88,7 +89,7 @@ public record GameState
             PlayerStateBuilder playerStateBuilder = playerStates[playerId];
             var newConstructions = GetNewConstructions(commandsForPlayer);
             var newTrainings = GetNewTrainings(commandsForPlayer);
-            var newResearches = GetNewResearches(commandsForPlayer, playerStateBuilder.UpgradeLevels);
+            (var newResearches, int researchCost) = GetNewResearches(commandsForPlayer, playerStateBuilder);
 
             // Income
             foreach ((Hexagon hexagon, Army army) in playerStateBuilder.Armies)
@@ -133,6 +134,7 @@ public record GameState
 
             // Researches
             playerStateBuilder.Researches.MergeOrOverwrite(newResearches);
+            playerStateBuilder.Matter -= researchCost;
             if (playerStateBuilder.Researches.TryGetValue(Turn, out var researches))
             {
                 foreach ((var hexagon, var upgrade) in researches)
@@ -439,15 +441,25 @@ public record GameState
         return newConstructions;
     }
 
-    private ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Upgrade>.Builder>.Builder GetNewResearches(IReadOnlyDictionary<Hexagon, Command> commands,
-        ImmutableDictionary<Upgrade, byte>.Builder upgradeLevels)
+    private (ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Upgrade>.Builder>.Builder Researches, int Cost) GetNewResearches(IReadOnlyDictionary<Hexagon, Command> commands,
+        PlayerStateBuilder playerStateBuilder)
     {
         ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Upgrade>.Builder>.Builder newResearches = ImmutableDictionary.CreateBuilder<ushort, ImmutableDictionary<Hexagon, Upgrade>.Builder>();
+        Dictionary<Upgrade, int> startedResearches = [];
+        int researchCost = 0;
         foreach ((var hexagon, var command) in commands.Where(x => x.Value.Upgrade is not null))
         {
             Upgrade upgrade = command.Upgrade!.Value;
-            byte currentLevel = upgradeLevels.GetValueOrDefault(upgrade, 0);
-            ushort completionTurn = (ushort)(Turn + GameSettings.Upgrades[upgrade][currentLevel].Duration - 1);
+            // Only completed researches are reflected in UpgradeLevels; researches still in
+            // progress and researches started on other hexagons this turn occupy the next
+            // levels as well.
+            int effectiveLevel = playerStateBuilder.UpgradeLevels.GetValueOrDefault(upgrade, 0)
+                + playerStateBuilder.Researches
+                    .Where(x => x.Key >= Turn)
+                    .Sum(x => x.Value.Count(y => y.Value == upgrade))
+                + startedResearches.GetValueOrDefault(upgrade);
+            IUpgrade upgradeLevel = GameSettings.Upgrades[upgrade][effectiveLevel];
+            ushort completionTurn = (ushort)(Turn + upgradeLevel.Duration - 1);
 
             if (!newResearches.TryGetValue(completionTurn, out var turnDict))
             {
@@ -455,9 +467,10 @@ public record GameState
                 newResearches.Add(completionTurn, turnDict);
             }
             turnDict[hexagon] = upgrade;
-
+            startedResearches[upgrade] = startedResearches.GetValueOrDefault(upgrade) + 1;
+            researchCost += upgradeLevel.Cost;
         }
-        return newResearches;
+        return (newResearches, researchCost);
     }
 
     public IEnumerable<IStateValidation> IsValid()
@@ -577,14 +590,30 @@ public record GameState
                         yield return new UpgradeRequiresDot(playerId, hexagon, upgrade);
                     }
 
-                    byte currentLevel = playerState.UpgradeLevels.GetValueOrDefault(upgrade);
+                    int totalLevel = playerState.UpgradeLevels.GetValueOrDefault(upgrade)
+                        + playerState.PendingResearchCount(upgrade, Turn);
                     int availableUpgrades = GameSettings.HexagonSettings[hexagon]
                         .ResearchableUpgrades.Where(x => x == upgrade)
                         .Count();
-                    if (currentLevel > availableUpgrades)
+                    if (totalLevel > availableUpgrades)
                     {
-                        yield return new UpgradeExceedsAvailableLevel(playerId, hexagon, upgrade, currentLevel, availableUpgrades);
+                        yield return new UpgradeExceedsAvailableLevel(playerId, hexagon, upgrade, totalLevel, availableUpgrades);
                     }
+                }
+            }
+
+            // Upgrade levels (completed and in progress combined) stay within the defined upgrade table.
+            var upgradesInUse = playerState.UpgradeLevels.Keys
+                .Union(playerState.Researches.Where(x => x.Key >= Turn).SelectMany(x => x.Value.Values))
+                .Distinct();
+            foreach (Upgrade upgrade in upgradesInUse)
+            {
+                int totalLevel = playerState.UpgradeLevels.GetValueOrDefault(upgrade)
+                    + playerState.PendingResearchCount(upgrade, Turn);
+                int definedLevels = GameSettings.Upgrades.TryGetValue(upgrade, out var upgradeLevels) ? upgradeLevels.Length : 0;
+                if (totalLevel > definedLevels)
+                {
+                    yield return new UpgradeExceedsDefinedLevels(playerId, upgrade, totalLevel, definedLevels);
                 }
             }
         }
@@ -610,6 +639,7 @@ public record GameState
         }
 
         int researchCost = 0;
+        Dictionary<Upgrade, int> commandedResearches = [];
         foreach ((var hexagon, var command) in commands)
         {
             Compound compound = playerState.Compounds.GetValueOrDefault(hexagon, Compound.Empty);
@@ -673,22 +703,31 @@ public record GameState
             // Upgrades are valid
             if (command.Upgrade is not null)
             {
-                byte currentLevel = playerState.UpgradeLevels.GetValueOrDefault(command.Upgrade.Value);
+                Upgrade upgrade = command.Upgrade.Value;
+                // Only completed researches are reflected in UpgradeLevels; researches still in
+                // progress and researches commanded on other hexagons this turn occupy the next
+                // levels as well.
+                int effectiveLevel = playerState.UpgradeLevels.GetValueOrDefault(upgrade)
+                    + playerState.PendingResearchCount(upgrade, Turn)
+                    + commandedResearches.GetValueOrDefault(upgrade);
                 int availableUpgrades = GameSettings.HexagonSettings[hexagon]
-                    .ResearchableUpgrades.Where(x => x == command.Upgrade)
+                    .ResearchableUpgrades.Where(x => x == upgrade)
                     .Count();
-                if (currentLevel >= availableUpgrades)
+                int definedLevels = GameSettings.Upgrades.TryGetValue(upgrade, out var upgradeLevels) ? upgradeLevels.Length : 0;
+                int maxLevel = Math.Min(availableUpgrades, definedLevels);
+                if (effectiveLevel >= maxLevel)
                 {
-                    yield return new UpgradeExceedsAvailableLevel(playerId, hexagon, command.Upgrade.Value, currentLevel, availableUpgrades);
+                    yield return new UpgradeExceedsAvailableLevel(playerId, hexagon, upgrade, effectiveLevel, maxLevel);
                 }
                 else
                 {
-                    researchCost += GameSettings.Upgrades[command.Upgrade.Value][currentLevel].Cost; // a level of 1 means the first upgrade, which is at index 0
+                    researchCost += upgradeLevels[effectiveLevel].Cost; // a level of 1 means the first upgrade, which is at index 0
+                    commandedResearches[upgrade] = commandedResearches.GetValueOrDefault(upgrade) + 1;
                 }
 
                 if (!playerState.Armies.TryGetValue(hexagon, out var army) || army.Dot <= 0)
                 {
-                    yield return new UpgradeRequiresDot(playerId, hexagon, command.Upgrade.Value);
+                    yield return new UpgradeRequiresDot(playerId, hexagon, upgrade);
                 }
             }
         }

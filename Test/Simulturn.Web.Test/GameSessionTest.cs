@@ -201,6 +201,34 @@ public class GameSessionTest
     }
 
     [Test]
+    public void ResolveTurn_WhenEngineThrows_KeepsStateAndDraftsAndReportsCrash()
+    {
+        var session = NewSession();
+        var center = new Simulturn.Core.Model.Hexagon(0, 0);
+
+        // ResolveTurn does not gate on validation results (the UI buttons do), so staging the
+        // same research three turns in a row drives NextTurn into reading past the two-level
+        // upgrade table — the crash that previously killed the whole circuit.
+        session.UpdateDraft("Player 1", center, draft => draft.Upgrade = Simulturn.Core.Model.Upgrade.DotUpgrade);
+        session.ResolveTurn();
+        session.UpdateDraft("Player 1", center, draft => draft.Upgrade = Simulturn.Core.Model.Upgrade.DotUpgrade);
+        session.ResolveTurn();
+        int historyBefore = session.History.Count;
+        session.UpdateDraft("Player 1", center, draft => draft.Upgrade = Simulturn.Core.Model.Upgrade.DotUpgrade);
+        session.ResolveTurn();
+
+        session.ResolutionCrash.ShouldNotBeNull();
+        session.History.Count.ShouldBe(historyBefore); // state unchanged
+        session.Drafts["Player 1"].ShouldContainKey(center); // orders kept
+
+        // The session stays usable: drop the bad order and resolve normally.
+        session.ClearDrafts("Player 1");
+        session.ResolveTurn();
+        session.ResolutionCrash.ShouldBeNull();
+        session.History.Count.ShouldBe(historyBefore + 1);
+    }
+
+    [Test]
     public void Changed_IsRaisedOnMutations()
     {
         var session = new GameSession();
