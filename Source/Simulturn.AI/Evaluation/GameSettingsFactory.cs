@@ -108,6 +108,7 @@ public static class GameSettingsFactory
             ConstructionDuration = new Compound() { Axis = 2, Dome = 3, Cube = 3, Plane = 4, Pyramid = 3 },
             FightExponent = new Army() { Triangle = 120, Circle = 120, Square = 120, Dot = 1 },
             Income = new Army() { Triangle = 0, Circle = 0, Square = 0, Dot = 10 },
+            MovementRange = new Army() { Triangle = 100, Circle = 100, Square = 100, Dot = 100 },
             ProvidedSpace = new Compound() { Axis = 10, Dome = 0, Cube = 0, Plane = 10, Pyramid = 0 },
             RequiredSpace = new Army() { Triangle = 3, Circle = 3, Square = 3, Dot = 1 },
             Seed = seed,
