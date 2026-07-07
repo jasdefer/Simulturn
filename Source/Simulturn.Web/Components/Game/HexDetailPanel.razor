@@ -40,6 +40,8 @@
         var army = playerState.Armies.GetValueOrDefault(Hexagon, Army.Empty);
         var compound = playerState.Compounds.GetValueOrDefault(Hexagon, Compound.Empty);
         int? enemyArmyCountOnly = null;
+        // Combat intel: fighting reveals the opponent's full composition (as it entered the fight).
+        Army? revealedArmy = isEnemy ? RevealedArmy(playerId) : null;
         if (isEnemy)
         {
             // Fog of war (engine-defined): buildings from possibly stale memories, unit counts
@@ -63,7 +65,7 @@
             pendingConstructions.Clear();
             pendingResearch.Clear();
         }
-        bool hasContent = !army.IsEmpty || !compound.IsEmpty || enemyArmyCountOnly is not null ||
+        bool hasContent = !army.IsEmpty || !compound.IsEmpty || enemyArmyCountOnly is not null || revealedArmy is not null ||
                           pendingTrainings.Count > 0 || pendingConstructions.Count > 0 || pendingResearch.Count > 0;
         if (!hasContent)
         {
@@ -89,6 +91,15 @@
                 <div class="d-flex align-center gap-2">
                     <MudText Typo="Typo.body2" Class="mud-text-secondary" Style="width: 76px;">Army</MudText>
                     <MudText Typo="Typo.body2">Σ @countOnly units (composition unknown)</MudText>
+                </div>
+            }
+            @if (revealedArmy is { } revealed)
+            {
+                <div class="d-flex align-center gap-2">
+                    <MudTooltip Text="Composition revealed by last turn's battle here (before losses)">
+                        <MudText Typo="Typo.body2" Class="mud-text-secondary" Style="width: 76px;">⚔ Intel</MudText>
+                    </MudTooltip>
+                    <ArmyDisplay Army="revealed" />
                 </div>
             }
             @if (!compound.IsEmpty)
@@ -170,6 +181,18 @@
         PlayerView is null
             ? "Remaining / initial matter"
             : "Last known / initial matter (? = never seen up close)";
+
+    /// <summary>The opponent's composition revealed by a battle on this hex last turn, if any.</summary>
+    private Army? RevealedArmy(string opponentId)
+    {
+        if (PlayerView is not null &&
+            PlayerView.PlayerState.RevealedArmies.TryGetValue(Hexagon, out var byOpponent) &&
+            byOpponent.TryGetValue(opponentId, out var army))
+        {
+            return army;
+        }
+        return null;
+    }
 
     private IEnumerable<(string PlayerId, byte Index)> Players =>
         BoardProjector.GetPlayerIndices(State).OrderBy(pair => pair.Value).Select(pair => (pair.Key, pair.Value));

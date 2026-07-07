@@ -6,17 +6,27 @@
     {
         var playerState = State.PlayerStates[playerId];
         bool isActive = Session.ActivePlayerId == playerId;
-        string borderStyle = Interactive && isActive
+        bool selectable = Interactive && !Session.IsAi(playerId);
+        string borderStyle = selectable && isActive
             ? $"border: 2px solid var(--player-{index}); background: color-mix(in srgb, var(--player-{index}) 16%, transparent);"
             : $"border: 1.5px solid color-mix(in srgb, var(--player-{index}) 55%, transparent);";
-        <MudTooltip Text="@(Interactive ? (isActive ? $"You are issuing orders for {playerId}" : $"Click to issue orders for {playerId}") : null)">
+        <MudTooltip Text="@(selectable ? (isActive ? $"You are issuing orders for {playerId}" : $"Click to issue orders for {playerId}") : null)">
             <MudPaper Elevation="0"
-                      Class="@($"player-chip d-flex align-center gap-3 px-3 py-1 {(Interactive ? "player-chip-clickable" : null)}")"
+                      Class="@($"player-chip d-flex align-center gap-3 px-3 py-1 {(selectable ? "player-chip-clickable" : null)}")"
                       Style="@($"{borderStyle} border-radius: 10px;")"
                       @onclick="() => HandleClick(playerId)">
                 <div style="@($"width: 11px; height: 11px; border-radius: 50%; background: var(--player-{index});")"></div>
                 <MudText Typo="Typo.subtitle2" Style="font-weight:600;">@playerId</MudText>
-                @if (Interactive && isActive)
+                @if (Session.IsAi(playerId))
+                {
+                    <MudTooltip Text="@($"Controlled by AI: {Session.AiName(playerId)}")">
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default"
+                                 Icon="@Icons.Material.Filled.SmartToy" Class="ma-0">
+                            @Session.AiName(playerId)
+                        </MudChip>
+                    </MudTooltip>
+                }
+                else if (Interactive && isActive)
                 {
                     <MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Style="@($"color: var(--player-{index});")" title="Issuing orders" />
                 }

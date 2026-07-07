@@ -103,6 +103,13 @@
         </MudAlert>
     }
 
+    @foreach (var aiError in Session.AiTurnErrors)
+    {
+        <MudAlert Severity="Severity.Warning" Dense="true" Square="true">
+            @aiError.Key: @aiError.Value
+        </MudAlert>
+    }
+
     @* --- Board + side panel --- *@
     <div class="d-flex flex-grow-1" style="min-height: 0;">
         <div class="flex-grow-1 pa-3" style="min-width: 0; position: relative;">

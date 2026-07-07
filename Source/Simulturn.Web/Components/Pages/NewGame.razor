@@ -36,10 +36,26 @@
                                           Value="_draft.PlayerNames[index]"
                                           ValueChanged="value => SetPlayerName(index, value)"
                                           Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <MudSelect T="string" Value="_controllers[index]"
+                                       ValueChanged="value => SetController(index, value)"
+                                       Label="Controlled by" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                       Style="min-width: 220px;">
+                                <MudSelectItem T="string" Value="@AiKind.HumanId">Human</MudSelectItem>
+                                @foreach (var ai in AiCatalog.All)
+                                {
+                                    <MudSelectItem T="string" Value="@ai.Id">@ai.Name</MudSelectItem>
+                                }
+                            </MudSelect>
                             <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small"
                                            Disabled="_draft.PlayerNames.Count <= 1"
                                            OnClick="() => RemovePlayer(index)" />
                         </div>
+                        @if (AiCatalog.Find(_controllers[index]) is { } chosen)
+                        {
+                            <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mb-2" Style="margin-left: 21px;">
+                                @chosen.Description
+                            </MudText>
+                        }
                     }
                     <MudButton StartIcon="@Icons.Material.Filled.Add" Size="Size.Small"
                                Disabled="_draft.PlayerNames.Count >= 4"
@@ -104,12 +120,24 @@
 
 @code {
     private SettingsDraft _draft = SettingsDraft.FromDefaults();
+
+    /// <summary>Parallel to <c>_draft.PlayerNames</c>: each entry is a controller id (Human or an AI kind).</summary>
+    private readonly List<string> _controllers = [AiKind.HumanId, AiKind.HumanId];
+
     private List<string> _problems = [];
     private MapPreview? _preview;
 
-    protected override void OnInitialized() => _problems = _draft.Validate();
+    protected override void OnInitialized() => Revalidate();
 
-    private void Revalidate() => _problems = _draft.Validate();
+    private void Revalidate()
+    {
+        _problems = _draft.Validate();
+        // Hot seat requires at least one human to hand the device to.
+        if (_draft.Mode == GameMode.HotSeat && _controllers.All(c => c != AiKind.HumanId))
+        {
+            _problems.Add("Hot seat needs at least one human player.");
+        }
+    }
 
     private void RefreshPreview()
     {
@@ -123,32 +151,50 @@
         RefreshPreview();
     }
 
+    private void SetController(int index, string controllerId)
+    {
+        _controllers[index] = controllerId;
+        Revalidate();
+    }
+
     private void AddPlayer()
     {
         _draft.PlayerNames.Add($"Player {_draft.PlayerNames.Count + 1}");
+        _controllers.Add(AiKind.HumanId);
         RefreshPreview();
     }
 
     private void RemovePlayer(int index)
     {
         _draft.PlayerNames.RemoveAt(index);
+        _controllers.RemoveAt(index);
         RefreshPreview();
     }
 
     private void ResetDefaults()
     {
         _draft = SettingsDraft.FromDefaults();
+        _controllers.Clear();
+        _controllers.AddRange(_draft.PlayerNames.Select(_ => AiKind.HumanId));
         RefreshPreview();
     }
 
     private void Start()
     {
-        _problems = _draft.Validate();
+        Revalidate();
         if (_problems.Count > 0)
         {
             return;
         }
-        Session.StartNewGame(_draft.Build(), _draft.Mode);
+        var aiAssignments = new Dictionary<string, AiKind>();
+        for (int index = 0; index < _draft.PlayerNames.Count; index++)
+        {
+            if (AiCatalog.Find(_controllers[index]) is { } kind)
+            {
+                aiAssignments[_draft.PlayerNames[index]] = kind;
+            }
+        }
+        Session.StartNewGame(_draft.Build(), _draft.Mode, aiAssignments);
         Navigation.NavigateTo("/game");
     }
 }

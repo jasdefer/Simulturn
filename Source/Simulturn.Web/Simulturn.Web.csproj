@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Simulturn.Core\Simulturn.Core.csproj" />
+    <ProjectReference Include="..\Simulturn.AI\Simulturn.AI.csproj" />
   </ItemGroup>
 
 </Project>

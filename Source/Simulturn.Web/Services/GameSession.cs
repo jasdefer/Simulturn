@@ -1,3 +1,4 @@
+using Simulturn.AI;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
@@ -49,6 +50,21 @@ public sealed class GameSession
     /// <summary>Engine consistency violations found by IsValid() after the last resolution — engine bugs.</summary>
     public List<IStateValidation> StateIssues { get; private set; } = [];
 
+    /// <summary>Which AI (if any) controls each player id. Absent = human.</summary>
+    private readonly Dictionary<string, AiKind> _aiAssignments = [];
+
+    /// <summary>Live AI instances for the current game (stateful across turns; recreated per game).</summary>
+    private readonly Dictionary<string, IArtificialPlayer> _aiPlayers = [];
+
+    /// <summary>Per-player message when an AI failed to produce valid commands last resolution.</summary>
+    public Dictionary<string, string> AiTurnErrors { get; } = [];
+
+    public bool IsAi(string playerId) => _aiAssignments.ContainsKey(playerId);
+
+    public string? AiName(string playerId) => _aiAssignments.GetValueOrDefault(playerId)?.Name;
+
+    public IEnumerable<string> HumanPlayerIds => PlayerIds.Where(playerId => !IsAi(playerId));
+
     public bool HasGame => History.Count > 0;
 
     public GameState Current => History[^1];
@@ -59,7 +75,8 @@ public sealed class GameSession
 
     public IReadOnlyList<string> PlayerIds { get; private set; } = [];
 
-    public void StartNewGame(GameSettings settings, GameMode mode)
+    public void StartNewGame(GameSettings settings, GameMode mode,
+        IReadOnlyDictionary<string, AiKind>? aiAssignments = null)
     {
         Settings = settings;
         Mode = mode;
@@ -68,14 +85,34 @@ public sealed class GameSession
         History.Add(new GameState(settings));
         ViewedIndex = 0;
         PlayerIds = [.. Current.PlayerIds.Order()];
+
+        // (Re)create fresh AI instances — they may keep internal state across turns.
+        _aiAssignments.Clear();
+        _aiPlayers.Clear();
+        AiTurnErrors.Clear();
+        if (aiAssignments is not null)
+        {
+            int index = 0;
+            foreach (var playerId in PlayerIds)
+            {
+                if (aiAssignments.TryGetValue(playerId, out var kind))
+                {
+                    _aiAssignments[playerId] = kind;
+                    _aiPlayers[playerId] = kind.Create(settings.Seed + index);
+                }
+                index++;
+            }
+        }
+
         Drafts.Clear();
         DraftsVersion++;
         ValidationResults.Clear();
         ValidationCrash = null;
         StateIssues = [];
         SubmittedPlayers.Clear();
-        ActivePlayerId = PlayerIds.FirstOrDefault();
-        ShowHandoff = Mode == GameMode.HotSeat;
+        // The active player is always a human; AI players never take a seat.
+        ActivePlayerId = HumanPlayerIds.FirstOrDefault();
+        ShowHandoff = Mode == GameMode.HotSeat && ActivePlayerId is not null;
         RaiseChanged();
     }
 
@@ -83,13 +120,16 @@ public sealed class GameSession
     {
         if (Settings is not null)
         {
-            StartNewGame(Settings, Mode);
+            // Snapshot: StartNewGame clears _aiAssignments before rebuilding from the argument.
+            var assignments = new Dictionary<string, AiKind>(_aiAssignments);
+            StartNewGame(Settings, Mode, assignments);
         }
     }
 
     public void SetActivePlayer(string playerId)
     {
-        if (ActivePlayerId != playerId && PlayerIds.Contains(playerId))
+        // Only human players are editable; AI players issue their own orders.
+        if (ActivePlayerId != playerId && PlayerIds.Contains(playerId) && !IsAi(playerId))
         {
             ActivePlayerId = playerId;
             RaiseChanged();
@@ -108,11 +148,12 @@ public sealed class GameSession
             return;
         }
         SubmittedPlayers.Add(ActivePlayerId);
-        string? next = PlayerIds.FirstOrDefault(playerId => !SubmittedPlayers.Contains(playerId));
+        // Only humans take a seat; AI players' commands are generated at resolution.
+        string? next = HumanPlayerIds.FirstOrDefault(playerId => !SubmittedPlayers.Contains(playerId));
         if (next is null)
         {
-            ResolveTurn(); // resets ActivePlayerId to the first player and clears submissions
-            ShowHandoff = true;
+            ResolveTurn(); // resets ActivePlayerId to the first human and clears submissions
+            ShowHandoff = ActivePlayerId is not null;
             RaiseChanged();
         }
         else
@@ -235,7 +276,7 @@ public sealed class GameSession
         ValidationResults.Clear();
         ValidationCrash = null;
         SubmittedPlayers.Clear();
-        ActivePlayerId = PlayerIds.FirstOrDefault();
+        ActivePlayerId = HumanPlayerIds.FirstOrDefault();
         RaiseChanged();
     }
 
@@ -291,12 +332,50 @@ public sealed class GameSession
         return army;
     }
 
-    private Dictionary<string, Dictionary<Hexagon, Command>> BuildCommands() =>
-        Drafts.ToDictionary(
-            player => player.Key,
-            player => player.Value
-                .Where(draft => !draft.Value.IsEmpty)
-                .ToDictionary(draft => draft.Key, draft => draft.Value.ToCommand()));
+    /// <summary>
+    /// The commands resolved this turn: human players' staged drafts, plus each AI player's
+    /// commands generated fresh from its fog-of-war view. AI failures are caught and surfaced
+    /// via <see cref="AiTurnErrors"/> so a misbehaving AI never breaks the turn.
+    /// </summary>
+    private Dictionary<string, Dictionary<Hexagon, Command>> BuildCommands()
+    {
+        var commands = Drafts
+            .Where(player => !IsAi(player.Key))
+            .ToDictionary(
+                player => player.Key,
+                player => player.Value
+                    .Where(draft => !draft.Value.IsEmpty)
+                    .ToDictionary(draft => draft.Key, draft => draft.Value.ToCommand()));
+
+        AiTurnErrors.Clear();
+        foreach ((string playerId, IArtificialPlayer ai) in _aiPlayers)
+        {
+            commands[playerId] = GenerateAiCommands(playerId, ai);
+        }
+        return commands;
+    }
+
+    private Dictionary<Hexagon, Command> GenerateAiCommands(string playerId, IArtificialPlayer ai)
+    {
+        try
+        {
+            var view = Current.GetPlayerGameState(playerId);
+            var produced = ai.GetCommands(view);
+            var commands = produced.ToDictionary(entry => entry.Key, entry => entry.Value);
+            var errors = Current.Validate(playerId, commands).ToList();
+            if (errors.Count > 0)
+            {
+                AiTurnErrors[playerId] = $"{ai.Name} produced {errors.Count} invalid command(s); skipped this turn.";
+                return [];
+            }
+            return commands;
+        }
+        catch (Exception exception)
+        {
+            AiTurnErrors[playerId] = $"{ai.Name} failed ({exception.GetType().Name}: {exception.Message}); skipped this turn.";
+            return [];
+        }
+    }
 
     private Dictionary<Hexagon, DraftCommand> GetOrCreatePlayerDrafts(string playerId)
     {
