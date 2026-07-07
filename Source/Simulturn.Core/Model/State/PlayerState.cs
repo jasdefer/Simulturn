@@ -29,14 +29,21 @@ public record PlayerState
     /// </summary>
     public ImmutableDictionary<Hexagon, HexagonMemory> Memories { get; init; } = ImmutableDictionary<Hexagon, HexagonMemory>.Empty;
 
+    /// <summary>
+    /// The armies of other players this player fought against in the current turn, keyed by
+    /// hexagon and opponent id. Fighting reveals the full composition of the participating
+    /// armies (as they entered the fight, before losses).
+    /// </summary>
+    public ImmutableDictionary<Hexagon, ImmutableDictionary<string, Army>> RevealedArmies { get; init; } = ImmutableDictionary<Hexagon, ImmutableDictionary<string, Army>>.Empty;
+
     public Army ExponentBonusFromUpgrades(GameSettings gameSettings)
     {
         // TODO: Extend upgrade exponent bonuses to support all unit-specific upgrades.
         Army bonus = Army.Empty;
-        Army player1Upgrades = Army.Empty;
-        if (UpgradeLevels.TryGetValue(Upgrade.DotUpgrade, out byte dotUpgradeLevel))
+        if (UpgradeLevels.TryGetValue(Upgrade.DotUpgrade, out byte dotUpgradeLevel) && dotUpgradeLevel > 0)
         {
-            player1Upgrades = player1Upgrades.AddUnit(Unit.Dot, ((DotUpgrade)gameSettings.Upgrades[Upgrade.DotUpgrade][dotUpgradeLevel]).ExponentBonus);
+            // A level of 1 means the first upgrade, which is at index 0.
+            bonus = bonus.AddUnit(Unit.Dot, ((DotUpgrade)gameSettings.Upgrades[Upgrade.DotUpgrade][dotUpgradeLevel - 1]).ExponentBonus);
         }
         return bonus;
     }

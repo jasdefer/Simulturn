@@ -276,6 +276,16 @@ public class GameStateTest
             .ShouldBe(new Army() { Dot = 2 });
         turn1.PlayerStates["Player02"]
             .Armies.ShouldNotContainKey(new Hexagon(0, 0));
+
+        // Fighting reveals the pre-fight composition of the participating armies to each other.
+        turn1.PlayerStates["Player01"]
+            .RevealedArmies[new Hexagon(0, 0)]["Player02"].ShouldBe(new Army() { Dot = 3 });
+        turn1.PlayerStates["Player02"]
+            .RevealedArmies[new Hexagon(0, 0)]["Player01"].ShouldBe(new Army() { Dot = 5 });
+
+        // The revelation only lasts for the turn of the fight.
+        var turn2 = GetNextTurnAndValidate(turn1, _noCommands);
+        turn2.PlayerStates["Player01"].RevealedArmies.ShouldBeEmpty();
     }
 
     [Test]
@@ -690,5 +700,55 @@ public class GameStateTest
         var validations = gameState.Validate(commands.Keys.Single(), commands.Single().Value);
         (validations.ShouldHaveSingleItem()
              as InsufficientSpace)!.Required.ShouldBe(9 + 9);
+    }
+
+    [Test]
+    public void ValidateHandlesPendingWorkOnOtherHexagons()
+    {
+        // Assign: a pending construction on the start hexagon and a dot on another hexagon
+        var gameState = new GameState(_gameSettings);
+        var commands = DictionaryExtensions.CommandsToDictionary([
+            ("Player01", _player1Start, new Command()
+            {
+                Construction = new Compound() { Pyramid = 1 },
+                MovementCommands = [new MovementCommand() { Army = new Army() { Dot = 1 }, Destination = new Hexagon(0, 0) }]
+            })
+        ]);
+        var turn1 = GetNextTurnAndValidate(gameState, commands);
+
+        // Act: commands on a hexagon without pending constructions or trainings must not throw
+        commands = DictionaryExtensions.CommandsToDictionary([
+            ("Player01", new Hexagon(0, 0), new Command()
+            {
+                Construction = new Compound() { Dome = 1 },
+                Training = new Army() { Dot = 1 }
+            })
+        ]);
+        var validations = turn1.Validate("Player01", commands["Player01"]).ToList();
+
+        // Assert: training a dot on (0,0) is invalid (no plane there), but validation must report it instead of crashing
+        validations.OfType<MissingBuildingForTraining>().ShouldHaveSingleItem();
+    }
+
+    [Test]
+    public void ExponentBonusFromUpgradesAppliesResearchedLevels()
+    {
+        var gameState = new GameState(_gameSettings);
+        var playerState = gameState.PlayerStates["Player01"];
+
+        playerState.ExponentBonusFromUpgrades(_gameSettings).ShouldBe(Army.Empty);
+
+        var levelOne = playerState with
+        {
+            UpgradeLevels = new Dictionary<Upgrade, byte>() { { Upgrade.DotUpgrade, 1 } }.ToImmutableDictionary()
+        };
+        levelOne.ExponentBonusFromUpgrades(_gameSettings).ShouldBe(new Army() { Dot = 20 });
+
+        // The maximum level must use the last defined upgrade instead of indexing past the array.
+        var maxLevel = playerState with
+        {
+            UpgradeLevels = new Dictionary<Upgrade, byte>() { { Upgrade.DotUpgrade, 2 } }.ToImmutableDictionary()
+        };
+        maxLevel.ExponentBonusFromUpgrades(_gameSettings).ShouldBe(new Army() { Dot = 20 });
     }
 }

@@ -50,6 +50,19 @@ public record GameState
         PlayerIds = PlayerStates.Keys.ToHashSet();
     }
 
+    /// <summary>
+    /// Creates a game state from explicit parts. Intended for client side what-if simulation
+    /// of believed states (e.g. by AI players); real games only ever evolve through
+    /// <see cref="NextTurn"/>. The caller is responsible for the consistency of the parts.
+    /// </summary>
+    public static GameState FromParts(GameSettings gameSettings,
+        ushort turn,
+        ImmutableDictionary<string, PlayerState> playerStates,
+        ImmutableDictionary<Hexagon, int> remainingMatter)
+    {
+        return new GameState(gameSettings, turn, playerStates, remainingMatter);
+    }
+
     private GameState(GameSettings gameSettings,
         ushort turn,
         ImmutableDictionary<string, PlayerState> playerStates,
@@ -164,6 +177,24 @@ public record GameState
             {
                 continue;
             }
+
+            // Fighting reveals the participating armies to each other.
+            foreach ((string playerId, Army army) in armies)
+            {
+                if (!playerStates[playerId].RevealedArmies.TryGetValue(hexagon, out var revealed))
+                {
+                    revealed = [];
+                    playerStates[playerId].RevealedArmies[hexagon] = revealed;
+                }
+                foreach ((string otherPlayerId, Army otherArmy) in armies)
+                {
+                    if (otherPlayerId != playerId)
+                    {
+                        revealed[otherPlayerId] = otherArmy;
+                    }
+                }
+            }
+
             Dictionary<string, Army> losses = [];
             for (var i = 0; i < armies.Count - 1; i++)
             {
@@ -587,7 +618,7 @@ public record GameState
             {
                 Army trainings = playerState.Trainings
                     .Where(x => x.Key >= Turn)
-                    .Select(x => x.Value[hexagon])
+                    .Select(x => x.Value.GetValueOrDefault(hexagon))
                     .Sum();
                 trainings += command.Training;
                 foreach (var unit in _units)
@@ -606,12 +637,12 @@ public record GameState
             {
                 Compound constructions = playerState.Constructions
                     .Where(x => x.Key >= Turn)
-                    .Select(x => x.Value[hexagon])
+                    .Select(x => x.Value.GetValueOrDefault(hexagon))
                     .Sum();
                 constructions += command.Construction;
                 if (constructions.Sum() > playerState.Armies.GetValueOrDefault(hexagon)[Unit.Dot])
                 {
-                    yield return new MissingDotsForConstruction(playerId, hexagon, constructions, playerState.Armies[hexagon][Unit.Dot]);
+                    yield return new MissingDotsForConstruction(playerId, hexagon, constructions, playerState.Armies.GetValueOrDefault(hexagon)[Unit.Dot]);
                 }
             }
 
