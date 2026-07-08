@@ -1,0 +1,66 @@
+@* Compact fight preview: the viewer's army against each known enemy army on a hex.
+   Pairwise like the engine's resolution; renders nothing when there is no known matchup. *@
+
+@if (!OwnArmy.IsEmpty && Opponents.Count > 0)
+{
+    <MudPaper Elevation="0" Outlined="true" Class="pa-2 mt-2" Style="border-radius: 8px;">
+        <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mb-1">⚔ Battle forecast</MudText>
+        @foreach (var opponent in Opponents)
+        {
+            var forecast = CombatForecast.Evaluate(Settings, opponent.Id, OwnArmy, OwnExponentBonus, opponent.Army, opponent.ExponentBonus);
+            <div class="mb-1">
+                <MudText Typo="Typo.body2">
+                    vs <b>@opponent.Id</b> — @Verdict(forecast)
+                    <span class="mud-text-secondary" style="font-variant-numeric: tabular-nums;">
+                        (strength @forecast.OwnStrength.ToString("0.#") vs @forecast.OpponentStrength.ToString("0.#"))
+                    </span>
+                    @if (opponent.Intel)
+                    {
+                        <span class="mud-text-secondary"> · composition from battle intel</span>
+                    }
+                </MudText>
+                <div class="d-flex align-center gap-2 pl-2 flex-wrap">
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">your losses ≈</MudText>
+                    @if (forecast.OwnLosses.IsEmpty)
+                    {
+                        <MudText Typo="Typo.caption">none</MudText>
+                    }
+                    else
+                    {
+                        <ArmyDisplay Army="forecast.OwnLosses" />
+                    }
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">· theirs ≈</MudText>
+                    @if (forecast.OpponentLosses.IsEmpty)
+                    {
+                        <MudText Typo="Typo.caption">none</MudText>
+                    }
+                    else
+                    {
+                        <ArmyDisplay Army="forecast.OpponentLosses" />
+                    }
+                </div>
+            </div>
+        }
+        <MudText Typo="Typo.caption" Class="mud-text-secondary d-block">@Caveat</MudText>
+    </MudPaper>
+}
+
+@code {
+    /// <summary>One enemy army to forecast against; Intel marks fog-of-war battle intel (may be stale).</summary>
+    public sealed record OpponentArmy(string Id, Army Army, Army ExponentBonus, bool Intel);
+
+    [Parameter, EditorRequired] public GameSettings Settings { get; set; } = default!;
+    [Parameter, EditorRequired] public Army OwnArmy { get; set; }
+    [Parameter] public Army OwnExponentBonus { get; set; }
+    [Parameter] public IReadOnlyList<OpponentArmy> Opponents { get; set; } = [];
+
+    /// <summary>Hot seat: enemy upgrades are hidden by fog, so the forecast assumes none.</summary>
+    [Parameter] public bool FogLimited { get; set; }
+
+    private static string Verdict(CombatForecast.Forecast forecast) =>
+        forecast.MutualDestruction ? "mutual destruction" : forecast.OwnArmyWins ? "you win" : "you lose";
+
+    private string Caveat => FogLimited
+        ? "Estimate — armies may move before the fight; enemy upgrades are unknown."
+        : "Estimate — armies may move before the fight.";
+}

@@ -35,11 +35,19 @@
 @if (awaitingDestination)
 {
     <MudAlert Severity="Severity.Info" Dense="true" Class="mt-2">
-        Click a destination hex on the board — or press Escape to cancel.
+        Click a destination hex on the board (your own hexes too) — or press Escape to cancel.
     </MudAlert>
 }
 else
 {
+    @if (!available.IsEmpty)
+    {
+        <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mt-1">
+            The movement range is highlighted — click a hex in range to move units there.
+            Clicking a hex with your own units or buildings selects it instead;
+            use the button below to reinforce it.
+        </MudText>
+    }
     <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
                StartIcon="@Icons.Material.Filled.OpenWith"
                Class="mt-2"

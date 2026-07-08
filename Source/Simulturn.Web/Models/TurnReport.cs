@@ -24,8 +24,15 @@ public sealed record PlayerTurnReport(
         Income.IsEmpty && MatterBefore == MatterAfter;
 }
 
-/// <summary>Units this player lost in a fight at a hex.</summary>
-public sealed record BattleEvent(Hexagon Hexagon, Army Losses);
+/// <summary>
+/// A fight this player participated in. Fighting reveals the full composition of every
+/// participating army to each other (engine fog rule), so the opponents' armies and losses
+/// are legitimately known — even when the player won without losses of their own.
+/// </summary>
+public sealed record BattleEvent(Hexagon Hexagon, Army Losses, ImmutableArray<BattleOpponent> Opponents);
+
+/// <summary>An opposing army as it entered the fight, and what it lost there.</summary>
+public sealed record BattleOpponent(string PlayerId, Army Army, Army Losses);
 
 public sealed record TrainingCompletedEvent(Hexagon Hexagon, Army Army);
 

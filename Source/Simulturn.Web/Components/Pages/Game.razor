@@ -45,18 +45,21 @@
                            Color="Color.Error"
                            Size="Size.Small"
                            StartIcon="@Icons.Material.Filled.DeleteSweep"
+                           Style="white-space: nowrap; flex-shrink: 0;"
                            OnClick="() => Session.ClearDrafts(resetPlayer)">
                     Reset orders
                 </MudButton>
             </MudTooltip>
         }
 
-        <MudBadge Content="ValidationCount" Visible="ValidationCount > 0" Color="Color.Warning" Overlap="true">
+        <MudBadge Content="ValidationCount" Visible="ValidationCount > 0" Color="Color.Warning" Overlap="true"
+                  Style="flex-shrink: 0;">
             @if (Session.Mode == GameMode.HotSeat)
             {
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Primary"
                            StartIcon="@Icons.Material.Filled.Check"
+                           Style="white-space: nowrap;"
                            Disabled="!Session.CanSubmitActivePlayer"
                            OnClick="SubmitOrders">
                     Submit orders
@@ -67,6 +70,7 @@
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Primary"
                            StartIcon="@Icons.Material.Filled.PlayArrow"
+                           Style="white-space: nowrap;"
                            Disabled="!Session.CanEndTurn"
                            OnClick="EndTurn">
                     End Turn
@@ -311,10 +315,29 @@
             ? Session.ValidationResults.GetValueOrDefault(active, []).Count + (Session.ValidationCrash is null ? 0 : 1)
             : Session.ValidationResults.Values.Sum(results => results.Count) + (Session.ValidationCrash is null ? 0 : 1);
 
-    private IReadOnlySet<Hexagon> DestinationCandidates =>
-        ViewState.MovementSource is { } source && ViewState.MovementDestination is null && CommandPlayerId is { } player
-            ? MovementRange.GetDestinations(Session.Viewed, source, Session.AvailableArmyForMovement(player, source))
-            : ImmutableHashSet<Hexagon>.Empty;
+    /// <summary>
+    /// Highlighted movement range: while explicitly picking a destination (Move units button),
+    /// or automatically for a selected own hex with movable units.
+    /// </summary>
+    private IReadOnlySet<Hexagon> DestinationCandidates
+    {
+        get
+        {
+            if (CommandPlayerId is not { } player || ViewState.MovementDestination is not null)
+            {
+                return ImmutableHashSet<Hexagon>.Empty;
+            }
+            Hexagon? source = ViewState.MovementSource ?? ViewState.SelectedHex;
+            if (source is not { } from)
+            {
+                return ImmutableHashSet<Hexagon>.Empty;
+            }
+            var available = Session.AvailableArmyForMovement(player, from);
+            return available.IsEmpty
+                ? ImmutableHashSet<Hexagon>.Empty
+                : MovementRange.GetDestinations(Session.Viewed, from, available);
+        }
+    }
 
     private Hexagon? StepperAnchor =>
         ViewState.MovementSource is not null ? ViewState.MovementDestination : null;
@@ -325,6 +348,7 @@
                                   PlayerId="@player"
                                   Source="source"
                                   Destination="destination"
+                                  PlayerView="PlayerView"
                                   OnCommitted="ViewState.CancelMovement"
                                   OnCancel="ViewState.CancelMovement" />
             : null;
@@ -358,36 +382,33 @@
 
     private void HandleHexClicked(Hexagon hexagon)
     {
-        // Awaiting a movement destination: highlighted (in-range) hexes are targets,
-        // anything else is a normal re-selection.
+        // Explicitly picking a destination (Move units button): every in-range hex is a
+        // target — including own hexes, which makes this the reinforcement flow.
         if (ViewState.MovementSource is { } source && ViewState.MovementDestination is null)
         {
             if (hexagon == source)
             {
                 ViewState.CancelMovement();
             }
-            else if (DestinationCandidates.Contains(hexagon))
+            else if (DestinationCandidates.Contains(hexagon) && CommandPlayerId is { } player)
             {
-                // A single movable unit needs no stepper — stage it immediately.
-                if (CommandPlayerId is { } player)
-                {
-                    var reachable = MovementRange.ReachableArmy(
-                        Session.Viewed.GameSettings,
-                        Session.AvailableArmyForMovement(player, source),
-                        source.DistanceTo(hexagon));
-                    if (reachable.Total == 1)
-                    {
-                        Session.UpdateDraft(player, source, draft => draft.UpsertMovement(hexagon, ArmyDraft.From(reachable)));
-                        ViewState.CancelMovement();
-                        return;
-                    }
-                }
-                ViewState.PickDestination(hexagon);
+                StageOrEditMovement(player, source, hexagon);
             }
             else
             {
                 ViewState.SelectHex(hexagon);
             }
+            return;
+        }
+
+        // Selected own hex with movable units: clicking an in-range hex moves directly.
+        // Hexes with own presence switch the selection instead (reinforce via Move units).
+        if (ViewState.SelectedHex is { } selected && selected != hexagon &&
+            CommandPlayerId is { } commandPlayer &&
+            !HasOwnPresence(commandPlayer, hexagon) &&
+            DestinationCandidates.Contains(hexagon))
+        {
+            StageOrEditMovement(commandPlayer, selected, hexagon);
             return;
         }
 
@@ -399,6 +420,29 @@
         {
             ViewState.SelectHex(hexagon);
         }
+    }
+
+    /// <summary>Stages a single movable unit immediately; otherwise opens the movement stepper.</summary>
+    private void StageOrEditMovement(string player, Hexagon source, Hexagon destination)
+    {
+        var reachable = MovementRange.ReachableArmy(
+            Session.Viewed.GameSettings,
+            Session.AvailableArmyForMovement(player, source),
+            source.DistanceTo(destination));
+        if (reachable.Total == 1)
+        {
+            Session.UpdateDraft(player, source, draft => draft.UpsertMovement(destination, ArmyDraft.From(reachable)));
+            ViewState.CancelMovement();
+            return;
+        }
+        ViewState.EditMovement(source, destination);
+    }
+
+    private bool HasOwnPresence(string player, Hexagon hexagon)
+    {
+        var playerState = Session.Viewed.PlayerStates[player];
+        return !playerState.Armies.GetValueOrDefault(hexagon, Army.Empty).IsEmpty ||
+               !playerState.Compounds.GetValueOrDefault(hexagon, Compound.Empty).IsEmpty;
     }
 
     private void HandleArrowClicked(OrderArrowView arrow)

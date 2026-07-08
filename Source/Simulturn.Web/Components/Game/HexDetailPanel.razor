@@ -1,5 +1,8 @@
+@inject GameSession Session
+
 @* Details of the selected hexagon: matter, per-player armies, buildings, and pending queues,
-   plus the command tabs (Move/Build/Train/Research) for the active player. *@
+   plus the command sections (Move/Build/Train/Research) for the active player — stacked in
+   one view, each shown only where it applies. *@
 
 <div class="pa-4">
     <div class="d-flex align-center justify-space-between mb-2">
@@ -138,21 +141,58 @@
 
     @if (CommandPlayerId is { } commandPlayer)
     {
+        var ownArmy = OwnArmy(commandPlayer);
+        if (!ownArmy.IsEmpty)
+        {
+            <BattleForecast Settings="State.GameSettings"
+                            OwnArmy="ownArmy"
+                            OwnExponentBonus="State.PlayerStates[commandPlayer].ExponentBonusFromUpgrades(State.GameSettings)"
+                            Opponents="ForecastOpponents(commandPlayer)"
+                            FogLimited="PlayerView is not null" />
+        }
+
+        var draft = Session.GetDraft(commandPlayer, Hexagon);
+        bool showMove = !ownArmy.IsEmpty || draft?.Movements.Count > 0;
+        bool showBuild = HexagonSettings.IsBuildable && (ownArmy.Dot > 0 || draft?.Construction.IsEmpty == false);
+        bool showTrain = !State.PlayerStates[commandPlayer].Compounds.GetValueOrDefault(Hexagon, Compound.Empty).IsEmpty;
+        bool showResearch = !HexagonSettings.ResearchableUpgrades.IsEmpty && (ownArmy.Dot > 0 || draft?.Upgrade is not null);
+
         <MudDivider Class="my-3" />
-        <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" MinimumTabWidth="70px">
-            <MudTabPanel Text="Move">
-                <div class="pt-3"><MovePanel PlayerId="@commandPlayer" Hexagon="Hexagon" /></div>
-            </MudTabPanel>
-            <MudTabPanel Text="Build">
-                <div class="pt-3"><BuildPanel PlayerId="@commandPlayer" Hexagon="Hexagon" /></div>
-            </MudTabPanel>
-            <MudTabPanel Text="Train">
-                <div class="pt-3"><TrainPanel PlayerId="@commandPlayer" Hexagon="Hexagon" /></div>
-            </MudTabPanel>
-            <MudTabPanel Text="Research">
-                <div class="pt-3"><ResearchPanel PlayerId="@commandPlayer" Hexagon="Hexagon" /></div>
-            </MudTabPanel>
-        </MudTabs>
+
+        @if (!showMove && !showBuild && !showTrain && !showResearch)
+        {
+            <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                No commands available on this hex — it has none of your units or buildings.
+            </MudText>
+        }
+        @if (showMove)
+        {
+            <div class="mb-4">
+                <MudText Typo="Typo.overline" Class="mud-text-secondary">Move</MudText>
+                <MovePanel PlayerId="@commandPlayer" Hexagon="Hexagon" />
+            </div>
+        }
+        @if (showBuild)
+        {
+            <div class="mb-4">
+                <MudText Typo="Typo.overline" Class="mud-text-secondary">Build</MudText>
+                <BuildPanel PlayerId="@commandPlayer" Hexagon="Hexagon" />
+            </div>
+        }
+        @if (showTrain)
+        {
+            <div class="mb-4">
+                <MudText Typo="Typo.overline" Class="mud-text-secondary">Train</MudText>
+                <TrainPanel PlayerId="@commandPlayer" Hexagon="Hexagon" />
+            </div>
+        }
+        @if (showResearch)
+        {
+            <div class="mb-4">
+                <MudText Typo="Typo.overline" Class="mud-text-secondary">Research</MudText>
+                <ResearchPanel PlayerId="@commandPlayer" Hexagon="Hexagon" />
+            </div>
+        }
     }
 </div>
 
@@ -192,6 +232,35 @@
             return army;
         }
         return null;
+    }
+
+    private Army OwnArmy(string playerId) =>
+        State.PlayerStates[playerId].Armies.GetValueOrDefault(Hexagon, Army.Empty);
+
+    /// <summary>Enemy armies on this hex with known composition: everything in god mode, battle intel under fog.</summary>
+    private IReadOnlyList<BattleForecast.OpponentArmy> ForecastOpponents(string commandPlayer)
+    {
+        List<BattleForecast.OpponentArmy> opponents = [];
+        foreach (var (playerId, playerState) in State.PlayerStates)
+        {
+            if (playerId == commandPlayer)
+            {
+                continue;
+            }
+            if (PlayerView is null)
+            {
+                var army = playerState.Armies.GetValueOrDefault(Hexagon, Army.Empty);
+                if (!army.IsEmpty)
+                {
+                    opponents.Add(new(playerId, army, playerState.ExponentBonusFromUpgrades(State.GameSettings), Intel: false));
+                }
+            }
+            else if (RevealedArmy(playerId) is { } revealed && !revealed.IsEmpty)
+            {
+                opponents.Add(new(playerId, revealed, Army.Empty, Intel: true));
+            }
+        }
+        return opponents;
     }
 
     private IEnumerable<(string PlayerId, byte Index)> Players =>

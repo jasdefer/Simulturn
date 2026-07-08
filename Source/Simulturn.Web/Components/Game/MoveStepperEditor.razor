@@ -18,6 +18,12 @@
 
     <ArmyStepperGroup Value="_army" Max="AvailableArmy" OnChanged="StateHasChanged" />
 
+    <BattleForecast Settings="Session.Current.GameSettings"
+                    OwnArmy="ForecastOwnArmy"
+                    OwnExponentBonus="OwnExponentBonus"
+                    Opponents="ForecastOpponents()"
+                    FogLimited="PlayerView is not null" />
+
     <div class="d-flex gap-2 mt-3">
         <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
                    Disabled="_army.IsEmpty && !IsExistingOrder"
@@ -37,6 +43,9 @@
     [Parameter, EditorRequired] public Hexagon Destination { get; set; }
     [Parameter] public EventCallback OnCommitted { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
+
+    /// <summary>Hot seat: the active player's fog-of-war view; null = god mode (all-seeing forecast).</summary>
+    [Parameter] public PlayerGameState? PlayerView { get; set; }
 
     private ArmyDraft _army = new();
     private (string, Hexagon, Hexagon)? _initializedFor;
@@ -92,6 +101,63 @@
             // Default: everything still available at the source.
             _army = ArmyDraft.From(AvailableArmy);
         }
+    }
+
+    /// <summary>The units picked in the stepper plus everything else of ours ending up at the destination.</summary>
+    private Army ForecastOwnArmy => _army.ToArmy() + ProjectedOwnArmyAtDestination();
+
+    private Army OwnExponentBonus =>
+        Session.Current.PlayerStates[PlayerId].ExponentBonusFromUpgrades(Session.Current.GameSettings);
+
+    private Army ProjectedOwnArmyAtDestination()
+    {
+        // Units already at the destination that are not staged to leave it...
+        Army army = Session.AvailableArmyForMovement(PlayerId, Destination);
+        // ...plus staged movements arriving there from other hexes.
+        foreach (var (hexagon, draft) in Session.Drafts.GetValueOrDefault(PlayerId) ?? [])
+        {
+            if (hexagon == Source || hexagon == Destination)
+            {
+                continue;
+            }
+            foreach (var movement in draft.Movements)
+            {
+                if (movement.Destination == Destination)
+                {
+                    army += movement.Army.ToArmy();
+                }
+            }
+        }
+        return army;
+    }
+
+    private IReadOnlyList<BattleForecast.OpponentArmy> ForecastOpponents()
+    {
+        List<BattleForecast.OpponentArmy> opponents = [];
+        var settings = Session.Current.GameSettings;
+        if (PlayerView is null)
+        {
+            foreach (var (playerId, playerState) in Session.Current.PlayerStates)
+            {
+                var army = playerState.Armies.GetValueOrDefault(Destination, Army.Empty);
+                if (playerId != PlayerId && !army.IsEmpty)
+                {
+                    opponents.Add(new(playerId, army, playerState.ExponentBonusFromUpgrades(settings), Intel: false));
+                }
+            }
+        }
+        else if (PlayerView.PlayerState.RevealedArmies.TryGetValue(Destination, out var revealed))
+        {
+            // Fog of war: composition is only known from last turn's battle intel.
+            foreach (var (playerId, army) in revealed)
+            {
+                if (!army.IsEmpty)
+                {
+                    opponents.Add(new(playerId, army, Army.Empty, Intel: true));
+                }
+            }
+        }
+        return opponents;
     }
 
     private Task Confirm()

@@ -25,8 +25,32 @@
         @foreach (var battle in player.Battles)
         {
             <ReportLine Icon="@Icons.Material.Filled.LocalFireDepartment" Color="Color.Error">
-                Lost <ArmyDisplay Army="battle.Losses" /> in battle at @Coords(battle.Hexagon)
+                Battle at @Coords(battle.Hexagon) —
+                @if (battle.Losses.IsEmpty)
+                {
+                    <span>no losses</span>
+                }
+                else
+                {
+                    <span>lost <ArmyDisplay Army="battle.Losses" /></span>
+                }
             </ReportLine>
+            @foreach (var opponent in battle.Opponents)
+            {
+                <div class="d-flex align-center gap-2 mb-1 flex-wrap" style="padding-left: 28px;">
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">vs @opponent.PlayerId — fought with</MudText>
+                    <ArmyDisplay Army="opponent.Army" />
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">, lost</MudText>
+                    @if (opponent.Losses.IsEmpty)
+                    {
+                        <MudText Typo="Typo.caption">nothing</MudText>
+                    }
+                    else
+                    {
+                        <ArmyDisplay Army="opponent.Losses" />
+                    }
+                </div>
+            }
         }
         @foreach (var loss in player.StructuresLost)
         {

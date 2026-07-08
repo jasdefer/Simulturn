@@ -99,4 +99,24 @@ public class TurnReportServiceTest
             battle.Losses.Dot.ShouldBe((short)5); // equal dot armies annihilate each other
         }
     }
+
+    [Test]
+    public void Report_Battle_RevealsOpponentArmyAndLosses()
+    {
+        var session = NewSession();
+        var center = new Hexagon(0, 0);
+        session.UpdateDraft("Player 1", Start(session, "Player 1"),
+            draft => draft.UpsertMovement(center, new ArmyDraft { Dot = 5 }));
+        session.UpdateDraft("Player 2", Start(session, "Player 2"),
+            draft => draft.UpsertMovement(center, new ArmyDraft { Dot = 2 }));
+        session.ResolveTurn();
+
+        var battle = session.Reports[0].Players.Single(player => player.PlayerId == "Player 1")
+            .Battles.ShouldHaveSingleItem();
+        battle.Losses.Dot.ShouldBe((short)2); // winner loses the strength fraction: ceil(5 · 2/5)
+        var opponent = battle.Opponents.ShouldHaveSingleItem();
+        opponent.PlayerId.ShouldBe("Player 2");
+        opponent.Army.Dot.ShouldBe((short)2);   // full composition revealed by the fight
+        opponent.Losses.Dot.ShouldBe((short)2); // loser is wiped out
+    }
 }

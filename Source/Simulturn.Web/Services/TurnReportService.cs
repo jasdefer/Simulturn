@@ -38,11 +38,16 @@ public static class TurnReportService
         var afterState = after.PlayerStates[playerId];
         var settings = before.GameSettings;
 
-        // Battles: Losses is reset each resolution, so afterState.Losses is exactly last turn's fights.
-        var battles = afterState.Losses
-            .Where(loss => !loss.Value.IsEmpty)
-            .Select(loss => new BattleEvent(loss.Key, loss.Value))
-            .OrderBy(battle => battle.Hexagon.Z).ThenBy(battle => battle.Hexagon.X)
+        // Battles: Losses and RevealedArmies are reset each resolution, so they are exactly last
+        // turn's fights. Keyed off RevealedArmies (every fight reveals the participants) so a
+        // flawless victory still produces a battle entry.
+        var battles = afterState.RevealedArmies.Keys
+            .Union(afterState.Losses.Where(loss => !loss.Value.IsEmpty).Select(loss => loss.Key))
+            .OrderBy(hexagon => hexagon.Z).ThenBy(hexagon => hexagon.X)
+            .Select(hexagon => new BattleEvent(
+                hexagon,
+                afterState.Losses.GetValueOrDefault(hexagon, Army.Empty),
+                BattleOpponents(after, playerId, hexagon)))
             .ToImmutableArray();
 
         // Completions: queue entries keyed with the resolved turn, plus duration-1 orders
@@ -78,6 +83,22 @@ public static class TurnReportService
             structuresLost,
             movements,
             income);
+    }
+
+    /// <summary>The armies this player fought at the hex, with each opponent's own losses there.</summary>
+    private static ImmutableArray<BattleOpponent> BattleOpponents(GameState after, string playerId, Hexagon hexagon)
+    {
+        if (!after.PlayerStates[playerId].RevealedArmies.TryGetValue(hexagon, out var revealed))
+        {
+            return [];
+        }
+        return revealed
+            .OrderBy(pair => pair.Key)
+            .Select(pair => new BattleOpponent(
+                pair.Key,
+                pair.Value,
+                after.PlayerStates[pair.Key].Losses.GetValueOrDefault(hexagon, Army.Empty)))
+            .ToImmutableArray();
     }
 
     private static ImmutableArray<TrainingCompletedEvent> CompletedTrainings(
