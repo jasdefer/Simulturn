@@ -36,6 +36,15 @@ public record PlayerState
     /// </summary>
     public ImmutableDictionary<Hexagon, ImmutableDictionary<string, Army>> RevealedArmies { get; init; } = ImmutableDictionary<Hexagon, ImmutableDictionary<string, Army>>.Empty;
 
+    /// <summary>
+    /// The number of researches of the given upgrade still in progress at the given turn.
+    /// Only completed researches are reflected in <see cref="UpgradeLevels"/>.
+    /// </summary>
+    public int PendingResearchCount(Upgrade upgrade, ushort turn) =>
+        Researches
+            .Where(x => x.Key >= turn)
+            .Sum(x => x.Value.Count(y => y.Value == upgrade));
+
     public Army ExponentBonusFromUpgrades(GameSettings gameSettings)
     {
         // TODO: Extend upgrade exponent bonuses to support all unit-specific upgrades.

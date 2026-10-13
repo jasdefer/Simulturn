@@ -14,6 +14,11 @@ public record GameSettings
     public required Army TrainingDuration { get; init; }
     public required Army Income { get; init; }
     public required Army StructureDamage { get; init; }
+
+    /// <summary>
+    /// The maximum number of hexagons each unit type can move in a single turn.
+    /// </summary>
+    public required Army MovementRange { get; init; }
     public required byte PartialVisibilityRange { get; set; }
     public required byte VisibilityRange { get; set; }
 

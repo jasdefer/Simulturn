@@ -26,6 +26,8 @@ public class PlayerGameStateTest
         ConstructionDuration = new Compound() { Axis = 2, Dome = 3, Cube = 3, Plane = 4, Pyramid = 3 },
         FightExponent = new Army() { Triangle = 120, Circle = 120, Square = 120, Dot = 1 },
         Income = new Army() { Triangle = 0, Circle = 0, Square = 0, Dot = 10 },
+        // Generous ranges: these tests exercise fog of war; range rules are tested separately.
+        MovementRange = new Army() { Triangle = 10, Circle = 10, Square = 10, Dot = 10 },
         ProvidedSpace = new Compound() { Axis = 10, Dome = 0, Cube = 0, Plane = 10, Pyramid = 0 },
         RequiredSpace = new Army() { Triangle = 3, Circle = 3, Square = 3, Dot = 1 },
         Seed = 1,

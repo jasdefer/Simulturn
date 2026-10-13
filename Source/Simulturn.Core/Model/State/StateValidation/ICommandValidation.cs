@@ -17,6 +17,13 @@ public record MissingDotsForConstruction(string PlayerId, Hexagon Hexagon, Compo
 
 public record MissingArmyForMovement(string PlayerId, Hexagon Hexagon, Unit Unit, short MovingUnits, short AvailableUnits) : ICommandValidation;
 
-public record UpgradeExceedsAvailableLevel(string PlayerId, Hexagon Hexagon, Upgrade Upgrade, byte CurrentLevel, int AvailableLevel) : ICommandValidation, IPlayerStateValidation;
+public record MovementExceedsRange(string PlayerId, Hexagon Hexagon, Hexagon Destination, Unit Unit, int Distance, short Range) : ICommandValidation;
+
+/// <summary>
+/// <paramref name="CurrentLevel"/> counts completed levels plus researches still in progress or
+/// commanded in the same turn; <paramref name="AvailableLevel"/> is the lower of the hexagon's
+/// researchable levels and the levels defined in <see cref="GameSettings.Upgrades"/>.
+/// </summary>
+public record UpgradeExceedsAvailableLevel(string PlayerId, Hexagon Hexagon, Upgrade Upgrade, int CurrentLevel, int AvailableLevel) : ICommandValidation, IPlayerStateValidation;
 
 public record UpgradeRequiresDot(string PlayerId, Hexagon Hexagon, Upgrade Upgrade) : ICommandValidation, IPlayerStateValidation;
