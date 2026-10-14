@@ -1,0 +1,84 @@
+fields:
+  id:
+    type: string
+    required: false
+    default: $filename
+    description: Unique identifier. Defaults to filename without .md extension.
+
+  title:
+    type: string
+    required: false
+    default: $filename_pretty
+    description: Display name. Falls back to prettified filename if not set.
+
+  status:
+    type: choice
+    values: [todo, in_progress, done]
+    required: true
+    default: todo
+
+  created:
+    type: date
+    required: true
+    default: $today
+
+  updated:
+    type: date
+    required: false
+    description: Date of the last change. Set by hand.
+
+  completed:
+    type: date
+    required: false
+    description: Date the item reached status done. Set by hand.
+
+  parent:
+    type: link
+    required: false
+    allow_cycles: false
+    inverse: children
+
+  depends_on:
+    type: links
+    required: false
+    allow_cycles: false
+    inverse: dependents
+
+  is_done:
+    type: boolean
+    compute: status == "done"
+    description: Derived. True when status is done.
+
+  dependencies_done:
+    type: boolean
+    pull:
+      over: depends_on
+      field: is_done
+      function: all
+    description: Derived. True when every item in depends_on is done, false when at least one is not, absent on items without dependencies.
+
+  status_color:
+    type: color
+    when:
+      - if: status == "done"
+        then: green
+      - if: status == "in_progress"
+        then: blue
+    default: gray
+    description: Derived. Tint by status; the project-wide color role in config.yaml.
+
+  start_color:
+    type: color
+    when:
+      - if: dependencies_done == false
+        then: red
+    default: green
+    description: Derived. Red when an uncompleted predecessor blocks the item, green otherwise; used by the hierarchy and dependencies views.
+
+rules:
+  - name: done-needs-completed-date
+    description: Items in status done must carry a completed date
+    match:
+      status: done
+    require:
+      completed: required

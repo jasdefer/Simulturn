@@ -1,0 +1,17 @@
+views:
+  - id: status-board
+    type: board
+    field: status
+
+  - id: hierarchy
+    type: tree
+    field: parent
+    display:
+      color: start_color
+
+  - id: dependencies
+    type: graph
+    field: depends_on
+    group_by: parent
+    display:
+      color: start_color
