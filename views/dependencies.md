@@ -10,6 +10,7 @@ flowchart TD
     movement-range["Bewegungsreichweite pro Einheitentyp"]
     research-cost-and-duration["Forschung kostet nichts und nutzt die falsche Stufe"]
     research-level-validation["Forschung kann über die Upgrade-Tabelle hinaus gestartet werden"]
+    training-cancellation-after-completion["Zerstörte Gebäude brechen bereits fertige Trainings ab"]
     turn-report["Nachvollziehbarkeit der Zugauflösung"]
     subgraph ui ["Neue UI"]
         ui-concept["UI-Konzept erarbeiten"]

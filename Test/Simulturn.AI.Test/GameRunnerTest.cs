@@ -1,10 +1,7 @@
 using Simulturn.AI.Players;
-using Simulturn.Core.Extensions;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
-using Simulturn.Core.Model.State;
-using Simulturn.Core.Model.Upgrades;
-using System.Collections.Immutable;
+using Simulturn.Test.Common;
 
 namespace Simulturn.AI.Test;
 
@@ -18,51 +15,9 @@ public class GameRunnerTest
     /// </summary>
     private static GameSettings CreateSettings(Army player1Army, Army player2Army)
     {
-        return new GameSettings()
-        {
-            Armor = new Compound() { Axis = 10, Dome = 20, Cube = 20, Plane = 30, Pyramid = 20 },
-            ArmyCost = new Army() { Triangle = 200, Circle = 200, Square = 200, Dot = 75 },
-            CompoundCost = new Compound() { Axis = 150, Dome = 100, Cube = 150, Plane = 350, Pyramid = 150 },
-            ConstructionDuration = new Compound() { Axis = 2, Dome = 3, Cube = 3, Plane = 4, Pyramid = 3 },
-            FightExponent = new Army() { Triangle = 120, Circle = 120, Square = 120, Dot = 1 },
-            Income = new Army() { Triangle = 0, Circle = 0, Square = 0, Dot = 10 },
-            ProvidedSpace = new Compound() { Axis = 10, Dome = 0, Cube = 0, Plane = 10, Pyramid = 0 },
-            RequiredSpace = new Army() { Triangle = 3, Circle = 3, Square = 3, Dot = 1 },
-            Seed = 1,
-            StartMatter = 500,
-            PartialVisibilityRange = 2,
-            VisibilityRange = 1,
-            StructureDamage = new Army() { Triangle = 5, Circle = 5, Square = 5, Dot = 1 },
-            TrainingDuration = new Army() { Triangle = 2, Circle = 2, Square = 2, Dot = 1 },
-            StartUpgrades = ImmutableDictionary<string, ImmutableArray<Upgrade>>.Empty,
-            Upgrades = new IUpgrade[]
-                {
-                    new DotUpgrade() { Cost = 150, Duration = 3, ExponentBonus = 20 },
-                    new DotUpgrade() { Cost = 175, Duration = 4, ExponentBonus = 20 }
-                }.ToDictionary(),
-            HexagonSettings = new Dictionary<Hexagon, HexagonSettings>
-            {
-                {
-                    _player1Start, new HexagonSettings()
-                    {
-                        Matter = 1000,
-                        MaxNumberOfUnitsGeneratingMatter = new Army() { Dot = 12 },
-                        PlayerInitialization = ("Player01", player1Army, new Compound() { Plane = 1 })
-                    }
-                },
-                {
-                    new Hexagon(0, 0), HexagonSettings.Empty
-                },
-                {
-                    _player2Start, new HexagonSettings()
-                    {
-                        Matter = 1000,
-                        MaxNumberOfUnitsGeneratingMatter = new Army() { Dot = 12 },
-                        PlayerInitialization = ("Player02", player2Army, new Compound() { Plane = 1 })
-                    }
-                }
-            }.ToImmutableDictionary()
-        };
+        return TestSettings.Create(Maps.Line(-1, 1)
+            .SetItem(_player1Start, Maps.Start("Player01", army: player1Army))
+            .SetItem(_player2Start, Maps.Start("Player02", army: player2Army)));
     }
 
     private static Dictionary<Hexagon, Command> MoveAll(Hexagon from, Hexagon to, Army army)

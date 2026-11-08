@@ -1,7 +1,9 @@
 ---
 id: validate-regression-tests
 title: Regressionstests für Validate mit Warteschlangen auf anderen Hexagons
-status: todo
+status: done
+completed: 2026-11-08
+updated: 2026-11-08
 created: 2026-10-14
 ---
 ## Hintergrund

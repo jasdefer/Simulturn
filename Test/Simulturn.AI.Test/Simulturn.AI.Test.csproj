@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Source\Simulturn.AI\Simulturn.AI.csproj" />
+    <ProjectReference Include="..\Simulturn.Test.Common\Simulturn.Test.Common.csproj" />
   </ItemGroup>
 
 </Project>
