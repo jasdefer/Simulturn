@@ -6,7 +6,8 @@ Use it as the default workflow and style baseline for this repository.
 - Solution: `Simulturn.sln`
 - Runtime: .NET 10 (`net10.0`)
 - Core project: `Source/Simulturn.Core/Simulturn.Core.csproj`
-- Test project: `Test/Simulturn.Core.Test/Simulturn.Core.Test.csproj`
+- Test projects: `Test/Simulturn.Core.Test` (engine), `Test/Simulturn.AI.Test` (players, runner, invariants), `Test/Simulturn.Test.Common` (shared fixtures)
+- Test strategy: `docs/test-strategy.md` (read before adding tests)
 - Console project: `Test/Simulturn.Core.Console/Simulturn.Core.Console.csproj`
 - Test stack: TUnit + Shouldly
 - Project settings: `Nullable=enable`, `ImplicitUsings=enable`
@@ -132,6 +133,7 @@ Follow local conventions in touched files first.
 - Favor clarity over terse one-liners in state transition code
 
 ### Testing conventions
+- Follow `docs/test-strategy.md`: pick the layer, reuse `Simulturn.Test.Common`, no new settings copies
 - Use TUnit attributes (`[Test]`, hooks) and Shouldly assertions
 - Keep Arrange/Act/Assert structure, especially in larger scenarios
 - Reuse helper setup methods for repeated game state construction

@@ -2,7 +2,7 @@ using Simulturn.Core.Extensions;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
-using Simulturn.Core.Model.Upgrades;
+using Simulturn.Test.Common;
 using System.Collections.Immutable;
 
 namespace Simulturn.Core.Test.State;
@@ -14,59 +14,13 @@ public class PlayerGameStateTest
     private static readonly Dictionary<string, Dictionary<Hexagon, Command>> _noCommands = [];
 
     /// <summary>
-    /// A map of 7 hexagons in a line from (-3,0) to (3,0).
+    /// A map of 7 hexagons in a line from (-3,0) to (3,0), each holding 1000 matter.
     /// The players start on the opposite ends, 6 hexagons apart, with 5 dots and a plane each.
     /// With a visibility range of 1 and a partial visibility range of 2, the players cannot see each other initially.
     /// </summary>
-    private static readonly GameSettings _gameSettings = new()
-    {
-        Armor = new Compound() { Axis = 10, Dome = 20, Cube = 20, Plane = 30, Pyramid = 20 },
-        ArmyCost = new Army() { Triangle = 200, Circle = 200, Square = 200, Dot = 75 },
-        CompoundCost = new Compound() { Axis = 150, Dome = 100, Cube = 150, Plane = 350, Pyramid = 150 },
-        ConstructionDuration = new Compound() { Axis = 2, Dome = 3, Cube = 3, Plane = 4, Pyramid = 3 },
-        FightExponent = new Army() { Triangle = 120, Circle = 120, Square = 120, Dot = 1 },
-        Income = new Army() { Triangle = 0, Circle = 0, Square = 0, Dot = 10 },
-        ProvidedSpace = new Compound() { Axis = 10, Dome = 0, Cube = 0, Plane = 10, Pyramid = 0 },
-        RequiredSpace = new Army() { Triangle = 3, Circle = 3, Square = 3, Dot = 1 },
-        Seed = 1,
-        StartMatter = 500,
-        PartialVisibilityRange = 2,
-        VisibilityRange = 1,
-        StructureDamage = new Army() { Triangle = 5, Circle = 5, Square = 5, Dot = 1 },
-        TrainingDuration = new Army() { Triangle = 2, Circle = 2, Square = 2, Dot = 1 },
-        StartUpgrades = ImmutableDictionary<string, ImmutableArray<Upgrade>>.Empty,
-        Upgrades = new IUpgrade[]
-            {
-                new DotUpgrade() { Cost = 150, Duration = 3, ExponentBonus = 20 },
-                new DotUpgrade() { Cost = 175, Duration = 4, ExponentBonus = 20 }
-            }.ToDictionary(),
-        HexagonSettings = Enumerable.Range(-3, 7)
-            .ToImmutableDictionary(
-                x => new Hexagon((short)x, 0),
-                x => new HexagonSettings()
-                {
-                    IsBuildable = true,
-                    Matter = 1000,
-                    MaxNumberOfUnitsGeneratingMatter = new Army() { Dot = 12 },
-                    PlayerInitialization = x switch
-                    {
-                        -3 => ("Player01", new Army() { Dot = 5 }, new Compound() { Plane = 1 }),
-                        3 => ("Player02", new Army() { Dot = 5 }, new Compound() { Plane = 1 }),
-                        _ => ((string, Army, Compound)?)null
-                    }
-                })
-    };
-
-    private static GameState GetNextTurnAndValidate(GameState gameState, Dictionary<string, Dictionary<Hexagon, Command>> commands)
-    {
-        foreach ((string playerId, Dictionary<Hexagon, Command> playerCommands) in commands)
-        {
-            gameState.Validate(playerId, playerCommands).ShouldBeEmpty();
-        }
-        var newState = gameState.NextTurn(commands);
-        newState.IsValid().ShouldBeEmpty();
-        return newState;
-    }
+    private static readonly GameSettings _gameSettings = TestSettings.Create(Maps.Line(-3, 3, matter: 1000)
+        .SetItem(_player1Start, Maps.Start("Player01"))
+        .SetItem(_player2Start, Maps.Start("Player02")));
 
     private static Dictionary<string, Dictionary<Hexagon, Command>> Move(string playerId, Hexagon from, Hexagon to, Army army)
     {
@@ -155,7 +109,7 @@ public class PlayerGameStateTest
     public void Memory_UpdatesWhileVisible()
     {
         var gameState = new GameState(_gameSettings);
-        var turn1 = GetNextTurnAndValidate(gameState, _noCommands);
+        var turn1 = gameState.PlayTurn(_noCommands);
         var view = turn1.GetPlayerGameState("Player01");
 
         // 5 dots harvested 50 matter on the own hexagon.
@@ -170,10 +124,10 @@ public class PlayerGameStateTest
         var scout = new Army() { Dot = 1 };
 
         // Move a single dot from (-3,0) towards the opponent, one hexagon per turn.
-        var turn1 = GetNextTurnAndValidate(gameState, Move("Player01", new Hexagon(-3, 0), new Hexagon(-2, 0), scout));
-        var turn2 = GetNextTurnAndValidate(turn1, Move("Player01", new Hexagon(-2, 0), new Hexagon(-1, 0), scout));
-        var turn3 = GetNextTurnAndValidate(turn2, Move("Player01", new Hexagon(-1, 0), new Hexagon(0, 0), scout));
-        var turn4 = GetNextTurnAndValidate(turn3, Move("Player01", new Hexagon(0, 0), new Hexagon(1, 0), scout));
+        var turn1 = gameState.PlayTurn(Move("Player01", new Hexagon(-3, 0), new Hexagon(-2, 0), scout));
+        var turn2 = turn1.PlayTurn(Move("Player01", new Hexagon(-2, 0), new Hexagon(-1, 0), scout));
+        var turn3 = turn2.PlayTurn(Move("Player01", new Hexagon(-1, 0), new Hexagon(0, 0), scout));
+        var turn4 = turn3.PlayTurn(Move("Player01", new Hexagon(0, 0), new Hexagon(1, 0), scout));
 
         // From (1,0) the opponent start hexagon is partially visible: buildings and matter, but no units.
         var view = turn4.GetPlayerGameState("Player01");
@@ -185,7 +139,7 @@ public class PlayerGameStateTest
         observation.OpponentUnitCounts.ShouldBeEmpty();
 
         // Retreat: the opponent start hexagon is out of sight again, the memory keeps the stale snapshot.
-        var turn5 = GetNextTurnAndValidate(turn4, Move("Player01", new Hexagon(1, 0), new Hexagon(0, 0), scout));
+        var turn5 = turn4.PlayTurn(Move("Player01", new Hexagon(1, 0), new Hexagon(0, 0), scout));
         view = turn5.GetPlayerGameState("Player01");
         observation = view.Observations[_player2Start];
         observation.Visibility.ShouldBe(Visibility.Mapped);
@@ -197,8 +151,8 @@ public class PlayerGameStateTest
         var constructAxis = DictionaryExtensions.CommandsToDictionary([
             ("Player02", _player2Start, new Command() { Construction = new Compound() { Axis = 1 } })
         ]);
-        var turn6 = GetNextTurnAndValidate(turn5, constructAxis);
-        var turn7 = GetNextTurnAndValidate(turn6, _noCommands); // axis completes
+        var turn6 = turn5.PlayTurn(constructAxis);
+        var turn7 = turn6.PlayTurn(_noCommands); // axis completes
         turn7.PlayerStates["Player02"].Compounds[_player2Start].ShouldBe(new Compound() { Plane = 1, Axis = 1 });
         view = turn7.GetPlayerGameState("Player01");
         observation = view.Observations[_player2Start];
@@ -206,7 +160,7 @@ public class PlayerGameStateTest
         observation.OpponentCompounds["Player02"].ShouldBe(new Compound() { Plane = 1 });
 
         // Scout again: the memory updates to the new buildings.
-        var turn8 = GetNextTurnAndValidate(turn7, Move("Player01", new Hexagon(0, 0), new Hexagon(1, 0), scout));
+        var turn8 = turn7.PlayTurn(Move("Player01", new Hexagon(0, 0), new Hexagon(1, 0), scout));
         view = turn8.GetPlayerGameState("Player01");
         observation = view.Observations[_player2Start];
         observation.Visibility.ShouldBe(Visibility.PartiallyVisible);
@@ -215,7 +169,7 @@ public class PlayerGameStateTest
         observation.OpponentUnitCounts.ShouldBeEmpty();
 
         // Move next to the opponent: full visibility reveals the unit count.
-        var turn9 = GetNextTurnAndValidate(turn8, Move("Player01", new Hexagon(1, 0), new Hexagon(2, 0), scout));
+        var turn9 = turn8.PlayTurn(Move("Player01", new Hexagon(1, 0), new Hexagon(2, 0), scout));
         view = turn9.GetPlayerGameState("Player01");
         observation = view.Observations[_player2Start];
         observation.Visibility.ShouldBe(Visibility.Visible);
