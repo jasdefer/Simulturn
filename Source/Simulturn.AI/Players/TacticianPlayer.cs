@@ -37,7 +37,7 @@ public sealed class TacticianPlayer : CommanderPlayer
         // base would burn matter that should become fighters.
         foreach (Unit fighter in _analysis!.Fighters)
         {
-            Building building = GameSettings.TrainingBuildingPerUnit[fighter];
+            Building building = GameSettings.TrainingBuilding(fighter);
             int owned = turn.OwnCompoundHexagons.Sum(x => turn.CountOwnedOrPendingBuildings(x, building));
             if (owned < _options.TrainingBuildingsPerFighter &&
                 turn.IdleWorkers(turn.MainBase) > 0 &&
@@ -106,7 +106,7 @@ public sealed class TacticianPlayer : CommanderPlayer
         int bySpace = smallestSpace > 0 ? turn.FreeSpace / smallestSpace : int.MaxValue;
         int byBuildings = turn.OwnCompoundHexagons
             .Sum(hexagon => _analysis.Fighters
-                .Sum(fighter => (int)turn.View.PlayerState.Compounds.GetValueOrDefault(hexagon)[GameSettings.TrainingBuildingPerUnit[fighter]]));
+                .Sum(fighter => (int)turn.View.PlayerState.Compounds.GetValueOrDefault(hexagon)[GameSettings.TrainingBuilding(fighter)]));
         return Math.Max(0, Math.Min(byBuildings, Math.Min(byMatter, bySpace)));
     }
 }

@@ -192,7 +192,7 @@ public sealed class RandomPlayer : IArtificialPlayer
             int budget = matter;
             int space = freeSpace;
             List<Unit> trainable = _units.Where(x =>
-                compound[GameSettings.TrainingBuildingPerUnit[x]] - pendingTrainings[x] > 0 &&
+                compound[GameSettings.TrainingBuilding(x)] - pendingTrainings[x] > 0 &&
                 gameSettings.ArmyCost[x] <= budget &&
                 gameSettings.RequiredSpace[x] <= space).ToList();
             if (trainable.Count == 0)
@@ -200,7 +200,7 @@ public sealed class RandomPlayer : IArtificialPlayer
                 continue;
             }
             Unit unit = trainable[_random.Next(trainable.Count)];
-            int maxCount = compound[GameSettings.TrainingBuildingPerUnit[unit]] - pendingTrainings[unit];
+            int maxCount = compound[GameSettings.TrainingBuilding(unit)] - pendingTrainings[unit];
             if (gameSettings.ArmyCost[unit] > 0)
             {
                 maxCount = Math.Min(maxCount, matter / gameSettings.ArmyCost[unit]);

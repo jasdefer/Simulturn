@@ -29,11 +29,12 @@ public sealed record GameSettings
     public required ImmutableDictionary<string, ImmutableArray<Upgrade>> StartUpgrades { get; init; }
     public required ImmutableDictionary<Upgrade, ImmutableArray<IUpgrade>> Upgrades { get; init; }
     public int Seed { get; init; }
-    public static ImmutableDictionary<Unit, Building> TrainingBuildingPerUnit => new Dictionary<Unit, Building>
-        {
-            { Unit.Dot, Building.Plane },
-            { Unit.Circle, Building.Dome },
-            { Unit.Triangle, Building.Pyramid },
-            { Unit.Square, Building.Cube }
-        }.ToImmutableDictionary();
+    public static Building TrainingBuilding(Unit unit) => unit switch
+    {
+        Unit.Dot => Building.Plane,
+        Unit.Circle => Building.Dome,
+        Unit.Triangle => Building.Pyramid,
+        Unit.Square => Building.Cube,
+        _ => throw new ArgumentOutOfRangeException(nameof(unit), unit, null)
+    };
 }

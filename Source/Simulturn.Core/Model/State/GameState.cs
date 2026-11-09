@@ -320,7 +320,7 @@ public sealed record GameState
                                 {
                                     if (destroyedCount <= 0 ||
                                         training[unit] <= 0 ||
-                                        GameSettings.TrainingBuildingPerUnit[unit] != building)
+                                        GameSettings.TrainingBuilding(unit) != building)
                                     {
                                         continue;
                                     }
@@ -535,9 +535,9 @@ public sealed record GameState
                         {
                             yield return new NegativeTrainingCount(playerId, hexagon, unit, training[unit]);
                         }
-                        if (training[unit] > compound[GameSettings.TrainingBuildingPerUnit[unit]])
+                        if (training[unit] > compound[GameSettings.TrainingBuilding(unit)])
                         {
-                            yield return new MissingBuildingForTraining(playerId, hexagon, unit, training[unit], compound[GameSettings.TrainingBuildingPerUnit[unit]]);
+                            yield return new MissingBuildingForTraining(playerId, hexagon, unit, training[unit], compound[GameSettings.TrainingBuilding(unit)]);
                         }
                     }
                 }
@@ -635,7 +635,7 @@ public sealed record GameState
                 foreach (var unit in _units)
                 {
                     short trainedUnits = trainings[unit];
-                    short availableBuildings = compound[GameSettings.TrainingBuildingPerUnit[unit]];
+                    short availableBuildings = compound[GameSettings.TrainingBuilding(unit)];
                     if (trainedUnits > availableBuildings)
                     {
                         yield return new MissingBuildingForTraining(playerId, hexagon, unit, trainedUnits, availableBuildings);
