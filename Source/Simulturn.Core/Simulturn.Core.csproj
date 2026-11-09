@@ -1,3 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Simulturn.Core.Test" />
+    <InternalsVisibleTo Include="Simulturn.Core.Console" />
+    <InternalsVisibleTo Include="Simulturn.Test.Common" />
+  </ItemGroup>
+
 </Project>

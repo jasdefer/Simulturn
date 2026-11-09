@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Simulturn.Core.Helper;
 
-public static class Printer
+internal static class Printer
 {
     private static readonly Random _random = new Random(1);
     private const int _hexagonSize = 100;

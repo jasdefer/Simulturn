@@ -3,7 +3,7 @@ namespace Simulturn.Core.Model.State;
 /// <summary>
 /// Computes what each player is allowed to know about the game.
 /// </summary>
-public static class FogOfWar
+internal static class FogOfWar
 {
     /// <summary>
     /// The minimum visibility required to observe static information (remaining matter, buildings) on a hexagon.
