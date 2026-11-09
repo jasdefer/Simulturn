@@ -1,4 +1,5 @@
 ﻿using Simulturn.Core.Model;
+using System.Collections.Frozen;
 using Simulturn.Core.Model.Upgrades;
 
 namespace Simulturn.Core.Extensions;
@@ -15,11 +16,11 @@ public static class CollectionExtensions
         return armies.Aggregate(new Compound(), (acc, compound) => acc + compound);
     }
 
-    public static ImmutableDictionary<Upgrade, ImmutableArray<IUpgrade>> ToDictionary(this IEnumerable<IUpgrade> upgrades)
+    public static FrozenDictionary<Upgrade, ImmutableArray<IUpgrade>> ToDictionary(this IEnumerable<IUpgrade> upgrades)
     {
         return upgrades
             .GroupBy(u => u.Upgrade)
-            .ToImmutableDictionary(
+            .ToFrozenDictionary(
                 g => g.Key,
                 g => g.ToImmutableArray()
             );

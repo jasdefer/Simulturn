@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using Simulturn.Core.Extensions;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Upgrades;
@@ -116,13 +117,13 @@ public static class GameSettingsFactory
             VisibilityRange = 1,
             StructureDamage = new Army() { Triangle = 5, Circle = 5, Square = 5, Dot = 1 },
             TrainingDuration = new Army() { Triangle = 2, Circle = 2, Square = 2, Dot = 1 },
-            StartUpgrades = ImmutableDictionary<string, ImmutableArray<Upgrade>>.Empty,
+            StartUpgrades = FrozenDictionary<string, ImmutableArray<Upgrade>>.Empty,
             Upgrades = new IUpgrade[]
                 {
                     new DotUpgrade() { Cost = 150, Duration = 3, ExponentBonus = 20 },
                     new DotUpgrade() { Cost = 175, Duration = 4, ExponentBonus = 20 }
                 }.ToDictionary(),
-            HexagonSettings = hexagonSettings.ToImmutableDictionary()
+            HexagonSettings = hexagonSettings.ToFrozenDictionary()
         };
     }
 }

@@ -29,7 +29,7 @@ public sealed class GameStateTest
     /// </summary>
     private static GameSettings WithStarts((Army Army, Compound Compound) player1, (Army Army, Compound Compound) player2)
     {
-        return TestSettings.Create(_gameSettings.HexagonSettings
+        return TestSettings.Create(_gameSettings.HexagonSettings.ToImmutableDictionary()
             .SetItem(_player1Start, Maps.Start("Player01", matter: 10000, army: player1.Army, compound: player1.Compound))
             .SetItem(_player2Start, Maps.Start("Player02", matter: 10000, army: player2.Army, compound: player2.Compound)));
     }
@@ -434,7 +434,7 @@ public sealed class GameStateTest
     [Test]
     public void IncomeIsCappedByMaxNumberOfUnitsGeneratingMatter()
     {
-        var gameSettings = TestSettings.Create(_gameSettings.HexagonSettings
+        var gameSettings = TestSettings.Create(_gameSettings.HexagonSettings.ToImmutableDictionary()
             .SetItem(_player1Start, Maps.Start("Player01", matter: 10000, army: new Army() { Dot = 15 }) with
             {
                 MaxNumberOfUnitsGeneratingMatter = new Army() { Dot = 3 }
