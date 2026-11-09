@@ -34,7 +34,6 @@ public static class StateInvariants
 
             int armySpace = player.Armies.Values.Sum(army => army * settings.RequiredSpace);
             int trainingSpace = player.Trainings
-                .Where(x => x.Key >= state.Turn)
                 .SelectMany(x => x.Value.Values)
                 .Sum(army => army * settings.RequiredSpace);
             if (player.UsedSpace != armySpace + trainingSpace)

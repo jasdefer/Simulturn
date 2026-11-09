@@ -45,14 +45,14 @@ internal sealed class TurnPlan
         Matter = playerState.Matter;
         FreeSpace = playerState.AvailableSpace - playerState.UsedSpace;
 
-        foreach ((ushort completionTurn, var constructionsPerHexagon) in playerState.Constructions.Where(x => x.Key >= view.Turn))
+        foreach ((ushort completionTurn, var constructionsPerHexagon) in playerState.Constructions)
         {
             foreach ((Hexagon hexagon, Compound compound) in constructionsPerHexagon)
             {
                 _anchoredDots[hexagon] = _anchoredDots.GetValueOrDefault(hexagon) + compound.Sum();
             }
         }
-        foreach ((ushort completionTurn, var trainingsPerHexagon) in playerState.Trainings.Where(x => x.Key >= view.Turn))
+        foreach ((ushort completionTurn, var trainingsPerHexagon) in playerState.Trainings)
         {
             foreach (Unit unit in Enum.GetValues<Unit>())
             {
@@ -61,7 +61,6 @@ internal sealed class TurnPlan
             }
         }
         PendingSpace = playerState.Constructions
-            .Where(x => x.Key >= view.Turn)
             .SelectMany(x => x.Value.Values)
             .Sum(x => x * gameSettings.ProvidedSpace);
 
@@ -148,7 +147,6 @@ internal sealed class TurnPlan
         return View.PlayerState.Compounds.GetValueOrDefault(hexagon)[building] +
             _constructions.GetValueOrDefault(hexagon)[building] +
             View.PlayerState.Constructions
-                .Where(x => x.Key >= View.Turn)
                 .Sum(x => x.Value.GetValueOrDefault(hexagon)[building]);
     }
 
@@ -177,7 +175,6 @@ internal sealed class TurnPlan
         GameSettings gameSettings = View.GameSettings;
         Building building = GameSettings.TrainingBuildingPerUnit[unit];
         Army pendingOnHexagon = View.PlayerState.Trainings
-            .Where(x => x.Key >= View.Turn)
             .Select(x => x.Value.GetValueOrDefault(hexagon))
             .Sum();
         int capacity = View.PlayerState.Compounds.GetValueOrDefault(hexagon)[building]
@@ -229,7 +226,6 @@ internal sealed class TurnPlan
             return false;
         }
         bool pending = playerState.Researches
-            .Where(x => x.Key >= View.Turn)
             .SelectMany(x => x.Value.Values)
             .Contains(upgrade);
         if (pending)

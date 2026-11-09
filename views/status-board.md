@@ -17,6 +17,7 @@ Cards grouped into columns by `status`.
 _(no cards)_
 
 ## done
+- [Warteschlangen enthalten nur offene Aufträge](../workdown-items/pending-only-queues.md)
 - [Zerstörte Gebäude brechen bereits fertige Trainings ab](../workdown-items/training-cancellation-after-completion.md)
 - [Regressionstests für Validate mit Warteschlangen auf anderen Hexagons](../workdown-items/validate-regression-tests.md)
 

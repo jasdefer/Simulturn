@@ -119,6 +119,7 @@ public record GameState
             {
                 playerStateBuilder.Armies.Merge(trainings);
                 potentialFightHexagons.UnionWith(trainings.Keys); // The army might be trained on a hexagon with an enemy army
+                playerStateBuilder.Trainings.Remove(Turn);
             }
             playerStateBuilder.Matter -= newTrainings.Sum(x => x.Value.Values.Sum(training => training * GameSettings.ArmyCost));
 
@@ -128,6 +129,7 @@ public record GameState
             {
                 playerStateBuilder.Compounds.Merge(construction);
                 playerStateBuilder.AvailableSpace += construction.Values.Sum(compound => compound * GameSettings.ProvidedSpace);
+                playerStateBuilder.Constructions.Remove(Turn);
             }
             playerStateBuilder.Matter -= newConstructions.Sum(x => x.Value.Values.Sum(compound => compound * GameSettings.CompoundCost));
 
@@ -143,6 +145,7 @@ public record GameState
                     }
                     playerStateBuilder.UpgradeLevels[upgrade]++;
                 }
+                playerStateBuilder.Researches.Remove(Turn);
             }
 
             // Movements
@@ -222,12 +225,10 @@ public record GameState
 
                 // Stop constructions for each lost dot
                 Compound constructions = playerStates[playerId].Constructions
-                    .Where(x => x.Key > Turn)
                     .Select(x => x.Value.GetValueOrDefault(hexagon))
                     .Sum();
                 var canceledConstructionCandidates = playerStates[playerId]
                     .Constructions
-                    .Where(x => x.Key > Turn)
                     .OrderByDescending(x => x.Key);
                 foreach ((ushort turn, var constructionForTurn) in canceledConstructionCandidates)
                 {
@@ -309,8 +310,7 @@ public record GameState
                             {
                                 continue;
                             }
-                            var cancelCandidates = playerStates[compoundPlayerId].Trainings.Where(x => x.Key > Turn);
-                            foreach ((ushort turn, var candidate) in cancelCandidates)
+                            foreach ((ushort turn, var candidate) in playerStates[compoundPlayerId].Trainings)
                             {
                                 if (destroyedCount <= 0 || !candidate.TryGetValue(hexagon, out Army training) || training.IsEmpty)
                                 {
@@ -516,8 +516,12 @@ public record GameState
             }
 
             // Trainings
-            foreach ((ushort turn, var trainings) in playerState.Trainings.Where(x => x.Key >= Turn))
+            foreach ((ushort turn, var trainings) in playerState.Trainings)
             {
+                if (turn < Turn)
+                {
+                    yield return new CompletedTrainingInQueue(playerId, turn);
+                }
                 foreach ((Hexagon hexagon, Army training) in trainings)
                 {
                     if (!GameSettings.HexagonSettings.ContainsKey(hexagon))
@@ -540,8 +544,12 @@ public record GameState
             }
 
             // Constructions
-            foreach ((ushort turn, var constructions) in playerState.Constructions.Where(x => x.Key >= Turn))
+            foreach ((ushort turn, var constructions) in playerState.Constructions)
             {
+                if (turn < Turn)
+                {
+                    yield return new CompletedConstructionInQueue(playerId, turn);
+                }
                 foreach ((Hexagon hexagon, Compound construction) in constructions)
                 {
                     if (!GameSettings.HexagonSettings.ContainsKey(hexagon))
@@ -564,8 +572,12 @@ public record GameState
             }
 
             // Researches
-            foreach ((ushort turn, var researches) in playerState.Researches.Where(x => x.Key >= Turn))
+            foreach ((ushort turn, var researches) in playerState.Researches)
             {
+                if (turn < Turn)
+                {
+                    yield return new CompletedResearchInQueue(playerId, turn);
+                }
                 foreach ((Hexagon hexagon, Upgrade upgrade) in researches)
                 {
                     if (!GameSettings.HexagonSettings.ContainsKey(hexagon))
@@ -617,7 +629,6 @@ public record GameState
             if (!command.Training.IsEmpty)
             {
                 Army trainings = playerState.Trainings
-                    .Where(x => x.Key >= Turn)
                     .Select(x => x.Value.GetValueOrDefault(hexagon))
                     .Sum();
                 trainings += command.Training;
@@ -636,7 +647,6 @@ public record GameState
             if (!command.Construction.IsEmpty)
             {
                 Compound constructions = playerState.Constructions
-                    .Where(x => x.Key >= Turn)
                     .Select(x => x.Value.GetValueOrDefault(hexagon))
                     .Sum();
                 constructions += command.Construction;

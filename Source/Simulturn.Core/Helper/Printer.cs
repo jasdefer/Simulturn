@@ -33,7 +33,7 @@ public static class Printer
             {
                 info.Add($"{playerId}: {compound.ToCompactString()}");
             }
-            foreach ((ushort turn, var trainings) in playerState.Trainings.Where(x => x.Key >= gameState.Turn))
+            foreach ((ushort turn, var trainings) in playerState.Trainings)
             {
                 if (trainings.TryGetValue(hexagon, out var training) && !training.IsEmpty)
                 {
@@ -41,7 +41,7 @@ public static class Printer
                 }
             }
 
-            foreach ((ushort turn, var constructions) in playerState.Constructions.Where(x => x.Key >= gameState.Turn))
+            foreach ((ushort turn, var constructions) in playerState.Constructions)
             {
                 if (constructions.TryGetValue(hexagon, out var construction) && !construction.IsEmpty)
                 {
