@@ -5,7 +5,7 @@ using System.Collections.Immutable;
 
 namespace Simulturn.Core.Console;
 
-internal class ConsoleGameSettings
+internal sealed class ConsoleGameSettings
 {
     public static readonly GameSettings DefaultGame = new()
     {
