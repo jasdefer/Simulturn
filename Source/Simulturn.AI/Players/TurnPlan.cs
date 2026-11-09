@@ -220,15 +220,12 @@ internal sealed class TurnPlan
             return false;
         }
         byte currentLevel = playerState.UpgradeLevels.GetValueOrDefault(upgrade);
-        int availableLevels = gameSettings.HexagonSettings[hexagon].ResearchableUpgrades.Count(x => x == upgrade);
-        if (currentLevel >= availableLevels || currentLevel >= gameSettings.Upgrades[upgrade].Length)
+        if (!gameSettings.HexagonSettings[hexagon].ResearchableUpgrades.Contains(upgrade) ||
+            currentLevel >= gameSettings.MaxUpgradeLevel(upgrade))
         {
             return false;
         }
-        bool pending = playerState.Researches
-            .SelectMany(x => x.Value.Values)
-            .Contains(upgrade);
-        if (pending)
+        if (playerState.PendingResearchLevels().ContainsKey(upgrade))
         {
             return false;
         }

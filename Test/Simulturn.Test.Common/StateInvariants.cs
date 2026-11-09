@@ -184,13 +184,17 @@ public static class StateInvariants
         GameSettings settings = state.GameSettings;
         PlayerState player = state.PlayerStates[playerId];
         int cost = 0;
+        // Every research pays the next free level after the completed and pending ones.
+        Dictionary<Upgrade, int> occupiedLevels = player.PendingResearchLevels()
+            .ToDictionary(x => x.Key, x => (int)x.Value);
         foreach (Command command in commands.Values)
         {
             cost += command.Training * settings.ArmyCost;
             cost += command.Construction * settings.CompoundCost;
             if (command.Upgrade is Upgrade upgrade)
             {
-                byte level = player.UpgradeLevels.GetValueOrDefault(upgrade);
+                int level = player.UpgradeLevels.GetValueOrDefault(upgrade) + occupiedLevels.GetValueOrDefault(upgrade);
+                occupiedLevels[upgrade] = occupiedLevels.GetValueOrDefault(upgrade) + 1;
                 ImmutableArray<IUpgrade> levels = settings.Upgrades[upgrade];
                 if (level < levels.Length)
                 {

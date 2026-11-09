@@ -23,8 +23,8 @@ public static class GameSettingsFactory
             seed,
             matterSelector: _ => matterPerHexagon,
             researchSelector: hexagon => hexagon == center
-                ? [Upgrade.DotUpgrade, Upgrade.DotUpgrade]
-                : ImmutableArray<Upgrade>.Empty);
+                ? [Upgrade.DotUpgrade]
+                : ImmutableHashSet<Upgrade>.Empty);
     }
 
     /// <summary>
@@ -37,8 +37,8 @@ public static class GameSettingsFactory
             seed,
             matterSelector: hexagon => IsStartingHexagon(radius, hexagon) ? startHexagonMatter : 0,
             researchSelector: hexagon => IsStartingHexagon(radius, hexagon)
-                ? [Upgrade.DotUpgrade, Upgrade.DotUpgrade]
-                : ImmutableArray<Upgrade>.Empty);
+                ? [Upgrade.DotUpgrade]
+                : ImmutableHashSet<Upgrade>.Empty);
     }
 
     /// <summary>
@@ -62,8 +62,8 @@ public static class GameSettingsFactory
                 ? 2000
                 : expansionMatter.GetValueOrDefault(hexagon),
             researchSelector: hexagon => hexagon == center
-                ? [Upgrade.DotUpgrade, Upgrade.DotUpgrade]
-                : ImmutableArray<Upgrade>.Empty);
+                ? [Upgrade.DotUpgrade]
+                : ImmutableHashSet<Upgrade>.Empty);
     }
 
     private static bool IsStartingHexagon(int radius, Hexagon hexagon)
@@ -74,7 +74,7 @@ public static class GameSettingsFactory
     private static GameSettings Build(int radius,
         int seed,
         Func<Hexagon, int> matterSelector,
-        Func<Hexagon, ImmutableArray<Upgrade>> researchSelector)
+        Func<Hexagon, ImmutableHashSet<Upgrade>> researchSelector)
     {
         Dictionary<Hexagon, HexagonSettings> hexagonSettings = [];
         for (short x = (short)-radius; x <= radius; x++)

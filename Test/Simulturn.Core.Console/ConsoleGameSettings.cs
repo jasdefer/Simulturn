@@ -50,7 +50,7 @@ internal class ConsoleGameSettings
                 }
             },
             {
-                new Hexagon(0,0), HexagonSettings.Empty with { ResearchableUpgrades = [Upgrade.DotUpgrade, Upgrade.DotUpgrade] }
+                new Hexagon(0,0), HexagonSettings.Empty with { ResearchableUpgrades = [Upgrade.DotUpgrade] }
             },
             {
                 new Hexagon(0,1), HexagonSettings.Empty

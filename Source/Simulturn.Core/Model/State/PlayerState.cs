@@ -36,6 +36,25 @@ public record PlayerState
     /// </summary>
     public ImmutableDictionary<Hexagon, ImmutableDictionary<string, Army>> RevealedArmies { get; init; } = ImmutableDictionary<Hexagon, ImmutableDictionary<string, Army>>.Empty;
 
+    /// <summary>
+    /// The number of pending researches per upgrade. Together with <see cref="UpgradeLevels"/>
+    /// these are the levels a player already occupies: no research may start once completed and
+    /// pending levels reach <see cref="GameSettings.MaxUpgradeLevel"/>. Upgrades without a
+    /// pending research have no entry.
+    /// </summary>
+    public ImmutableDictionary<Upgrade, byte> PendingResearchLevels()
+    {
+        var pendingLevels = ImmutableDictionary.CreateBuilder<Upgrade, byte>();
+        foreach (var researches in Researches.Values)
+        {
+            foreach (Upgrade upgrade in researches.Values)
+            {
+                pendingLevels[upgrade] = (byte)(pendingLevels.GetValueOrDefault(upgrade) + 1);
+            }
+        }
+        return pendingLevels.ToImmutable();
+    }
+
     public Army ExponentBonusFromUpgrades(GameSettings gameSettings)
     {
         // TODO: Extend upgrade exponent bonuses to support all unit-specific upgrades.

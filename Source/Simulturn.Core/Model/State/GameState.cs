@@ -8,6 +8,7 @@ public record GameState
 {
     private static readonly ImmutableArray<Unit> _units = Enum.GetValues<Unit>().Cast<Unit>().ToImmutableArray();
     private static readonly ImmutableArray<Building> _buildings = Enum.GetValues<Building>().Cast<Building>().ToImmutableArray();
+    private static readonly ImmutableArray<Upgrade> _upgrades = Enum.GetValues<Upgrade>().ToImmutableArray();
     public GameSettings GameSettings { get; init; }
     public ImmutableHashSet<Hexagon> Hexagons { get; init; }
     public HashSet<string> PlayerIds { get; init; }
@@ -76,6 +77,11 @@ public record GameState
         PlayerStates = playerStates;
     }
 
+    /// <summary>
+    /// Resolves one turn. The commands of every player must have passed <see cref="Validate"/>:
+    /// NextTurn applies them without checking and an invalid command, for example a research
+    /// beyond the last level of <see cref="GameSettings.Upgrades"/>, corrupts the state or throws.
+    /// </summary>
     public GameState NextTurn<TCommands>(IReadOnlyDictionary<string, TCommands> commands)
             where TCommands : IReadOnlyDictionary<Hexagon, Command>
     {
@@ -580,23 +586,31 @@ public record GameState
                 }
                 foreach ((Hexagon hexagon, Upgrade upgrade) in researches)
                 {
-                    if (!GameSettings.HexagonSettings.ContainsKey(hexagon))
+                    if (!GameSettings.HexagonSettings.TryGetValue(hexagon, out var hexagonSettings))
                     {
                         yield return new HexagonMissingInSettings(hexagon);
+                    }
+                    else if (!hexagonSettings.ResearchableUpgrades.Contains(upgrade))
+                    {
+                        yield return new UpgradeNotResearchableOnHexagon(playerId, hexagon, upgrade);
                     }
                     if (!playerState.Armies.TryGetValue(hexagon, out var army) || army.Dot <= 0)
                     {
                         yield return new UpgradeRequiresDot(playerId, hexagon, upgrade);
                     }
+                }
+            }
 
-                    byte currentLevel = playerState.UpgradeLevels.GetValueOrDefault(upgrade);
-                    int availableUpgrades = GameSettings.HexagonSettings[hexagon]
-                        .ResearchableUpgrades.Where(x => x == upgrade)
-                        .Count();
-                    if (currentLevel > availableUpgrades)
-                    {
-                        yield return new UpgradeExceedsAvailableLevel(playerId, hexagon, upgrade, currentLevel, availableUpgrades);
-                    }
+            // Upgrade levels: completed plus pending never exceed the table
+            var pendingResearchLevels = playerState.PendingResearchLevels();
+            foreach (Upgrade upgrade in _upgrades)
+            {
+                byte completedLevels = playerState.UpgradeLevels.GetValueOrDefault(upgrade);
+                byte pendingLevels = pendingResearchLevels.GetValueOrDefault(upgrade);
+                int maxLevel = GameSettings.MaxUpgradeLevel(upgrade);
+                if (completedLevels + pendingLevels > maxLevel)
+                {
+                    yield return new UpgradeLevelsExceedTable(playerId, upgrade, completedLevels, pendingLevels, maxLevel);
                 }
             }
         }
@@ -621,7 +635,13 @@ public record GameState
             yield return new InsufficientSpace(playerId, PlayerStates[playerId].UsedSpace + additionalSpace, PlayerStates[playerId].AvailableSpace);
         }
 
-        int researchCost = 0;
+        // Researches of the same upgrade in this turn share the remaining levels, independent of the command order.
+        var pendingResearchLevels = playerState.PendingResearchLevels();
+        var requestedResearchLevels = commands.Values
+            .Where(command => command.Upgrade is not null)
+            .GroupBy(command => command.Upgrade!.Value)
+            .ToDictionary(group => group.Key, group => (byte)group.Count());
+
         foreach ((var hexagon, var command) in commands)
         {
             Compound compound = playerState.Compounds.GetValueOrDefault(hexagon, Compound.Empty);
@@ -670,23 +690,38 @@ public record GameState
             // Upgrades are valid
             if (command.Upgrade is not null)
             {
-                byte currentLevel = playerState.UpgradeLevels.GetValueOrDefault(command.Upgrade.Value);
-                int availableUpgrades = GameSettings.HexagonSettings[hexagon]
-                    .ResearchableUpgrades.Where(x => x == command.Upgrade)
-                    .Count();
-                if (currentLevel >= availableUpgrades)
+                Upgrade upgrade = command.Upgrade.Value;
+                if (!GameSettings.HexagonSettings.TryGetValue(hexagon, out var hexagonSettings) ||
+                    !hexagonSettings.ResearchableUpgrades.Contains(upgrade))
                 {
-                    yield return new UpgradeExceedsAvailableLevel(playerId, hexagon, command.Upgrade.Value, currentLevel, availableUpgrades);
+                    yield return new UpgradeNotResearchableOnHexagon(playerId, hexagon, upgrade);
                 }
-                else
+
+                byte completedLevels = playerState.UpgradeLevels.GetValueOrDefault(upgrade);
+                byte pendingLevels = pendingResearchLevels.GetValueOrDefault(upgrade);
+                byte requestedLevels = requestedResearchLevels[upgrade];
+                int maxLevel = GameSettings.MaxUpgradeLevel(upgrade);
+                if (completedLevels + pendingLevels + requestedLevels > maxLevel)
                 {
-                    researchCost += GameSettings.Upgrades[command.Upgrade.Value][currentLevel].Cost; // a level of 1 means the first upgrade, which is at index 0
+                    yield return new UpgradeExceedsAvailableLevel(playerId, hexagon, upgrade, completedLevels, pendingLevels, requestedLevels, maxLevel);
                 }
 
                 if (!playerState.Armies.TryGetValue(hexagon, out var army) || army.Dot <= 0)
                 {
-                    yield return new UpgradeRequiresDot(playerId, hexagon, command.Upgrade.Value);
+                    yield return new UpgradeRequiresDot(playerId, hexagon, upgrade);
                 }
+            }
+        }
+
+        // Research cost: every requested research pays the next free level, after the completed and pending ones.
+        int researchCost = 0;
+        foreach ((Upgrade upgrade, byte requestedLevels) in requestedResearchLevels)
+        {
+            int firstLevel = playerState.UpgradeLevels.GetValueOrDefault(upgrade) + pendingResearchLevels.GetValueOrDefault(upgrade);
+            int lastLevel = Math.Min(firstLevel + requestedLevels, GameSettings.MaxUpgradeLevel(upgrade));
+            for (int level = firstLevel; level < lastLevel; level++)
+            {
+                researchCost += GameSettings.Upgrades[upgrade][level].Cost; // a level of 1 means the first upgrade, which is at index 0
             }
         }
 

@@ -93,10 +93,8 @@ public class RandomPlayer : IArtificialPlayer
         PlayerState playerState = playerGameState.PlayerState;
         GameSettings gameSettings = playerGameState.GameSettings;
 
-        // Researching an upgrade that is already in progress could exceed the available level on completion.
-        HashSet<Upgrade> pendingUpgrades = playerState.Researches
-            .SelectMany(x => x.Value.Values)
-            .ToHashSet();
+        // The random player never stacks researches: one pending research per upgrade at a time.
+        var pendingResearchLevels = playerState.PendingResearchLevels();
 
         List<(Hexagon Hexagon, Upgrade Upgrade, short Cost)> candidates = [];
         foreach (Hexagon hexagon in armyHexagons)
@@ -105,15 +103,14 @@ public class RandomPlayer : IArtificialPlayer
             {
                 continue;
             }
-            foreach (Upgrade upgrade in gameSettings.HexagonSettings[hexagon].ResearchableUpgrades.Distinct().OrderBy(x => x))
+            foreach (Upgrade upgrade in gameSettings.HexagonSettings[hexagon].ResearchableUpgrades.OrderBy(x => x))
             {
-                if (pendingUpgrades.Contains(upgrade))
+                if (pendingResearchLevels.ContainsKey(upgrade))
                 {
                     continue;
                 }
                 byte currentLevel = playerState.UpgradeLevels.GetValueOrDefault(upgrade);
-                int availableLevels = gameSettings.HexagonSettings[hexagon].ResearchableUpgrades.Count(x => x == upgrade);
-                if (currentLevel >= availableLevels || currentLevel >= gameSettings.Upgrades[upgrade].Length)
+                if (currentLevel >= gameSettings.MaxUpgradeLevel(upgrade))
                 {
                     continue;
                 }
