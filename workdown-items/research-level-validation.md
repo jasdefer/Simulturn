@@ -1,8 +1,10 @@
 ---
 id: research-level-validation
 title: Forschung kann über die Upgrade-Tabelle hinaus gestartet werden
-status: todo
+status: done
 created: 2026-10-14
+updated: 2026-11-09
+completed: 2026-11-09
 ---
 ## Problem
 
@@ -23,10 +25,20 @@ Ein Spieler kann zu keinem Zeitpunkt mehr Stufen eines Upgrades abgeschlossen od
 - Die Regel "welche Forschungen laufen noch" existiert genau einmal. Heute steht sie in drei AI-Spielern (`CommanderPlayer`, `RandomPlayer`, `TurnPlan`), und der alte Branch hat sie im Core noch zweimal inline ergänzt.
 - Der Aufwand pro Spieler wächst nicht quadratisch mit der Zahl laufender Forschungen. Die Arena ruft `IsValid` in jedem Zug jedes Spiels.
 
-## Zu entscheiden
+## Entscheidung
 
-- Wie `NextTurn` mit einem nicht validierten Command umgeht, der über die Tabelle hinausgeht: überspringen, oder Vorbedingung dokumentieren. Der alte Branch warf mitten im Zug.
-- Ob der Typ von `UpgradeExceedsAvailableLevel.CurrentLevel` (`byte`) noch passt, wenn laufende Forschungen mitgezählt werden.
+Die Spielregel wurde vereinfacht: Ein Hexagon bietet ein Upgrade an oder nicht. Wie viele Stufen ein Upgrade hat, legt allein die Tabelle `GameSettings.Upgrades` fest. `HexagonSettings.ResearchableUpgrades` ist deshalb ein `ImmutableHashSet<Upgrade>`; die frühere Zählung der Vorkommen pro Hexagon entfällt. Damit gibt es keine Obergrenze pro Hexagon mehr, und das Gegenbeispiel aus dem Review (Hexagon A eine Stufe, B zwei) kann nicht mehr auftreten. Keine bestehende Karte nutzte unterschiedliche Zahlen pro Hexagon.
+
+Die Regel lautet jetzt an allen Stellen gleich: abgeschlossene Stufen (`PlayerState.UpgradeLevels`) plus laufende Forschungen (`PlayerState.PendingResearchLevels()`) plus im Zug angeforderte Forschungen dürfen `GameSettings.MaxUpgradeLevel(upgrade)` nicht überschreiten.
+
+- `Validate` zählt die Research-Commands pro Upgrade und meldet `UpgradeExceedsAvailableLevel` (mit `CompletedLevels`, `PendingLevels`, `RequestedLevels`, `MaxLevel`) für jeden betroffenen Command, unabhängig von der Reihenfolge. Die Kosten verwendet die nächste freie Stufe nach den laufenden Forschungen. Ein Hexagon ohne das Upgrade ergibt `UpgradeNotResearchableOnHexagon`.
+- `IsValid` meldet `UpgradeLevelsExceedTable`, wenn abgeschlossene plus laufende Stufen die Tabelle übersteigen, und `UpgradeNotResearchableOnHexagon` für laufende Forschungen auf einem Hexagon ohne Angebot.
+- `NextTurn` setzt validierte Commands voraus (XML-Doc). Es gibt keine zusätzliche Schutzprüfung.
+- `byte` bleibt der Typ der Stufenzähler, die Summe ist durch die Tabellenlänge begrenzt.
+- Die drei AI-Spieler nutzen `PendingResearchLevels()` und `MaxUpgradeLevel` statt eigener Zählungen. Sie stapeln weiterhin nicht.
+- Eine Settings-Validierung ist nicht nötig: Ein Upgrade ohne Tabelle hat null Stufen und wird von `Validate` abgelehnt.
+
+Tests: `ResearchLevelTest` in `Simulturn.Core.Test`.
 
 ## Referenz
 

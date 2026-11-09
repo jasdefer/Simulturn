@@ -17,6 +17,13 @@ public record MissingDotsForConstruction(string PlayerId, Hexagon Hexagon, Compo
 
 public record MissingArmyForMovement(string PlayerId, Hexagon Hexagon, Unit Unit, short MovingUnits, short AvailableUnits) : ICommandValidation;
 
-public record UpgradeExceedsAvailableLevel(string PlayerId, Hexagon Hexagon, Upgrade Upgrade, byte CurrentLevel, int AvailableLevel) : ICommandValidation, IPlayerStateValidation;
+/// <summary>
+/// The researches requested this turn would push the completed and pending levels of the upgrade
+/// beyond the levels defined in <see cref="GameSettings.Upgrades"/>. Reported for every research
+/// command of that upgrade, so the result does not depend on the order of the commands.
+/// </summary>
+public record UpgradeExceedsAvailableLevel(string PlayerId, Hexagon Hexagon, Upgrade Upgrade, byte CompletedLevels, byte PendingLevels, byte RequestedLevels, int MaxLevel) : ICommandValidation;
+
+public record UpgradeNotResearchableOnHexagon(string PlayerId, Hexagon Hexagon, Upgrade Upgrade) : ICommandValidation, IPlayerStateValidation;
 
 public record UpgradeRequiresDot(string PlayerId, Hexagon Hexagon, Upgrade Upgrade) : ICommandValidation, IPlayerStateValidation;

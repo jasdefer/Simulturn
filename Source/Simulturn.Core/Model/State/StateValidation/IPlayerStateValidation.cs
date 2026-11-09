@@ -18,3 +18,9 @@ public record NegativeConstructionCount(string PlayerId, Hexagon Hexagon, Buildi
 public record ExpiredTraining(string PlayerId, ushort CompletionTurn) : IPlayerStateValidation;
 public record ExpiredConstruction(string PlayerId, ushort CompletionTurn) : IPlayerStateValidation;
 public record ExpiredResearch(string PlayerId, ushort CompletionTurn) : IPlayerStateValidation;
+
+/// <summary>
+/// The completed and pending levels of an upgrade exceed the levels defined in
+/// <see cref="GameSettings.Upgrades"/>. Such a state cannot be reached through validated commands.
+/// </summary>
+public record UpgradeLevelsExceedTable(string PlayerId, Upgrade Upgrade, byte CompletedLevels, byte PendingLevels, int MaxLevel) : IPlayerStateValidation;

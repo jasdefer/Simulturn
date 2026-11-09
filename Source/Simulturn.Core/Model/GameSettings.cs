@@ -29,6 +29,16 @@ public record GameSettings
     public required ImmutableDictionary<string, ImmutableArray<Upgrade>> StartUpgrades { get; init; }
     public required ImmutableDictionary<Upgrade, ImmutableArray<IUpgrade>> Upgrades { get; init; }
     public int Seed { get; init; }
+
+    /// <summary>
+    /// The number of levels defined for the upgrade in <see cref="Upgrades"/>. An upgrade without
+    /// a table has no levels and can never be researched, no matter which hexagon offers it.
+    /// </summary>
+    public int MaxUpgradeLevel(Upgrade upgrade)
+    {
+        return Upgrades.TryGetValue(upgrade, out var levels) ? levels.Length : 0;
+    }
+
     public static ImmutableDictionary<Unit, Building> TrainingBuildingPerUnit => new Dictionary<Unit, Building>
         {
             { Unit.Dot, Building.Plane },

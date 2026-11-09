@@ -17,12 +17,12 @@ public class GameStateTest
 
     /// <summary>
     /// A disc of 7 hexagons. The players start on opposite sides of the center with 5 dots and a plane each.
-    /// Only the start hexagons hold matter; the center offers two levels of the dot upgrade.
+    /// Only the start hexagons hold matter; the center offers the dot upgrade.
     /// </summary>
     private static readonly GameSettings _gameSettings = TestSettings.Create(Maps.Disc(1)
         .SetItem(_player1Start, Maps.Start("Player01", matter: 10000))
         .SetItem(_player2Start, Maps.Start("Player02", matter: 10000))
-        .SetItem(_center, Maps.Hexagon().WithResearch(Upgrade.DotUpgrade, Upgrade.DotUpgrade)));
+        .SetItem(_center, Maps.Hexagon().WithResearch(Upgrade.DotUpgrade)));
 
     /// <summary>
     /// The standard map with different start armies and compounds.
