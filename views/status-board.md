@@ -9,7 +9,6 @@ Cards grouped into columns by `status`.
 - [Bewegungsreichweite pro Einheitentyp](../workdown-items/movement-range.md)
 - [Forschung kostet nichts und nutzt die falsche Stufe](../workdown-items/research-cost-and-duration.md)
 - [Forschung kann über die Upgrade-Tabelle hinaus gestartet werden](../workdown-items/research-level-validation.md)
-- [Zerstörte Gebäude brechen bereits fertige Trainings ab](../workdown-items/training-cancellation-after-completion.md)
 - [Nachvollziehbarkeit der Zugauflösung](../workdown-items/turn-report.md)
 - [Neue UI](../workdown-items/ui.md)
 - [UI-Konzept erarbeiten](../workdown-items/ui-concept.md)
@@ -18,6 +17,7 @@ Cards grouped into columns by `status`.
 _(no cards)_
 
 ## done
+- [Zerstörte Gebäude brechen bereits fertige Trainings ab](../workdown-items/training-cancellation-after-completion.md)
 - [Regressionstests für Validate mit Warteschlangen auf anderen Hexagons](../workdown-items/validate-regression-tests.md)
 
 ## No status

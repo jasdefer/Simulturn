@@ -363,7 +363,6 @@ public class GameStateTest
     /// but not the circle that completed on turn 1 and already died in the fight.
     /// </summary>
     [Test]
-    [Skip("training-cancellation-after-completion: destroyed buildings also cancel trainings that completed this turn and refund their space twice.")]
     public void CancelTrainingsAfterCompoundDestruction()
     {
         // Assign

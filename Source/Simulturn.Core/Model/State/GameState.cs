@@ -222,12 +222,12 @@ public record GameState
 
                 // Stop constructions for each lost dot
                 Compound constructions = playerStates[playerId].Constructions
-                    .Where(x => x.Key >= Turn)
+                    .Where(x => x.Key > Turn)
                     .Select(x => x.Value.GetValueOrDefault(hexagon))
                     .Sum();
                 var canceledConstructionCandidates = playerStates[playerId]
                     .Constructions
-                    .Where(x => x.Key >= Turn)
+                    .Where(x => x.Key > Turn)
                     .OrderByDescending(x => x.Key);
                 foreach ((ushort turn, var constructionForTurn) in canceledConstructionCandidates)
                 {
@@ -309,7 +309,7 @@ public record GameState
                             {
                                 continue;
                             }
-                            var cancelCandidates = playerStates[compoundPlayerId].Trainings.Where(x => x.Key >= Turn);
+                            var cancelCandidates = playerStates[compoundPlayerId].Trainings.Where(x => x.Key > Turn);
                             foreach ((ushort turn, var candidate) in cancelCandidates)
                             {
                                 if (destroyedCount <= 0 || !candidate.TryGetValue(hexagon, out Army training) || training.IsEmpty)

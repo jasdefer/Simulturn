@@ -8,7 +8,7 @@ Hierarchical outline following `parent` upward to roots.
 - [Bewegungsreichweite pro Einheitentyp](../workdown-items/movement-range.md) — status: todo · created: 2026-10-14
 - [Forschung kostet nichts und nutzt die falsche Stufe](../workdown-items/research-cost-and-duration.md) — status: todo · created: 2026-10-14
 - [Forschung kann über die Upgrade-Tabelle hinaus gestartet werden](../workdown-items/research-level-validation.md) — status: todo · created: 2026-10-14
-- [Zerstörte Gebäude brechen bereits fertige Trainings ab](../workdown-items/training-cancellation-after-completion.md) — status: todo · created: 2026-11-08
+- [Zerstörte Gebäude brechen bereits fertige Trainings ab](../workdown-items/training-cancellation-after-completion.md) — status: done · created: 2026-11-08 · updated: 2026-11-09 · completed: 2026-11-09
 - [Nachvollziehbarkeit der Zugauflösung](../workdown-items/turn-report.md) — status: todo · created: 2026-10-14
 - [Neue UI](../workdown-items/ui.md) — status: todo · created: 2026-10-14
   - [UI-Konzept erarbeiten](../workdown-items/ui-concept.md) — status: todo · created: 2026-10-14

@@ -1,7 +1,9 @@
 ---
 id: training-cancellation-after-completion
 title: Zerstörte Gebäude brechen bereits fertige Trainings ab
-status: todo
+status: done
+completed: 2026-11-09
+updated: 2026-11-09
 created: 2026-11-08
 ---
 ## Problem
@@ -23,3 +25,7 @@ Ein Training oder Bau, der in diesem Zug abgeschlossen wurde, kann nicht mehr ab
 ## Zu entscheiden
 
 Ob abgeschlossene Einträge aus `Trainings`, `Constructions` und `Researches` entfernt werden. Heute bleiben sie dauerhaft im Zustand, und jeder Leser filtert mit `Key >= Turn`.
+
+## Entscheidung
+
+Abgeschlossene Einträge bleiben in den Warteschlangen. Der Fix beschränkt sich auf die drei Abbruch-Filter in `NextTurn` (`> Turn` statt `>= Turn`). Alle Leser außerhalb von `NextTurn` arbeiten auf einem Zustand zwischen zwei Zügen; dort ist `>= Turn` weiterhin richtig. Das Aufräumen der Warteschlangen bleibt ein eigenes Thema.
