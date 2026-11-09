@@ -129,9 +129,7 @@ public class GameStateTest
             .ShouldBe(0);
         turn1.PlayerStates["Player01"].Constructions.ShouldBeEmpty();
         turn1.PlayerStates["Player02"].Constructions.ShouldBeEmpty();
-        turn1.PlayerStates["Player01"].Trainings
-            .ShouldHaveSingleItem().Value
-            .ShouldHaveSingleItem().Value.ShouldBe(new Army() { Dot = 1 });
+        turn1.PlayerStates["Player01"].Trainings.ShouldBeEmpty(); // A dot takes one turn, so it is applied and removed in the same turn.
         turn1.PlayerStates["Player02"].Trainings.ShouldBeEmpty();
         turn1.GameSettings.ShouldBe(_gameSettings);
         turn1.PlayerStates["Player01"].Armies[_player1Start].ShouldBe(new Army() { Dot = 6 });
@@ -326,8 +324,7 @@ public class GameStateTest
             .Researches.ShouldHaveSingleItem().Value.ShouldHaveSingleItem().Value.ShouldBe(Upgrade.DotUpgrade);
         turn3.PlayerStates["Player01"].UpgradeLevels.ShouldBeEmpty();
         var turn4 = turn3.PlayTurn(_noCommands);
-        turn4.PlayerStates["Player01"]
-            .Researches.ShouldHaveSingleItem().Value.ShouldHaveSingleItem().Value.ShouldBe(Upgrade.DotUpgrade);
+        turn4.PlayerStates["Player01"].Researches.ShouldBeEmpty();
         turn4.PlayerStates["Player01"].UpgradeLevels.ShouldHaveSingleItem().Key.ShouldBe(Upgrade.DotUpgrade);
         turn4.PlayerStates["Player01"].UpgradeLevels.ShouldHaveSingleItem().Value.ShouldBe((byte)1);
     }
@@ -363,7 +360,6 @@ public class GameStateTest
     /// but not the circle that completed on turn 1 and already died in the fight.
     /// </summary>
     [Test]
-    [Skip("training-cancellation-after-completion: destroyed buildings also cancel trainings that completed this turn and refund their space twice.")]
     public void CancelTrainingsAfterCompoundDestruction()
     {
         // Assign
@@ -388,8 +384,7 @@ public class GameStateTest
         var player = turn2.PlayerStates["Player01"];
         player.Compounds[_player1Start].ShouldBe(new Compound() { Pyramid = 2, Cube = 2, Plane = 2 });
         player.Armies.GetValueOrDefault(_player1Start).ShouldBe(Army.Empty);
-        var pendingTrainings = player.Trainings.Where(x => x.Key >= turn2.Turn).ToList();
-        pendingTrainings.ShouldHaveSingleItem().Value[_player1Start].ShouldBe(new Army() { Square = 1, Triangle = 1 });
+        player.Trainings.ShouldHaveSingleItem().Value[_player1Start].ShouldBe(new Army() { Square = 1, Triangle = 1 });
         player.UsedSpace.ShouldBe(6);
     }
 

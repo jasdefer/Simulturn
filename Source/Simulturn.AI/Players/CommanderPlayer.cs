@@ -545,7 +545,6 @@ public class CommanderPlayer : IArtificialPlayer
         GameSettings gameSettings = turn.View.GameSettings;
         PlayerState playerState = turn.View.PlayerState;
         HashSet<Upgrade> pendingUpgrades = playerState.Researches
-            .Where(x => x.Key >= turn.View.Turn)
             .SelectMany(x => x.Value.Values)
             .ToHashSet();
         var researchHexagons = gameSettings.HexagonSettings

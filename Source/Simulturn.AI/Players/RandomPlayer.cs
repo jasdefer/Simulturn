@@ -34,7 +34,6 @@ public class RandomPlayer : IArtificialPlayer
     {
         PlayerState playerState = playerGameState.PlayerState;
         GameSettings gameSettings = playerGameState.GameSettings;
-        ushort turn = playerGameState.Turn;
         int matter = playerState.Matter;
         int freeSpace = playerState.AvailableSpace - playerState.UsedSpace;
 
@@ -47,9 +46,8 @@ public class RandomPlayer : IArtificialPlayer
 
         // Dots occupied by pending constructions must stay on their hexagon;
         // a pending research requires at least one dot to remain.
-        Dictionary<Hexagon, int> constructionDots = GetPendingConstructionDots(playerState, turn);
+        Dictionary<Hexagon, int> constructionDots = GetPendingConstructionDots(playerState);
         HashSet<Hexagon> researchHexagons = playerState.Researches
-            .Where(x => x.Key >= turn)
             .SelectMany(x => x.Value.Keys)
             .ToHashSet();
 
@@ -97,7 +95,6 @@ public class RandomPlayer : IArtificialPlayer
 
         // Researching an upgrade that is already in progress could exceed the available level on completion.
         HashSet<Upgrade> pendingUpgrades = playerState.Researches
-            .Where(x => x.Key >= playerGameState.Turn)
             .SelectMany(x => x.Value.Values)
             .ToHashSet();
 
@@ -189,7 +186,6 @@ public class RandomPlayer : IArtificialPlayer
 
             // Buildings already training units on or after this turn are occupied.
             Army pendingTrainings = playerState.Trainings
-                .Where(x => x.Key >= playerGameState.Turn)
                 .Select(x => x.Value.GetValueOrDefault(hexagon))
                 .Sum();
 
@@ -320,10 +316,10 @@ public class RandomPlayer : IArtificialPlayer
         return candidates[^1];
     }
 
-    private static Dictionary<Hexagon, int> GetPendingConstructionDots(PlayerState playerState, ushort turn)
+    private static Dictionary<Hexagon, int> GetPendingConstructionDots(PlayerState playerState)
     {
         Dictionary<Hexagon, int> constructionDots = [];
-        foreach ((ushort completionTurn, var constructionsPerHexagon) in playerState.Constructions.Where(x => x.Key >= turn))
+        foreach ((ushort completionTurn, var constructionsPerHexagon) in playerState.Constructions)
         {
             foreach ((Hexagon hexagon, Compound compound) in constructionsPerHexagon)
             {

@@ -41,14 +41,14 @@ dotnet test Test/Simulturn.Core.Test/Simulturn.Core.Test.csproj
 ```
 
 ### Run one test (important)
-Preferred: filter by fully qualified name.
+TUnit ignores `--filter`. Use the tree node filter after `--`; the pattern is `/Assembly/Namespace/Class/Method` and `*` matches a whole segment.
 ```bash
-dotnet test Test/Simulturn.Core.Test/Simulturn.Core.Test.csproj --filter "FullyQualifiedName~Simulturn.Core.Test.State.GameStateTest.Initialize"
+dotnet test Test/Simulturn.Core.Test/Simulturn.Core.Test.csproj -- --treenode-filter "/*/*/*/CancelTrainingsAfterCompoundDestruction"
 ```
 
-Alternative: filter by short name.
+All tests of one class:
 ```bash
-dotnet test Test/Simulturn.Core.Test/Simulturn.Core.Test.csproj --filter "Name~Initialize"
+dotnet test Test/Simulturn.Core.Test/Simulturn.Core.Test.csproj -- --treenode-filter "/*/*/GameStateTest/*"
 ```
 
 ### List discovered tests
