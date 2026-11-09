@@ -26,4 +26,4 @@ Die Historie eines Spiels sind die Commands aller Züge ([[game-persistence]]) u
 
 ## Umsetzung
 
-`NextTurn` entfernt den Schlüssel `Turn` aus den drei Builder-Dictionaries, sobald die Einträge angewendet sind. Damit laufen die Abbruch-Filter beim Verlust von Gebäuden und Dots ohne Vergleich. `IsValid` meldet liegen gebliebene Einträge als `CompletedTrainingInQueue`, `CompletedConstructionInQueue` und `CompletedResearchInQueue`; die Zufallsspiele prüfen das über `StateInvariants`. Tests in `PendingQueueTest`.
+`NextTurn` entfernt den Schlüssel `Turn` aus den drei Builder-Dictionaries, sobald die Einträge angewendet sind. Damit laufen die Abbruch-Filter beim Verlust von Gebäuden und Dots ohne Vergleich. `IsValid` meldet liegen gebliebene Einträge als `ExpiredTraining`, `ExpiredConstruction` und `ExpiredResearch`; die Zufallsspiele prüfen das über `StateInvariants`. Tests in `PendingQueueTest`.

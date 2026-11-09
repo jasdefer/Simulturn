@@ -520,7 +520,7 @@ public record GameState
             {
                 if (turn < Turn)
                 {
-                    yield return new CompletedTrainingInQueue(playerId, turn);
+                    yield return new ExpiredTraining(playerId, turn);
                 }
                 foreach ((Hexagon hexagon, Army training) in trainings)
                 {
@@ -548,7 +548,7 @@ public record GameState
             {
                 if (turn < Turn)
                 {
-                    yield return new CompletedConstructionInQueue(playerId, turn);
+                    yield return new ExpiredConstruction(playerId, turn);
                 }
                 foreach ((Hexagon hexagon, Compound construction) in constructions)
                 {
@@ -576,7 +576,7 @@ public record GameState
             {
                 if (turn < Turn)
                 {
-                    yield return new CompletedResearchInQueue(playerId, turn);
+                    yield return new ExpiredResearch(playerId, turn);
                 }
                 foreach ((Hexagon hexagon, Upgrade upgrade) in researches)
                 {

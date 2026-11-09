@@ -12,8 +12,9 @@ public record NegativeBuildingCount(string PlayerId, Hexagon Hexagon, Building B
 public record NegativeConstructionCount(string PlayerId, Hexagon Hexagon, Building Building, short ConstructionCount) : IPlayerStateValidation;
 
 /// <summary>
-/// The queues only hold pending work: <see cref="GameState.NextTurn"/> removes every entry once it is applied.
+/// An entry whose completion turn lies in the past. The queues only hold pending work:
+/// <see cref="GameState.NextTurn"/> removes every entry in the turn it is applied.
 /// </summary>
-public record CompletedTrainingInQueue(string PlayerId, ushort CompletionTurn) : IPlayerStateValidation;
-public record CompletedConstructionInQueue(string PlayerId, ushort CompletionTurn) : IPlayerStateValidation;
-public record CompletedResearchInQueue(string PlayerId, ushort CompletionTurn) : IPlayerStateValidation;
+public record ExpiredTraining(string PlayerId, ushort CompletionTurn) : IPlayerStateValidation;
+public record ExpiredConstruction(string PlayerId, ushort CompletionTurn) : IPlayerStateValidation;
+public record ExpiredResearch(string PlayerId, ushort CompletionTurn) : IPlayerStateValidation;

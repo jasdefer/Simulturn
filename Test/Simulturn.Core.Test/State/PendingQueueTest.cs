@@ -95,7 +95,7 @@ public class PendingQueueTest
     }
 
     [Test]
-    public void IsValid_TrainingLeftInQueue_YieldsCompletedTrainingInQueue()
+    public void IsValid_TrainingPastItsCompletionTurn_YieldsExpiredTraining()
     {
         var state = WithPlayer1(player => player with
         {
@@ -103,14 +103,14 @@ public class PendingQueueTest
                 .Add(0, ImmutableDictionary<Hexagon, Army>.Empty.Add(_start, new Army() { Dot = 1 }))
         });
 
-        var validation = state.IsValid().ShouldHaveSingleItem().ShouldBeOfType<CompletedTrainingInQueue>();
+        var validation = state.IsValid().ShouldHaveSingleItem().ShouldBeOfType<ExpiredTraining>();
 
         validation.PlayerId.ShouldBe("Player01");
         validation.CompletionTurn.ShouldBe((ushort)0);
     }
 
     [Test]
-    public void IsValid_ConstructionLeftInQueue_YieldsCompletedConstructionInQueue()
+    public void IsValid_ConstructionPastItsCompletionTurn_YieldsExpiredConstruction()
     {
         var state = WithPlayer1(player => player with
         {
@@ -118,14 +118,14 @@ public class PendingQueueTest
                 .Add(0, ImmutableDictionary<Hexagon, Compound>.Empty.Add(_start, new Compound() { Axis = 1 }))
         });
 
-        var validation = state.IsValid().ShouldHaveSingleItem().ShouldBeOfType<CompletedConstructionInQueue>();
+        var validation = state.IsValid().ShouldHaveSingleItem().ShouldBeOfType<ExpiredConstruction>();
 
         validation.PlayerId.ShouldBe("Player01");
         validation.CompletionTurn.ShouldBe((ushort)0);
     }
 
     [Test]
-    public void IsValid_ResearchLeftInQueue_YieldsCompletedResearchInQueue()
+    public void IsValid_ResearchPastItsCompletionTurn_YieldsExpiredResearch()
     {
         var state = WithPlayer1(player => player with
         {
@@ -133,7 +133,7 @@ public class PendingQueueTest
                 .Add(0, ImmutableDictionary<Hexagon, Upgrade>.Empty.Add(_start, Upgrade.DotUpgrade))
         });
 
-        var validation = state.IsValid().ShouldHaveSingleItem().ShouldBeOfType<CompletedResearchInQueue>();
+        var validation = state.IsValid().ShouldHaveSingleItem().ShouldBeOfType<ExpiredResearch>();
 
         validation.PlayerId.ShouldBe("Player01");
         validation.CompletionTurn.ShouldBe((ushort)0);
