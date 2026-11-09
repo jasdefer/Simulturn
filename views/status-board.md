@@ -4,6 +4,7 @@ Cards grouped into columns by `status`.
 
 ## todo
 - [Kampfausgang vorab berechnen können](../workdown-items/combat-forecast-core.md)
+- [Auf die nächste .NET-Version wechseln und neue Sprachfeatures nutzen](../workdown-items/dotnet-upgrade-and-union-types.md)
 - [Spielstände speichern und wiederherstellen](../workdown-items/game-persistence.md)
 - [Karten erzeugen und Settings nicht sechsfach pflegen](../workdown-items/map-generator-and-default-settings.md)
 - [Bewegungsreichweite pro Einheitentyp](../workdown-items/movement-range.md)

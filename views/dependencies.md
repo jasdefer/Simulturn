@@ -5,6 +5,7 @@ Directed graph of items connected through `depends_on`, nested by `parent`.
 ```mermaid
 flowchart TD
     combat-forecast-core["Kampfausgang vorab berechnen können"]
+    dotnet-upgrade-and-union-types["Auf die nächste .NET-Version wechseln und neue Sprachfeatures nutzen"]
     game-persistence["Spielstände speichern und wiederherstellen"]
     map-generator-and-default-settings["Karten erzeugen und Settings nicht sechsfach pflegen"]
     movement-range["Bewegungsreichweite pro Einheitentyp"]
