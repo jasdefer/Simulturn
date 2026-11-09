@@ -10,7 +10,7 @@ public sealed record GameState
     private static readonly ImmutableArray<Building> _buildings = Enum.GetValues<Building>().Cast<Building>().ToImmutableArray();
     public GameSettings GameSettings { get; init; }
     public ImmutableHashSet<Hexagon> Hexagons { get; init; }
-    public HashSet<string> PlayerIds { get; init; }
+    public ImmutableHashSet<string> PlayerIds { get; init; }
     public ImmutableDictionary<string, PlayerState> PlayerStates { get; init; }
     public ImmutableDictionary<Hexagon, int> RemainingMatter { get; init; }
     public bool IsGameOver => PlayerStates.Where(x => x.Value.Compounds.Any(compound => !compound.Value.IsEmpty)).Count() <= 1;
@@ -47,7 +47,7 @@ public sealed record GameState
                 };
             });
         PlayerStates = FogOfWar.UpdateMemories(PlayerStates, RemainingMatter, Turn);
-        PlayerIds = PlayerStates.Keys.ToHashSet();
+        PlayerIds = PlayerStates.Keys.ToImmutableHashSet();
     }
 
     /// <summary>
@@ -69,7 +69,7 @@ public sealed record GameState
         ImmutableDictionary<Hexagon, int> remainingMatter)
     {
         GameSettings = gameSettings;
-        PlayerIds = playerStates.Keys.ToHashSet();
+        PlayerIds = playerStates.Keys.ToImmutableHashSet();
         Turn = turn;
         Hexagons = GameSettings.HexagonSettings.Keys.ToImmutableHashSet();
         RemainingMatter = remainingMatter;

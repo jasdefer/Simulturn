@@ -85,7 +85,7 @@ internal static class FogOfWar
             PlayerId = playerId,
             Turn = gameState.Turn,
             GameSettings = gameState.GameSettings,
-            PlayerIds = gameState.PlayerIds.ToImmutableHashSet(),
+            PlayerIds = gameState.PlayerIds,
             PlayerState = playerState,
             Observations = observations.ToImmutableDictionary(),
             IsGameOver = gameState.IsGameOver
