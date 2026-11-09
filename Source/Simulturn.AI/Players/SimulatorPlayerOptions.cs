@@ -3,7 +3,7 @@ namespace Simulturn.AI.Players;
 /// <summary>
 /// Tuning knobs of the <see cref="SimulatorPlayer"/> on top of the commander options.
 /// </summary>
-public record SimulatorPlayerOptions : CommanderPlayerOptions
+public sealed record SimulatorPlayerOptions : CommanderPlayerOptions
 {
     /// <summary>
     /// How many turns each candidate strategy is rolled out on the believed state

@@ -12,7 +12,7 @@ namespace Simulturn.Core.Test.State;
 /// turn it is applied, and IsValid reports entries that were left behind. The history of a game
 /// lives in its commands, not in the queues (work item pending-only-queues).
 /// </summary>
-public class PendingQueueTest
+public sealed class PendingQueueTest
 {
     private static readonly Hexagon _start = new(-1, 0);
     private static readonly Hexagon _opponentStart = new(1, 0);

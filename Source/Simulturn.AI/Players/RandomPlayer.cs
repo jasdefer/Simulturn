@@ -11,7 +11,7 @@ namespace Simulturn.AI.Players;
 /// Armies move as stacks towards randomly weighted destinations (see <see cref="RandomPlayerOptions"/>)
 /// instead of scattering unit by unit. All produced commands pass validation by construction.
 /// </summary>
-public class RandomPlayer : IArtificialPlayer
+public sealed class RandomPlayer : IArtificialPlayer
 {
     private static readonly (short X, short Y)[] _directions = [(1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1)];
     private static readonly double[] _movementFractions = [0.25, 0.5, 1.0];

@@ -13,7 +13,7 @@ namespace Simulturn.AI.Players;
 /// army beats a uniform one, which also makes the attack margin reachable in matchups
 /// that previously stalled.
 /// </summary>
-public class TacticianPlayer : CommanderPlayer
+public sealed class TacticianPlayer : CommanderPlayer
 {
     private readonly TacticianPlayerOptions _tacticianOptions;
 

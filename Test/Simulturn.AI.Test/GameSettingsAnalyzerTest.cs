@@ -4,7 +4,7 @@ using Simulturn.Core.Model;
 
 namespace Simulturn.AI.Test;
 
-public class GameSettingsAnalyzerTest
+public sealed class GameSettingsAnalyzerTest
 {
     [Test]
     public void Analyze_DerivesRolesFromDefaultSettings()

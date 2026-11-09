@@ -4,7 +4,7 @@ namespace Simulturn.AI.Players;
 /// Controls how often the <see cref="RandomPlayer"/> acts and where its armies tend to move.
 /// The movement weights bias the random destination choice; they do not make the player smart.
 /// </summary>
-public record RandomPlayerOptions
+public sealed record RandomPlayerOptions
 {
     /// <summary>
     /// The probability per own hexagon with idle dots to start a construction.

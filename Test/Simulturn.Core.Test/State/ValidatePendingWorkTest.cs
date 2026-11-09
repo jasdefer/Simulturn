@@ -11,7 +11,7 @@ namespace Simulturn.Core.Test.State;
 /// hexagon other than the commanded one, or no army at all on the commanded hexagon.
 /// Regression tests for a KeyNotFoundException fixed in PR #5 and #7.
 /// </summary>
-public class ValidatePendingWorkTest
+public sealed class ValidatePendingWorkTest
 {
     private static readonly Hexagon _start = new(-1, 0);
     private static readonly Hexagon _center = new(0, 0);

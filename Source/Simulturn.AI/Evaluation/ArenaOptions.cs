@@ -1,6 +1,6 @@
 namespace Simulturn.AI.Evaluation;
 
-public record ArenaOptions
+public sealed record ArenaOptions
 {
     /// <summary>
     /// Games per pairing and seat assignment. Every pairing is played twice per game index,

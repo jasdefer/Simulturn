@@ -3,7 +3,7 @@ namespace Simulturn.AI.Evaluation;
 /// <summary>
 /// The aggregated outcome of all games between two arena players.
 /// </summary>
-public record PairingResult
+public sealed record PairingResult
 {
     public required string PlayerA { get; init; }
     public required string PlayerB { get; init; }

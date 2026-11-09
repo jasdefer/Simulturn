@@ -8,7 +8,7 @@ using System.Collections.Immutable;
 
 namespace Simulturn.Core.Test.State;
 
-public class GameStateTest
+public sealed class GameStateTest
 {
     private static readonly Hexagon _player1Start = new Hexagon(-1, 0);
     private static readonly Hexagon _player2Start = new Hexagon(1, 0);

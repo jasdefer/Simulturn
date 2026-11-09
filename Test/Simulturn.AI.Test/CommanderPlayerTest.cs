@@ -5,7 +5,7 @@ using Simulturn.Core.Model.State;
 
 namespace Simulturn.AI.Test;
 
-public class CommanderPlayerTest
+public sealed class CommanderPlayerTest
 {
     [Test]
     public void ProducesValidCommandsFromTheStart()

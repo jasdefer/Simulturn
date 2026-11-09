@@ -2,7 +2,7 @@ using Simulturn.Core.Model.State;
 
 namespace Simulturn.AI;
 
-public record GameResult
+public sealed record GameResult
 {
     public required GameEndReason EndReason { get; init; }
 

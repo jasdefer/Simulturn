@@ -2,7 +2,7 @@ using Simulturn.Core.Model.Upgrades;
 
 namespace Simulturn.Core.Model.State;
 
-public record PlayerState
+public sealed record PlayerState
 {
     public int Matter { get; init; }
     public int UsedSpace { get; init; }

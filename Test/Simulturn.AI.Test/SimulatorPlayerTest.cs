@@ -4,7 +4,7 @@ using Simulturn.Core.Model.State;
 
 namespace Simulturn.AI.Test;
 
-public class SimulatorPlayerTest
+public sealed class SimulatorPlayerTest
 {
     [Test]
     public void ProducesValidCommandsFromTheStart()

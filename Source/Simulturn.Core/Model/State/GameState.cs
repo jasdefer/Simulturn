@@ -4,7 +4,7 @@ using Simulturn.Core.Model.State.StateValidation;
 
 namespace Simulturn.Core.Model.State;
 
-public record GameState
+public sealed record GameState
 {
     private static readonly ImmutableArray<Unit> _units = Enum.GetValues<Unit>().Cast<Unit>().ToImmutableArray();
     private static readonly ImmutableArray<Building> _buildings = Enum.GetValues<Building>().Cast<Building>().ToImmutableArray();

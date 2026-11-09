@@ -4,7 +4,7 @@ namespace Simulturn.Core.Model.State;
 /// Everything a player knows about a single hexagon.
 /// Static information (terrain, initial matter) is available through the game settings and not repeated here.
 /// </summary>
-public record HexagonObservation
+public sealed record HexagonObservation
 {
     /// <summary>
     /// The current visibility of the hexagon for the player.

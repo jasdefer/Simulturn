@@ -4,7 +4,7 @@ namespace Simulturn.Core.Model.State;
 /// What a player remembers about a hexagon from the last turn it was at least partially visible.
 /// The values are a snapshot and can be outdated if the hexagon is no longer visible.
 /// </summary>
-public record HexagonMemory
+public sealed record HexagonMemory
 {
     /// <summary>
     /// The turn on which the hexagon was last at least partially visible.

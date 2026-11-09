@@ -13,7 +13,7 @@ namespace Simulturn.AI.Players;
 /// against the estimated enemy army (unit counts are known, the composition is assumed
 /// to be a uniform mix) predicts a win with a safety margin.
 /// </summary>
-public class StateMachinePlayer : IArtificialPlayer
+public sealed class StateMachinePlayer : IArtificialPlayer
 {
     public enum EconomyMode { Eco, Expand, BuildArmy }
     public enum MilitaryMode { Scout, Guard, Attack }

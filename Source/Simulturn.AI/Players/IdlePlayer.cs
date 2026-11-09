@@ -7,7 +7,7 @@ namespace Simulturn.AI.Players;
 /// <summary>
 /// Never issues any command. The weakest possible baseline opponent.
 /// </summary>
-public class IdlePlayer : IArtificialPlayer
+public sealed class IdlePlayer : IArtificialPlayer
 {
     public string Name => "Idle";
 

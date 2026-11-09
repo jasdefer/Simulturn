@@ -2,7 +2,7 @@ using Simulturn.Core.Model.Upgrades;
 
 namespace Simulturn.Core.Model;
 
-public record GameSettings
+public sealed record GameSettings
 {
     public GameSettings()
     {

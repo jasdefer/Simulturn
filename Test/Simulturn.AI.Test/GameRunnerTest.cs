@@ -5,7 +5,7 @@ using Simulturn.Test.Common;
 
 namespace Simulturn.AI.Test;
 
-public class GameRunnerTest
+public sealed class GameRunnerTest
 {
     private static readonly Hexagon _player1Start = new Hexagon(-1, 0);
     private static readonly Hexagon _player2Start = new Hexagon(1, 0);

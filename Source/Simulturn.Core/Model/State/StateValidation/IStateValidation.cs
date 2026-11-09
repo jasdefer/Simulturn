@@ -2,6 +2,6 @@
 
 public interface IStateValidation;
 
-public record NegativeRemainingMatter(Hexagon Hexagon, int RemainingMatter) : IStateValidation;
+public sealed record NegativeRemainingMatter(Hexagon Hexagon, int RemainingMatter) : IStateValidation;
 
-public record HexagonMissingInSettings(Hexagon Hexagon) : IStateValidation;
+public sealed record HexagonMissingInSettings(Hexagon Hexagon) : IStateValidation;

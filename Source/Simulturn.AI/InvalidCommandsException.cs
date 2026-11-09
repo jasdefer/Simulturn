@@ -6,7 +6,7 @@ namespace Simulturn.AI;
 /// Thrown when an artificial player returns commands that do not pass validation.
 /// This is always a bug in the player implementation.
 /// </summary>
-public class InvalidCommandsException : Exception
+public sealed class InvalidCommandsException : Exception
 {
     public string PlayerId { get; }
     public IReadOnlyList<ICommandValidation> Validations { get; }
