@@ -313,7 +313,7 @@ public class GameStateTest
         ]);
         var turn1 = gameState.PlayTurn(commands);
         commands = DictionaryExtensions.CommandsToDictionary([
-            ("Player01", new Hexagon(0,0),new Command(){ Upgrade = Upgrade.DotUpgrade})
+            ("Player01", new Hexagon(0,0),new Command(){ Research = Upgrade.DotUpgrade})
         ]);
         var turn2 = turn1.PlayTurn(commands);
         turn2.PlayerStates["Player01"]

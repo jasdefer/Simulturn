@@ -286,7 +286,7 @@ internal sealed class TurnPlan
                 MovementCommands = _movements.TryGetValue(hexagon, out var movements)
                     ? [.. movements]
                     : [],
-                Upgrade = _research?.Hexagon == hexagon ? _research.Value.Upgrade : null
+                Research = _research?.Hexagon == hexagon ? _research.Value.Upgrade : null
             };
         }
         return commands;

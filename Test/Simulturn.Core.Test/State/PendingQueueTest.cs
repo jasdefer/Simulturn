@@ -82,7 +82,7 @@ public class PendingQueueTest
         var state = new GameState(_gameSettings);
 
         // Act
-        var turn1 = state.PlayTurn(Player1(new Command() { Upgrade = Upgrade.DotUpgrade }));
+        var turn1 = state.PlayTurn(Player1(new Command() { Research = Upgrade.DotUpgrade }));
         var turn2 = turn1.PlayEmptyTurn();
         var turn3 = turn2.PlayEmptyTurn();
 

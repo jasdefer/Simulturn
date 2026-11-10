@@ -191,7 +191,7 @@ public static class StateInvariants
         {
             cost += command.Training * settings.ArmyCost;
             cost += command.Construction * settings.CompoundCost;
-            if (command.Upgrade is Upgrade upgrade && requestedUpgrades.Add(upgrade))
+            if (command.Research is Upgrade upgrade && requestedUpgrades.Add(upgrade))
             {
                 int level = player.UpgradeLevels.GetValueOrDefault(upgrade);
                 ImmutableArray<IUpgradeLevel> levels = settings.Upgrades[upgrade];

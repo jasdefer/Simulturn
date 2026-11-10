@@ -74,7 +74,7 @@ public class RandomPlayer : IArtificialPlayer
                 Construction = constructions.GetValueOrDefault(hexagon),
                 Training = trainings.GetValueOrDefault(hexagon),
                 MovementCommands = movements.TryGetValue(hexagon, out var movement) ? [movement] : [],
-                Upgrade = research?.Hexagon == hexagon ? research.Value.Upgrade : null
+                Research = research?.Hexagon == hexagon ? research.Value.Upgrade : null
             };
         }
         return commands;

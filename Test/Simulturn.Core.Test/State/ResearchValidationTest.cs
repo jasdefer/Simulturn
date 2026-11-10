@@ -40,7 +40,7 @@ public class ResearchValidationTest
     private static Dictionary<string, Dictionary<Hexagon, Command>> Research(string playerId, Upgrade upgrade, params Hexagon[] hexagons)
     {
         return hexagons
-            .Select(hexagon => (playerId, hexagon, new Command() { Upgrade = upgrade }))
+            .Select(hexagon => (playerId, hexagon, new Command() { Research = upgrade }))
             .CommandsToDictionary();
     }
 
@@ -254,7 +254,7 @@ public class ResearchValidationTest
         // Arrange: a research and a movement of all dots in the same command.
         var state = new GameState(_richSettings);
         var commands = MoveDotsToCenter(5);
-        commands["Player01"][_start] = commands["Player01"][_start] with { Upgrade = Upgrade.DotUpgrade };
+        commands["Player01"][_start] = commands["Player01"][_start] with { Research = Upgrade.DotUpgrade };
 
         // Act
         var validations = Validate(state, commands);

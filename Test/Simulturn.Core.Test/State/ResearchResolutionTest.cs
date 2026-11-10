@@ -30,7 +30,7 @@ public class ResearchResolutionTest
 
     private static Dictionary<string, Dictionary<Hexagon, Command>> Research(Hexagon hexagon)
     {
-        return DictionaryExtensions.CommandsToDictionary([("Player01", hexagon, new Command() { Upgrade = Upgrade.DotUpgrade })]);
+        return DictionaryExtensions.CommandsToDictionary([("Player01", hexagon, new Command() { Research = Upgrade.DotUpgrade })]);
     }
 
     private static Dictionary<string, Dictionary<Hexagon, Command>> MoveOneDotToCenter()

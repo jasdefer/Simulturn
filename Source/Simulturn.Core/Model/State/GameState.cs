@@ -142,7 +142,7 @@ public record GameState
             // Nothing stacks (one pending research per upgrade), so the next level is the one after the completed ones.
             foreach ((Hexagon hexagon, Command command) in commandsForPlayer)
             {
-                if (command.Upgrade is not Upgrade upgrade)
+                if (command.Research is not Upgrade upgrade)
                 {
                     continue;
                 }
@@ -635,8 +635,8 @@ public record GameState
         // Counting the requests per upgrade keeps the result independent of the command order.
         var upgradesInResearch = playerState.UpgradesInResearch();
         var requestedUpgradeCounts = commands.Values
-            .Where(command => command.Upgrade is not null)
-            .GroupBy(command => command.Upgrade!.Value)
+            .Where(command => command.Research is not null)
+            .GroupBy(command => command.Research!.Value)
             .ToDictionary(group => group.Key, group => (byte)group.Count());
         // A dot arriving this turn keeps a research alive, so the dots moving in count for the research hexagons.
         Dictionary<Hexagon, int> arrivingDots = [];
@@ -691,9 +691,9 @@ public record GameState
             }
 
             // Upgrades are valid
-            if (command.Upgrade is not null)
+            if (command.Research is not null)
             {
-                Upgrade upgrade = command.Upgrade.Value;
+                Upgrade upgrade = command.Research.Value;
                 if (!GameSettings.HexagonSettings.TryGetValue(hexagon, out var hexagonSettings) ||
                     !hexagonSettings.ResearchableUpgrades.Contains(upgrade))
                 {
@@ -727,9 +727,9 @@ public record GameState
             // Movements leave a dot on a hexagon with a pending or requested research
             if (availableArmy.Dot > 0 &&
                 availableArmy.Dot - departingArmy.Dot + arrivingDots.GetValueOrDefault(hexagon) <= 0 &&
-                (command.Upgrade is not null || playerState.Researches.ContainsKey(hexagon)))
+                (command.Research is not null || playerState.Researches.ContainsKey(hexagon)))
             {
-                Upgrade researched = command.Upgrade ?? playerState.Researches[hexagon].Upgrade;
+                Upgrade researched = command.Research ?? playerState.Researches[hexagon].Upgrade;
                 yield return new MovementLeavesResearchWithoutDot(playerId, hexagon, researched);
             }
         }
