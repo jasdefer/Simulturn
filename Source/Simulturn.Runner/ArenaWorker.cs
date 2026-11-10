@@ -1,4 +1,5 @@
 using Simulturn.AI.Evaluation;
+using Simulturn.Core.Setup;
 using System.Collections.Immutable;
 using System.Diagnostics;
 
@@ -21,16 +22,27 @@ public static class ArenaWorker
             MaxTurns = ushort.Parse(arguments.GetValueOrDefault("max-turns", "200")),
             Seed = int.Parse(arguments.GetValueOrDefault("seed", "0"))
         };
-        string map = arguments.GetValueOrDefault("map", "disc").ToLowerInvariant();
-        var gameSettings = map switch
+        string map = arguments.GetValueOrDefault("map", "open").ToLowerInvariant();
+        MapGeneratorOptions mapOptions = map switch
         {
-            "disc" => GameSettingsFactory.HexDisc(
-                radius: int.Parse(arguments.GetValueOrDefault("radius", "3")),
-                matterPerHexagon: int.Parse(arguments.GetValueOrDefault("matter", "1500"))),
-            "noexpansion" => GameSettingsFactory.NoExpansion(),
-            "rich" => GameSettingsFactory.RichExpansions(),
-            _ => throw new ArgumentException($"Unknown map '{map}'. Known maps: disc, noexpansion, rich.")
+            "open" => MapGeneratorOptions.Open,
+            "homeonly" => MapGeneratorOptions.HomeOnly,
+            "expansions" => MapGeneratorOptions.Expansions,
+            _ => throw new ArgumentException($"Unknown map '{map}'. Known maps: open, homeonly, expansions.")
         };
+        if (arguments.TryGetValue("radius", out string? radius))
+        {
+            mapOptions = mapOptions with { Radius = int.Parse(radius) };
+        }
+        if (arguments.TryGetValue("matter", out string? matter))
+        {
+            mapOptions = mapOptions with { HexagonMatter = int.Parse(matter), StartHexagonMatter = int.Parse(matter) };
+        }
+        if (arguments.TryGetValue("map-seed", out string? mapSeed))
+        {
+            mapOptions = mapOptions with { Seed = int.Parse(mapSeed) };
+        }
+        var gameSettings = DefaultSettings.Create(mapOptions);
 
         Console.WriteLine($"Arena: {players.Count} players, {options.GamesPerSeatPairing * 2} games per pairing, " +
             $"max {options.MaxTurns} turns, map {map}, seed {options.Seed}");

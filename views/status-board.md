@@ -6,14 +6,13 @@ Cards grouped into columns by `status`.
 - [Kampfausgang vorab berechnen können](../workdown-items/combat-forecast-core.md)
 - [Auf die nächste .NET-Version wechseln und neue Sprachfeatures nutzen](../workdown-items/dotnet-upgrade-and-union-types.md)
 - [Spielstände speichern und wiederherstellen](../workdown-items/game-persistence.md)
-- [Karten erzeugen und Settings nicht sechsfach pflegen](../workdown-items/map-generator-and-default-settings.md)
 - [Bewegungsreichweite pro Einheitentyp](../workdown-items/movement-range.md)
 - [Nachvollziehbarkeit der Zugauflösung](../workdown-items/turn-report.md)
 - [Neue UI](../workdown-items/ui.md)
 - [UI-Konzept erarbeiten](../workdown-items/ui-concept.md)
 
 ## in_progress
-_(no cards)_
+- [Karten erzeugen und Settings nicht sechsfach pflegen](../workdown-items/map-generator-and-default-settings.md)
 
 ## done
 - [Warteschlangen enthalten nur offene Aufträge](../workdown-items/pending-only-queues.md)

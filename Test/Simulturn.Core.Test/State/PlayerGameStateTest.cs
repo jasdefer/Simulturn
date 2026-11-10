@@ -2,6 +2,7 @@ using Simulturn.Core.Extensions;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
+using Simulturn.Core.Setup;
 using Simulturn.Test.Common;
 using System.Collections.Immutable;
 

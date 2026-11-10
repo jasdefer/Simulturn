@@ -2,6 +2,7 @@ using Simulturn.AI.Evaluation;
 using Simulturn.AI.Players;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.State;
+using Simulturn.Core.Setup;
 
 namespace Simulturn.AI.Test;
 
@@ -10,7 +11,7 @@ public class CommanderPlayerTest
     [Test]
     public void ProducesValidCommandsFromTheStart()
     {
-        var gameSettings = GameSettingsFactory.HexDisc();
+        var gameSettings = DefaultSettings.Create(MapGeneratorOptions.Open);
         var gameState = new GameState(gameSettings);
         var player = new CommanderPlayer();
 
@@ -23,7 +24,7 @@ public class CommanderPlayerTest
     [Test]
     public void DefeatsTheIdlePlayer()
     {
-        var gameSettings = GameSettingsFactory.HexDisc();
+        var gameSettings = DefaultSettings.Create(MapGeneratorOptions.Open);
         var players = new Dictionary<string, IArtificialPlayer>()
         {
             { "Player01", new CommanderPlayer() },
@@ -37,13 +38,13 @@ public class CommanderPlayerTest
     }
 
     [Test]
-    public void DefeatsRandomPlayersOnEveryMapPreset()
+    public void DefeatsRandomPlayersOnEveryMapType()
     {
         (string Name, GameSettings Settings)[] maps =
         [
-            ("disc", GameSettingsFactory.HexDisc()),
-            ("noexpansion", GameSettingsFactory.NoExpansion()),
-            ("rich", GameSettingsFactory.RichExpansions())
+            ("open", DefaultSettings.Create(MapGeneratorOptions.Open)),
+            ("homeonly", DefaultSettings.Create(MapGeneratorOptions.HomeOnly)),
+            ("expansions", DefaultSettings.Create(MapGeneratorOptions.Expansions))
         ];
         var commander = new ArenaPlayer()
         {
@@ -69,7 +70,7 @@ public class CommanderPlayerTest
     public void ResearchesUpgradesWithBankedMatter()
     {
         // Upgrades are researchable on the starting hexagon of this map.
-        var gameSettings = GameSettingsFactory.NoExpansion();
+        var gameSettings = DefaultSettings.Create(MapGeneratorOptions.HomeOnly);
         var players = new Dictionary<string, IArtificialPlayer>()
         {
             { "Player01", new CommanderPlayer() },
@@ -86,7 +87,7 @@ public class CommanderPlayerTest
     [Test]
     public void OutperformsTheStateMachinePlayer()
     {
-        var gameSettings = GameSettingsFactory.HexDisc();
+        var gameSettings = DefaultSettings.Create(MapGeneratorOptions.Open);
         var commander = new ArenaPlayer()
         {
             Name = "Commander",
