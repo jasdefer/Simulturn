@@ -11,7 +11,7 @@ public class PlayerStateBuilder
     public required ImmutableDictionary<Hexagon, Compound>.Builder Compounds { get; init; }
     public required ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Army>.Builder>.Builder Trainings { get; init; }
     public required ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Compound>.Builder>.Builder Constructions { get; init; }
-    public required ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Upgrade>.Builder>.Builder Researches { get; init; }
+    public required ImmutableDictionary<Hexagon, Research>.Builder Researches { get; init; }
     public required ImmutableDictionary<Upgrade, byte>.Builder UpgradeLevels { get; init; }
     public required ImmutableDictionary<Hexagon, Army>.Builder Losses { get; init; }
 
@@ -40,9 +40,7 @@ public class PlayerStateBuilder
             Constructions = Constructions.ToImmutableDictionary(
                 kvp => kvp.Key,
                 kvp => kvp.Value.ToImmutableDictionary()),
-            Researches = Researches.ToImmutableDictionary(
-                kvp => kvp.Key,
-                kvp => kvp.Value.ToImmutableDictionary()),
+            Researches = Researches.ToImmutableDictionary(),
             UpgradeLevels = UpgradeLevels.ToImmutableDictionary(),
             Visibilities = GetVisibility(Armies,
                 gameSettings.HexagonSettings.Keys,
@@ -110,9 +108,7 @@ public class PlayerStateBuilder
             Constructions = playerState.Constructions.ToImmutableDictionary(
                 kvp => kvp.Key,
                 kvp => kvp.Value.ToBuilder()).ToBuilder(),
-            Researches = playerState.Researches.ToImmutableDictionary(
-                kvp => kvp.Key,
-                kvp => kvp.Value.ToBuilder()).ToBuilder(),
+            Researches = playerState.Researches.ToBuilder(),
             UpgradeLevels = playerState.UpgradeLevels.ToBuilder(),
             Losses = ImmutableDictionary<Hexagon, Army>.Empty.ToBuilder(),
             Memories = playerState.Memories

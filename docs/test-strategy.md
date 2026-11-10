@@ -65,7 +65,7 @@ Goal: `GameRunner` and `Arena` keep their contract, and the AI players have the 
 
 A test that fails because of a known, not yet fixed bug is written anyway and marked `[Skip("<work-item-id>: <reason>")]`. The fix removes the skip. This way the suite describes the intended behaviour, and the fix already has its test.
 
-Example: matter conservation fails in games with research today, because research costs nothing (`research-cost-and-duration`).
+Example: until `research-cost-and-duration` was fixed, matter conservation failed in games with research because research cost nothing. The invariant test carried the skip, the fix removed it.
 
 ## Projects
 

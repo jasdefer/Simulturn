@@ -544,9 +544,9 @@ public class CommanderPlayer : IArtificialPlayer
         }
         GameSettings gameSettings = turn.View.GameSettings;
         PlayerState playerState = turn.View.PlayerState;
-        var pendingResearchLevels = playerState.PendingResearchLevels();
+        var upgradesInResearch = playerState.UpgradesInResearch();
         var researchHexagons = gameSettings.HexagonSettings
-            .Where(x => !x.Value.ResearchableUpgrades.IsEmpty)
+            .Where(x => !x.Value.ResearchableUpgrades.IsEmpty && !playerState.Researches.ContainsKey(x.Key))
             .Select(x => x.Key)
             .OrderBy(x => x.DistanceTo(turn.MainBase))
             .ThenBy(x => x.X).ThenBy(x => x.Y);
@@ -555,7 +555,7 @@ public class CommanderPlayer : IArtificialPlayer
             foreach (Upgrade upgrade in gameSettings.HexagonSettings[hexagon].ResearchableUpgrades.OrderBy(x => x))
             {
                 byte currentLevel = playerState.UpgradeLevels.GetValueOrDefault(upgrade);
-                if (pendingResearchLevels.ContainsKey(upgrade) ||
+                if (upgradesInResearch.Contains(upgrade) ||
                     currentLevel >= gameSettings.MaxUpgradeLevel(upgrade))
                 {
                     continue;

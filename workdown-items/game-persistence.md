@@ -12,7 +12,7 @@ Ein laufendes Spiel soll gespeichert und später exakt wiederhergestellt werden 
 
 - Die Engine ist deterministisch: `NextTurn` hängt nur vom Zustand und den Commands ab, `GameSettings.Seed` wird nirgends gelesen. Settings plus die Orders aller Züge bestimmen jeden Zustand vollständig.
 - `Validate` und `NextTurn` sind heute unabhängig von der Enumerationsreihenfolge der Dictionaries: Jeder Command wird für sich geprüft, Kampfverluste werden über alle Paarungen summiert, und zwei Spieler können nicht gleichzeitig auf demselben Hexagon ernten. Das muss so bleiben; der Review zu PR #8 hat gezeigt, wie leicht ein Akkumulator über Commands das bricht (siehe [[research-level-validation]]). Es gibt bislang keinen Test, der die Replay-Eigenschaft der Engine absichert.
-- Die alte UI hatte nur einen Einweg-JSON-Export über anonyme DTOs. Dabei fiel auf, dass `System.Text.Json` am Modell scheitert: `Hexagon` als Dictionary-Schlüssel, `PlayerInitialization` als Tupel, `IUpgrade` polymorph ohne Diskriminator. Das ist eine Eigenschaft des Modells, keine Vorgabe für die Lösung.
+- Die alte UI hatte nur einen Einweg-JSON-Export über anonyme DTOs. Dabei fiel auf, dass `System.Text.Json` am Modell scheitert: `Hexagon` als Dictionary-Schlüssel, `PlayerInitialization` als Tupel, `IUpgradeLevel` polymorph ohne Diskriminator. Das ist eine Eigenschaft des Modells, keine Vorgabe für die Lösung.
 
 ## Zu entscheiden
 

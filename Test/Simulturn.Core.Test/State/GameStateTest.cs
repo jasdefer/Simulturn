@@ -313,15 +313,15 @@ public class GameStateTest
         ]);
         var turn1 = gameState.PlayTurn(commands);
         commands = DictionaryExtensions.CommandsToDictionary([
-            ("Player01", new Hexagon(0,0),new Command(){ Upgrade = Upgrade.DotUpgrade})
+            ("Player01", new Hexagon(0,0),new Command(){ Research = Upgrade.DotUpgrade})
         ]);
         var turn2 = turn1.PlayTurn(commands);
         turn2.PlayerStates["Player01"]
-            .Researches.ShouldHaveSingleItem().Value.ShouldHaveSingleItem().Value.ShouldBe(Upgrade.DotUpgrade);
+            .Researches.ShouldHaveSingleItem().Value.Upgrade.ShouldBe(Upgrade.DotUpgrade);
         turn2.PlayerStates["Player01"].UpgradeLevels.ShouldBeEmpty();
         var turn3 = turn2.PlayTurn(_noCommands);
         turn3.PlayerStates["Player01"]
-            .Researches.ShouldHaveSingleItem().Value.ShouldHaveSingleItem().Value.ShouldBe(Upgrade.DotUpgrade);
+            .Researches.ShouldHaveSingleItem().Value.Upgrade.ShouldBe(Upgrade.DotUpgrade);
         turn3.PlayerStates["Player01"].UpgradeLevels.ShouldBeEmpty();
         var turn4 = turn3.PlayTurn(_noCommands);
         turn4.PlayerStates["Player01"].Researches.ShouldBeEmpty();

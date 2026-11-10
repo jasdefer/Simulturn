@@ -103,7 +103,6 @@ public class EngineInvariantsTest
     }
 
     [Test]
-    [Skip("research-cost-and-duration: NextTurn never deducts the cost of a research.")]
     public void RandomGamesWithResearch_ConserveMatter()
     {
         foreach ((string map, GameSettings gameSettings) in MapPresets())
