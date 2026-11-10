@@ -49,7 +49,7 @@ public static class Arena
         var games = Enumerable.Range(0, options.GamesPerSeatPairing)
             .SelectMany(game => new[] { (game, seat: 0), (game, seat: 1) })
             .ToList();
-        object aggregationLock = new();
+        Lock aggregationLock = new();
         int winsA = 0, winsB = 0, draws = 0, forfeitsA = 0, forfeitsB = 0;
         long totalTurns = 0;
 

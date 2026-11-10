@@ -6,9 +6,9 @@ namespace Simulturn.Core.Model.State;
 
 public sealed record GameState
 {
-    private static readonly ImmutableArray<Unit> _units = Enum.GetValues<Unit>().Cast<Unit>().ToImmutableArray();
-    private static readonly ImmutableArray<Building> _buildings = Enum.GetValues<Building>().Cast<Building>().ToImmutableArray();
-    private static readonly ImmutableArray<Upgrade> _upgrades = Enum.GetValues<Upgrade>().ToImmutableArray();
+    private static readonly ImmutableArray<Unit> _units = [.. Enum.GetValues<Unit>()];
+    private static readonly ImmutableArray<Building> _buildings = [.. Enum.GetValues<Building>()];
+    private static readonly ImmutableArray<Upgrade> _upgrades = [.. Enum.GetValues<Upgrade>()];
     public GameSettings GameSettings { get; init; }
     public ImmutableHashSet<Hexagon> Hexagons { get; init; }
     public ImmutableHashSet<string> PlayerIds { get; init; }
