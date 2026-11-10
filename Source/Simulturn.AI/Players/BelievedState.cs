@@ -67,7 +67,7 @@ internal static class BelievedState
                 Compounds = compounds.ToImmutableDictionary(),
                 Trainings = ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Army>>.Empty,
                 Constructions = ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Compound>>.Empty,
-                Researches = ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Upgrade>>.Empty,
+                Researches = ImmutableDictionary<Hexagon, Research>.Empty,
                 Visibilities = PlayerStateBuilder.GetVisibility(armies,
                     gameSettings.HexagonSettings.Keys,
                     gameSettings.PartialVisibilityRange,

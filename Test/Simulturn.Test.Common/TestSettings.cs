@@ -34,7 +34,8 @@ public static class TestSettings
             Upgrades = new IUpgrade[]
                 {
                     new DotUpgrade() { Cost = 150, Duration = 3, ExponentBonus = 20 },
-                    new DotUpgrade() { Cost = 175, Duration = 4, ExponentBonus = 20 }
+                    new DotUpgrade() { Cost = 175, Duration = 4, ExponentBonus = 20 },
+                    new UpgradeStartMatter() { Cost = 100, Duration = 2, Matter = 0 }
                 }.ToDictionary(),
             HexagonSettings = hexagonSettings
         };

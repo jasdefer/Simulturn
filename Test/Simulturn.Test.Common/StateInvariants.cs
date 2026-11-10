@@ -184,17 +184,16 @@ public static class StateInvariants
         GameSettings settings = state.GameSettings;
         PlayerState player = state.PlayerStates[playerId];
         int cost = 0;
-        // Every research pays the next free level after the completed and pending ones.
-        Dictionary<Upgrade, int> occupiedLevels = player.PendingResearchLevels()
-            .ToDictionary(x => x.Key, x => (int)x.Value);
+        // Every requested upgrade pays the level after the completed ones. Researches never stack,
+        // so an upgrade requested twice is invalid and counted once, like in Validate.
+        HashSet<Upgrade> requestedUpgrades = [];
         foreach (Command command in commands.Values)
         {
             cost += command.Training * settings.ArmyCost;
             cost += command.Construction * settings.CompoundCost;
-            if (command.Upgrade is Upgrade upgrade)
+            if (command.Upgrade is Upgrade upgrade && requestedUpgrades.Add(upgrade))
             {
-                int level = player.UpgradeLevels.GetValueOrDefault(upgrade) + occupiedLevels.GetValueOrDefault(upgrade);
-                occupiedLevels[upgrade] = occupiedLevels.GetValueOrDefault(upgrade) + 1;
+                int level = player.UpgradeLevels.GetValueOrDefault(upgrade);
                 ImmutableArray<IUpgrade> levels = settings.Upgrades[upgrade];
                 if (level < levels.Length)
                 {

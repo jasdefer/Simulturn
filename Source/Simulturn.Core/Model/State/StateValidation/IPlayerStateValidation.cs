@@ -24,3 +24,9 @@ public record ExpiredResearch(string PlayerId, ushort CompletionTurn) : IPlayerS
 /// <see cref="GameSettings.Upgrades"/>. Such a state cannot be reached through validated commands.
 /// </summary>
 public record UpgradeLevelsExceedTable(string PlayerId, Upgrade Upgrade, byte CompletedLevels, byte PendingLevels, int MaxLevel) : IPlayerStateValidation;
+
+/// <summary>
+/// The upgrade is pending on more than one hexagon. Researches never stack, so such a state cannot
+/// be reached through validated commands.
+/// </summary>
+public record UpgradeResearchedOnMultipleHexagons(string PlayerId, Upgrade Upgrade, byte PendingCount) : IPlayerStateValidation;

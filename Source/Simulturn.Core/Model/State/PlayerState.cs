@@ -11,7 +11,11 @@ public record PlayerState
     public required ImmutableDictionary<Hexagon, Compound> Compounds { get; init; }
     public required Trainings Trainings { get; init; }
     public required Constructions Constructions { get; init; }
-    public required ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Upgrade>> Researches { get; init; }
+    /// <summary>
+    /// The pending researches, keyed by hexagon. A hexagon hosts at most one research, and an
+    /// upgrade is researched on at most one hexagon at a time (work item research-cost-and-duration).
+    /// </summary>
+    public required ImmutableDictionary<Hexagon, Research> Researches { get; init; }
     public required ImmutableDictionary<Hexagon, Visibility> Visibilities { get; init; }
     /// <summary>
     /// The losses of the player in the current turn.
@@ -37,22 +41,12 @@ public record PlayerState
     public ImmutableDictionary<Hexagon, ImmutableDictionary<string, Army>> RevealedArmies { get; init; } = ImmutableDictionary<Hexagon, ImmutableDictionary<string, Army>>.Empty;
 
     /// <summary>
-    /// The number of pending researches per upgrade. Together with <see cref="UpgradeLevels"/>
-    /// these are the levels a player already occupies: no research may start once completed and
-    /// pending levels reach <see cref="GameSettings.MaxUpgradeLevel"/>. Upgrades without a
-    /// pending research have no entry.
+    /// The upgrades with a pending research. The next level of such an upgrade can only be
+    /// started once the pending research has completed.
     /// </summary>
-    public ImmutableDictionary<Upgrade, byte> PendingResearchLevels()
+    public ImmutableHashSet<Upgrade> PendingUpgrades()
     {
-        var pendingLevels = ImmutableDictionary.CreateBuilder<Upgrade, byte>();
-        foreach (var researches in Researches.Values)
-        {
-            foreach (Upgrade upgrade in researches.Values)
-            {
-                pendingLevels[upgrade] = (byte)(pendingLevels.GetValueOrDefault(upgrade) + 1);
-            }
-        }
-        return pendingLevels.ToImmutable();
+        return Researches.Values.Select(research => research.Upgrade).ToImmutableHashSet();
     }
 
     public Army ExponentBonusFromUpgrades(GameSettings gameSettings)

@@ -47,9 +47,7 @@ public class RandomPlayer : IArtificialPlayer
         // Dots occupied by pending constructions must stay on their hexagon;
         // a pending research requires at least one dot to remain.
         Dictionary<Hexagon, int> constructionDots = GetPendingConstructionDots(playerState);
-        HashSet<Hexagon> researchHexagons = playerState.Researches
-            .SelectMany(x => x.Value.Keys)
-            .ToHashSet();
+        HashSet<Hexagon> researchHexagons = playerState.Researches.Keys.ToHashSet();
 
         (Hexagon Hexagon, Upgrade Upgrade)? research = TryPickResearch(playerGameState, armyHexagons, ref matter);
         if (research is not null)
@@ -93,19 +91,19 @@ public class RandomPlayer : IArtificialPlayer
         PlayerState playerState = playerGameState.PlayerState;
         GameSettings gameSettings = playerGameState.GameSettings;
 
-        // The random player never stacks researches: one pending research per upgrade at a time.
-        var pendingResearchLevels = playerState.PendingResearchLevels();
+        // One pending research per upgrade and per hexagon, as the engine demands.
+        var pendingUpgrades = playerState.PendingUpgrades();
 
         List<(Hexagon Hexagon, Upgrade Upgrade, short Cost)> candidates = [];
         foreach (Hexagon hexagon in armyHexagons)
         {
-            if (playerState.Armies[hexagon].Dot <= 0)
+            if (playerState.Armies[hexagon].Dot <= 0 || playerState.Researches.ContainsKey(hexagon))
             {
                 continue;
             }
             foreach (Upgrade upgrade in gameSettings.HexagonSettings[hexagon].ResearchableUpgrades.OrderBy(x => x))
             {
-                if (pendingResearchLevels.ContainsKey(upgrade))
+                if (pendingUpgrades.Contains(upgrade))
                 {
                     continue;
                 }
