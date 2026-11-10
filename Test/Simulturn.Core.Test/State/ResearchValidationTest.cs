@@ -15,7 +15,7 @@ namespace Simulturn.Core.Test.State;
 /// next level only after the previous one completed, never beyond the table, never on a hexagon
 /// without the upgrade or without a dot, and the last dot stays until the research completes.
 /// </summary>
-public class ResearchValidationTest
+public sealed class ResearchValidationTest
 {
     private static readonly Hexagon _start = new(-1, 0);
     private static readonly Hexagon _center = new(0, 0);

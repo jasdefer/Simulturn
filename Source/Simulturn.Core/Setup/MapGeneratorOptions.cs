@@ -19,7 +19,7 @@ public enum ResearchLocation
 /// The presets <see cref="Open"/>, <see cref="HomeOnly"/> and <see cref="Expansions"/> are the
 /// map types; adjust them with a <c>with</c> expression.
 /// </summary>
-public record MapGeneratorOptions
+public sealed record MapGeneratorOptions
 {
     /// <summary>
     /// Matter on every hexagon, upgrades researchable in the center.
