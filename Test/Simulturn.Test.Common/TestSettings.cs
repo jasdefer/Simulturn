@@ -11,7 +11,7 @@ public static class TestSettings
 {
     public const int DefaultStartMatter = DefaultSettings.DefaultStartMatter;
 
-    public static GameSettings Create(ImmutableDictionary<Hexagon, HexagonSettings> hexagonSettings, int startMatter = DefaultStartMatter)
+    public static GameSettings Create(IReadOnlyDictionary<Hexagon, HexagonSettings> hexagonSettings, int startMatter = DefaultStartMatter)
     {
         return DefaultSettings.Create(hexagonSettings, startMatter);
     }

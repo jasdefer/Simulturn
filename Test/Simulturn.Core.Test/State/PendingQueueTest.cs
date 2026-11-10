@@ -2,7 +2,7 @@ using System.Collections.Immutable;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
-using Simulturn.Core.Model.State.StateValidation;
+using Simulturn.Core.Model.State.Validation;
 using Simulturn.Core.Setup;
 using Simulturn.Test.Common;
 
@@ -13,7 +13,7 @@ namespace Simulturn.Core.Test.State;
 /// turn it is applied, and IsValid reports entries that were left behind. The history of a game
 /// lives in its commands, not in the queues (work item pending-only-queues).
 /// </summary>
-public class PendingQueueTest
+public sealed class PendingQueueTest
 {
     private static readonly Hexagon _start = new(-1, 0);
     private static readonly Hexagon _opponentStart = new(1, 0);
@@ -104,7 +104,7 @@ public class PendingQueueTest
                 .Add(0, ImmutableDictionary<Hexagon, Army>.Empty.Add(_start, new Army() { Dot = 1 }))
         });
 
-        var validation = state.IsValid().ShouldHaveSingleItem().ShouldBeOfType<ExpiredTraining>();
+        var validation = state.IsValid().ShouldHaveSingleItem().Value.ShouldBeOfType<ExpiredTraining>();
 
         validation.PlayerId.ShouldBe("Player01");
         validation.CompletionTurn.ShouldBe((ushort)0);
@@ -119,7 +119,7 @@ public class PendingQueueTest
                 .Add(0, ImmutableDictionary<Hexagon, Compound>.Empty.Add(_start, new Compound() { Axis = 1 }))
         });
 
-        var validation = state.IsValid().ShouldHaveSingleItem().ShouldBeOfType<ExpiredConstruction>();
+        var validation = state.IsValid().ShouldHaveSingleItem().Value.ShouldBeOfType<ExpiredConstruction>();
 
         validation.PlayerId.ShouldBe("Player01");
         validation.CompletionTurn.ShouldBe((ushort)0);
@@ -133,7 +133,7 @@ public class PendingQueueTest
             Researches = ImmutableDictionary<Hexagon, Research>.Empty.Add(_start, new Research(Upgrade.DotUpgrade, 0))
         });
 
-        var validation = state.IsValid().ShouldHaveSingleItem().ShouldBeOfType<ExpiredResearch>();
+        var validation = state.IsValid().ShouldHaveSingleItem().Value.ShouldBeOfType<ExpiredResearch>();
 
         validation.PlayerId.ShouldBe("Player01");
         validation.CompletionTurn.ShouldBe((ushort)0);

@@ -45,9 +45,12 @@ public static class Maps
         };
     }
 
-    public static HexagonSettings WithResearch(this HexagonSettings settings, params Upgrade[] upgrades)
+    extension(HexagonSettings settings)
     {
-        return settings with { ResearchableUpgrades = [.. upgrades] };
+        public HexagonSettings WithResearch(params Upgrade[] upgrades)
+        {
+            return settings with { ResearchableUpgrades = [.. upgrades] };
+        }
     }
 
     /// <summary>

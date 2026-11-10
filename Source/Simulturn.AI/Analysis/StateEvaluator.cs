@@ -8,7 +8,7 @@ namespace Simulturn.AI.Analysis;
 /// strongest opponent's assets. All weights are derived from the game settings costs,
 /// so the evaluation adapts to the settings instead of hardcoding unit values.
 /// </summary>
-public static class StateEvaluator
+internal static class StateEvaluator
 {
     /// <summary>
     /// How many turns of income are counted as an asset.

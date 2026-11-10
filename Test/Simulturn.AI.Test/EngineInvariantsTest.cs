@@ -11,7 +11,7 @@ namespace Simulturn.AI.Test;
 /// Layer 3 of the test strategy: random games must satisfy the engine invariants on every turn.
 /// The random players only produce valid commands, so every failure here is an engine bug.
 /// </summary>
-public class EngineInvariantsTest
+public sealed class EngineInvariantsTest
 {
     private const int Seeds = 8;
     private const ushort MaxTurns = 100;

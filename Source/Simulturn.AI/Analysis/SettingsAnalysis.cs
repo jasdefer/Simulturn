@@ -7,7 +7,7 @@ namespace Simulturn.AI.Analysis;
 /// Unit and building roles derived from the game settings, so that AI players
 /// adapt to the settings instead of hardcoding units.
 /// </summary>
-public record SettingsAnalysis
+public sealed record SettingsAnalysis
 {
     /// <summary>
     /// The unit that generates income and constructs buildings.

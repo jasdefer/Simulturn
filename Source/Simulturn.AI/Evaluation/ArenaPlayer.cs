@@ -4,7 +4,7 @@ namespace Simulturn.AI.Evaluation;
 /// A named factory for arena participants. A fresh player instance is created per game,
 /// parameterized with the seed of that game.
 /// </summary>
-public record ArenaPlayer
+public sealed record ArenaPlayer
 {
     public required string Name { get; init; }
     public required Func<int, IArtificialPlayer> CreatePlayer { get; init; }

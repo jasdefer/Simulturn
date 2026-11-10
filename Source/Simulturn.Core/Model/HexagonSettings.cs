@@ -1,6 +1,6 @@
 namespace Simulturn.Core.Model;
 
-public record HexagonSettings
+public sealed record HexagonSettings
 {
     public static readonly HexagonSettings Empty = new()
     {

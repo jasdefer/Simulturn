@@ -4,105 +4,121 @@ using System.Numerics;
 
 namespace Simulturn.Core.Extensions;
 
-public static class DictionaryExtensions
+internal static class DictionaryExtensions
 {
-    public static void Merge<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key, TValue addition)
+    extension<TKey, TValue>(IDictionary<TKey, TValue> dict)
         where TKey : notnull
         where TValue : IAdditionOperators<TValue, TValue, TValue>
     {
-        if (!dict.TryGetValue(key, out TValue? existingValue))
+        public void Merge(TKey key, TValue addition)
         {
-            dict.Add(key, addition);
-            return;
+            if (!dict.TryGetValue(key, out TValue? existingValue))
+            {
+                dict.Add(key, addition);
+                return;
+            }
+            TValue newValue = existingValue + addition;
+            if (newValue.Equals(default(TValue)))
+            {
+                dict.Remove(key);
+                return;
+            }
+            dict[key] = newValue;
         }
-        TValue newValue = existingValue + addition;
-        if (newValue.Equals(default(TValue)))
-        {
-            dict.Remove(key);
-            return;
-        }
-        dict[key] = newValue;
-        return;
     }
 
-    public static void Merge<TKey, TValue>(this ImmutableDictionary<TKey, TValue>.Builder builder, IReadOnlyDictionary<TKey, TValue> other)
-        where TValue : IAdditionOperators<TValue, TValue, TValue>
+    extension<TKey, TValue>(ImmutableDictionary<TKey, TValue>.Builder builder)
         where TKey : notnull
+        where TValue : IAdditionOperators<TValue, TValue, TValue>
     {
-        foreach (var kvp in other)
+        public void Merge(IReadOnlyDictionary<TKey, TValue> other)
         {
-            if (builder.TryGetValue(kvp.Key, out var existingValue))
+            foreach (var kvp in other)
             {
-                builder[kvp.Key] += kvp.Value;
-            }
-            else
-            {
-                builder.Add(kvp.Key, kvp.Value);
+                if (builder.TryGetValue(kvp.Key, out var existingValue))
+                {
+                    builder[kvp.Key] += kvp.Value;
+                }
+                else
+                {
+                    builder.Add(kvp.Key, kvp.Value);
+                }
             }
         }
     }
 
-    public static IReadOnlyDictionary<Hexagon, Command> GetOrDefault<TInner>(this IReadOnlyDictionary<string, TInner> dict, string key)
+    extension<TInner>(IReadOnlyDictionary<string, TInner> dict)
         where TInner : IReadOnlyDictionary<Hexagon, Command>
     {
-        if (dict.TryGetValue(key, out var innerDict))
+        public IReadOnlyDictionary<Hexagon, Command> GetOrDefault(string key)
         {
-            return innerDict;
+            if (dict.TryGetValue(key, out var innerDict))
+            {
+                return innerDict;
+            }
+            return ImmutableDictionary<Hexagon, Command>.Empty;
         }
-        return ImmutableDictionary<Hexagon, Command>.Empty;
     }
 
-    public static void Merge<TKey1, TKey2, TValue>(this ImmutableDictionary<TKey1, ImmutableDictionary<TKey2, TValue>.Builder>.Builder dict,
-        ImmutableDictionary<TKey1, ImmutableDictionary<TKey2, TValue>.Builder>.Builder other)
+    extension<TKey1, TKey2, TValue>(ImmutableDictionary<TKey1, ImmutableDictionary<TKey2, TValue>.Builder>.Builder dict)
         where TKey1 : notnull
         where TKey2 : notnull
         where TValue : IAdditionOperators<TValue, TValue, TValue>
     {
-        foreach (var kvp in other)
+        public void Merge(ImmutableDictionary<TKey1, ImmutableDictionary<TKey2, TValue>.Builder>.Builder other)
         {
-            if (!dict.TryGetValue(kvp.Key, out var innerDict))
+            foreach (var kvp in other)
             {
-                dict[kvp.Key] = kvp.Value;
-                continue;
-            }
-            foreach (var innerKvp in kvp.Value)
-            {
-                if (innerDict.TryGetValue(innerKvp.Key, out var existingValue))
+                if (!dict.TryGetValue(kvp.Key, out var innerDict))
                 {
-                    innerDict[innerKvp.Key] += innerKvp.Value;
+                    dict[kvp.Key] = kvp.Value;
+                    continue;
                 }
-                else
+                foreach (var innerKvp in kvp.Value)
                 {
-                    innerDict.Add(innerKvp.Key, innerKvp.Value);
+                    if (innerDict.TryGetValue(innerKvp.Key, out var existingValue))
+                    {
+                        innerDict[innerKvp.Key] += innerKvp.Value;
+                    }
+                    else
+                    {
+                        innerDict.Add(innerKvp.Key, innerKvp.Value);
+                    }
                 }
             }
         }
     }
 
-    public static Dictionary<string, Dictionary<Hexagon, Command>> MovementsToDictionary(this IEnumerable<(string PlayerId, Hexagon Origin, Hexagon Destination, Army Army)> movements)
+    extension(IEnumerable<(string PlayerId, Hexagon Origin, Hexagon Destination, Army Army)> movements)
     {
-        return movements.GroupBy(x => x.PlayerId)
-            .ToDictionary(
-                group => group.Key,
-                group => group.ToDictionary(
-                    x => x.Origin,
-                    x => new Command
-                    {
-                        MovementCommands = [new MovementCommand()
+        public Dictionary<string, Dictionary<Hexagon, Command>> MovementsToDictionary()
+        {
+            return movements.GroupBy(x => x.PlayerId)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.ToDictionary(
+                        x => x.Origin,
+                        x => new Command
                         {
-                            Destination = x.Destination,
-                            Army = x.Army
-                        }]
-                    }));
+                            MovementCommands = [new MovementCommand()
+                            {
+                                Destination = x.Destination,
+                                Army = x.Army
+                            }]
+                        }));
+        }
     }
 
-    public static Dictionary<string, Dictionary<Hexagon, Command>> CommandsToDictionary(this IEnumerable<(string PlayerId, Hexagon Hexagon, Command Command)> commands)
+    extension(IEnumerable<(string PlayerId, Hexagon Hexagon, Command Command)> commands)
     {
-        return commands.GroupBy(x => x.PlayerId)
-            .ToDictionary(
-                group => group.Key,
-                group => group.ToDictionary(
-                    x => x.Hexagon,
-                    x => x.Command));
+        public Dictionary<string, Dictionary<Hexagon, Command>> CommandsToDictionary()
+        {
+            return commands.GroupBy(x => x.PlayerId)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.ToDictionary(
+                        x => x.Hexagon,
+                        x => x.Command));
+        }
     }
 }

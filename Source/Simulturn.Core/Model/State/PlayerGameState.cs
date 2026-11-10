@@ -4,7 +4,7 @@ namespace Simulturn.Core.Model.State;
 /// Everything a single player is allowed to know about the game.
 /// Clients and AI players must only receive this view, never the full <see cref="GameState"/>.
 /// </summary>
-public record PlayerGameState
+public sealed record PlayerGameState
 {
     public required string PlayerId { get; init; }
     public required ushort Turn { get; init; }

@@ -13,7 +13,7 @@ namespace Simulturn.AI.Players;
 /// the opponent modeled as a commander) and the mode with the best evaluated outcome wins.
 /// Fights reveal the enemy army composition, which sharpens the believed state.
 /// </summary>
-public class SimulatorPlayer : CommanderPlayer
+public sealed class SimulatorPlayer : CommanderPlayer
 {
     private readonly SimulatorPlayerOptions _simulatorOptions;
 

@@ -2,7 +2,7 @@
 
 namespace Simulturn.Core.Model;
 
-public readonly struct Compound : IAdditionOperators<Compound, Compound, Compound>
+public readonly struct Compound : IEquatable<Compound>, IAdditionOperators<Compound, Compound, Compound>
 {
     public static readonly Compound Empty = new Compound();
     /// <summary>
@@ -33,6 +33,22 @@ public readonly struct Compound : IAdditionOperators<Compound, Compound, Compoun
     public bool IsEmpty => Dome == 0 && Pyramid == 0 && Cube == 0 && Plane == 0 && Axis == 0;
 
     public int Sum() => Dome + Axis + Plane + Pyramid + Cube;
+
+    public bool Equals(Compound other) =>
+        Dome == other.Dome &&
+        Pyramid == other.Pyramid &&
+        Cube == other.Cube &&
+        Plane == other.Plane &&
+        Axis == other.Axis;
+
+    public override bool Equals(object? obj) =>
+        obj is Compound other && Equals(other);
+
+    public override int GetHashCode() =>
+        HashCode.Combine(Dome, Pyramid, Cube, Plane, Axis);
+
+    public static bool operator ==(Compound left, Compound right) => left.Equals(right);
+    public static bool operator !=(Compound left, Compound right) => !left.Equals(right);
 
     public static Compound operator +(Compound a, Compound b) =>
         new Compound()

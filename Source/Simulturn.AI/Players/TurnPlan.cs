@@ -179,7 +179,7 @@ internal sealed class TurnPlan
     public int Train(Hexagon hexagon, Unit unit, int wanted)
     {
         GameSettings gameSettings = View.GameSettings;
-        Building building = GameSettings.TrainingBuildingPerUnit[unit];
+        Building building = GameSettings.TrainingBuilding(unit);
         Army pendingOnHexagon = View.PlayerState.Trainings
             .Select(x => x.Value.GetValueOrDefault(hexagon))
             .Sum();

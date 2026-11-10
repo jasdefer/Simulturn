@@ -7,43 +7,47 @@ namespace Simulturn.Test.Common;
 
 public static class GameStateExtensions
 {
-    /// <summary>
-    /// Resolves one turn the way a server would: the commands must pass <see cref="GameState.Validate"/>,
-    /// and the resulting state must satisfy every state invariant.
-    /// </summary>
-    public static GameState PlayTurn<TCommands>(this GameState state, IReadOnlyDictionary<string, TCommands> commands, bool validateCommands = true)
-        where TCommands : IReadOnlyDictionary<Hexagon, Command>
+    extension(GameState state)
     {
-        if (validateCommands)
+        /// <summary>
+        /// Resolves one turn the way a server would: the commands must pass <see cref="GameState.Validate"/>,
+        /// and the resulting state must satisfy every state invariant.
+        /// </summary>
+        public GameState PlayTurn<TCommands>(IReadOnlyDictionary<string, TCommands> commands, bool validateCommands = true)
+            where TCommands : IReadOnlyDictionary<Hexagon, Command>
         {
-            foreach ((string playerId, TCommands playerCommands) in commands)
+            if (validateCommands)
             {
-                state.Validate(playerId, playerCommands).ShouldBeEmpty($"The commands of {playerId} on turn {state.Turn} are invalid.");
+                foreach ((string playerId, TCommands playerCommands) in commands)
+                {
+                    state.Validate(playerId, playerCommands).ShouldBeEmpty($"The commands of {playerId} on turn {state.Turn} are invalid.");
+                }
             }
+            GameState next = state.NextTurn(commands);
+            StateInvariants.CheckState(next).ShouldBeEmpty($"The state after turn {state.Turn} violates an invariant.");
+            return next;
         }
-        GameState next = state.NextTurn(commands);
-        StateInvariants.CheckState(next).ShouldBeEmpty($"The state after turn {state.Turn} violates an invariant.");
-        return next;
-    }
 
-    /// <summary>
-    /// Resolves a turn without any commands.
-    /// </summary>
-    public static GameState PlayEmptyTurn(this GameState state)
-    {
-        return state.PlayTurn(new Dictionary<string, Dictionary<Hexagon, Command>>());
-    }
-
-    /// <summary>
-    /// Resolves empty turns until the player has no pending research, at most ten.
-    /// </summary>
-    public static GameState PlayUntilResearchesComplete(this GameState state, string playerId)
-    {
-        for (int turn = 0; turn < 10 && !state.PlayerStates[playerId].Researches.IsEmpty; turn++)
+        /// <summary>
+        /// Resolves a turn without any commands.
+        /// </summary>
+        public GameState PlayEmptyTurn()
         {
-            state = state.PlayEmptyTurn();
+            return state.PlayTurn(new Dictionary<string, Dictionary<Hexagon, Command>>());
         }
-        state.PlayerStates[playerId].Researches.ShouldBeEmpty($"The researches of {playerId} did not complete within ten turns.");
-        return state;
+
+        /// <summary>
+        /// Resolves empty turns until the player has no pending research, at most ten.
+        /// </summary>
+        public GameState PlayUntilResearchesComplete(string playerId)
+        {
+            GameState current = state;
+            for (int turn = 0; turn < 10 && !current.PlayerStates[playerId].Researches.IsEmpty; turn++)
+            {
+                current = current.PlayEmptyTurn();
+            }
+            current.PlayerStates[playerId].Researches.ShouldBeEmpty($"The researches of {playerId} did not complete within ten turns.");
+            return current;
+        }
     }
 }

@@ -1,17 +1,17 @@
 using Simulturn.Core.Extensions;
 using Simulturn.Core.Model.Commands;
-using Simulturn.Core.Model.State.StateValidation;
+using Simulturn.Core.Model.State.Validation;
 
 namespace Simulturn.Core.Model.State;
 
-public record GameState
+public sealed record GameState
 {
-    private static readonly ImmutableArray<Unit> _units = Enum.GetValues<Unit>().Cast<Unit>().ToImmutableArray();
-    private static readonly ImmutableArray<Building> _buildings = Enum.GetValues<Building>().Cast<Building>().ToImmutableArray();
-    private static readonly ImmutableArray<Upgrade> _upgrades = Enum.GetValues<Upgrade>().ToImmutableArray();
+    private static readonly ImmutableArray<Unit> _units = [.. Enum.GetValues<Unit>()];
+    private static readonly ImmutableArray<Building> _buildings = [.. Enum.GetValues<Building>()];
+    private static readonly ImmutableArray<Upgrade> _upgrades = [.. Enum.GetValues<Upgrade>()];
     public GameSettings GameSettings { get; init; }
     public ImmutableHashSet<Hexagon> Hexagons { get; init; }
-    public HashSet<string> PlayerIds { get; init; }
+    public ImmutableHashSet<string> PlayerIds { get; init; }
     public ImmutableDictionary<string, PlayerState> PlayerStates { get; init; }
     public ImmutableDictionary<Hexagon, int> RemainingMatter { get; init; }
     public bool IsGameOver => PlayerStates.Where(x => x.Value.Compounds.Any(compound => !compound.Value.IsEmpty)).Count() <= 1;
@@ -48,7 +48,7 @@ public record GameState
                 };
             });
         PlayerStates = FogOfWar.UpdateMemories(PlayerStates, RemainingMatter, Turn);
-        PlayerIds = PlayerStates.Keys.ToHashSet();
+        PlayerIds = PlayerStates.Keys.ToImmutableHashSet();
     }
 
     /// <summary>
@@ -70,7 +70,7 @@ public record GameState
         ImmutableDictionary<Hexagon, int> remainingMatter)
     {
         GameSettings = gameSettings;
-        PlayerIds = playerStates.Keys.ToHashSet();
+        PlayerIds = playerStates.Keys.ToImmutableHashSet();
         Turn = turn;
         Hexagons = GameSettings.HexagonSettings.Keys.ToImmutableHashSet();
         RemainingMatter = remainingMatter;
@@ -330,7 +330,7 @@ public record GameState
                                 {
                                     if (destroyedCount <= 0 ||
                                         training[unit] <= 0 ||
-                                        GameSettings.TrainingBuildingPerUnit[unit] != building)
+                                        GameSettings.TrainingBuilding(unit) != building)
                                     {
                                         continue;
                                     }
@@ -462,7 +462,7 @@ public record GameState
         return newConstructions;
     }
 
-    public IEnumerable<IStateValidation> IsValid()
+    public IEnumerable<StateValidation> IsValid()
     {
         // Remaining Matter
         foreach ((var hexagon, int remainingMatter) in RemainingMatter)
@@ -537,9 +537,9 @@ public record GameState
                         {
                             yield return new NegativeTrainingCount(playerId, hexagon, unit, training[unit]);
                         }
-                        if (training[unit] > compound[GameSettings.TrainingBuildingPerUnit[unit]])
+                        if (training[unit] > compound[GameSettings.TrainingBuilding(unit)])
                         {
-                            yield return new MissingBuildingForTraining(playerId, hexagon, unit, training[unit], compound[GameSettings.TrainingBuildingPerUnit[unit]]);
+                            yield return new MissingBuildingForTraining(playerId, hexagon, unit, training[unit], compound[GameSettings.TrainingBuilding(unit)]);
                         }
                     }
                 }
@@ -612,7 +612,7 @@ public record GameState
         }
     }
 
-    public IEnumerable<ICommandValidation> Validate(string playerId, IReadOnlyDictionary<Hexagon, Command> commands)
+    public IEnumerable<CommandValidation> Validate(string playerId, IReadOnlyDictionary<Hexagon, Command> commands)
     {
         if (!PlayerIds.Contains(playerId))
         {
@@ -658,7 +658,7 @@ public record GameState
                 foreach (var unit in _units)
                 {
                     short trainedUnits = trainings[unit];
-                    short availableBuildings = compound[GameSettings.TrainingBuildingPerUnit[unit]];
+                    short availableBuildings = compound[GameSettings.TrainingBuilding(unit)];
                     if (trainedUnits > availableBuildings)
                     {
                         yield return new MissingBuildingForTraining(playerId, hexagon, unit, trainedUnits, availableBuildings);

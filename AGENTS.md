@@ -4,13 +4,13 @@ Use it as the default workflow and style baseline for this repository.
 
 ## Repository Snapshot
 - Solution: `Simulturn.sln`
-- Runtime: .NET 10 (`net10.0`)
+- Runtime: .NET 11 (`net11.0`, C# 15), SDK pinned in `global.json`
 - Core project: `Source/Simulturn.Core/Simulturn.Core.csproj`
 - Test projects: `Test/Simulturn.Core.Test` (engine), `Test/Simulturn.AI.Test` (players, runner, invariants), `Test/Simulturn.Test.Common` (shared fixtures)
 - Test strategy: `docs/test-strategy.md` (read before adding tests)
 - Console project: `Test/Simulturn.Core.Console/Simulturn.Core.Console.csproj`
 - Test stack: TUnit + Shouldly
-- Project settings: `Nullable=enable`, `ImplicitUsings=enable`
+- Shared project settings (`TargetFramework`, `Nullable`, `ImplicitUsings`, `EnforceCodeStyleInBuild`) live in `Directory.Build.props`; package versions in `Directory.Packages.props` (central package management)
 
 ## Cursor and Copilot Rules
 No agent rules files were found when this file was generated:
@@ -57,8 +57,8 @@ dotnet test Test/Simulturn.Core.Test/Simulturn.Core.Test.csproj --list-tests
 ```
 
 ### Lint / formatting
-There is no dedicated linter config in repo (no `.editorconfig` or ruleset files).
-Use `dotnet format` as the formatting/lint proxy:
+`.editorconfig` at the repo root enables CA1852 (seal internal types) and the file-scoped namespace rule; `EnforceCodeStyleInBuild` turns style violations into build warnings.
+Use `dotnet format` for formatting:
 ```bash
 dotnet format Simulturn.sln
 dotnet format Simulturn.sln --verify-no-changes
@@ -99,9 +99,15 @@ Follow local conventions in touched files first.
 ### Types and immutability
 - Use `record` for immutable state aggregates (`GameState`, `PlayerState` patterns)
 - Use `readonly struct` for value objects (`Army`, `Hexagon` patterns)
+- Seal every class and record that has no derived types, public ones too; CA1852 only warns for internal types, public types are sealed by convention
+- Value objects implement `IEquatable<T>`, `GetHashCode` and `==`/`!=` (`Army`, `Compound` patterns)
 - Keep domain objects strongly typed; avoid weakly typed dictionaries/arrays
 - Preserve immutable collection boundaries for stored state
 - Use `.ToBuilder()` only inside mutation-heavy logic, then convert back to immutable
+- Data that is built once and read every turn (`GameSettings` maps) uses `FrozenDictionary`; state that changes per turn uses `ImmutableDictionary`
+- Accept `IReadOnlyDictionary`/`IReadOnlyList` as parameters, never store them as properties
+- Static enum mappings are switch expressions (`GameSettings.TrainingBuilding`), not dictionaries
+- Closed sets of result types are `union` types (C# 15): `CommandValidation` and `StateValidation` in `Model/State/Validation/`. A `switch` over them is exhaustive, the cases are plain sealed records without a shared interface. In tests, match the case through `.Value` (`validation.Value.ShouldBeOfType<...>()`), the union itself is a struct
 
 ### Naming conventions
 - Public types, methods, properties: PascalCase
@@ -118,7 +124,7 @@ Follow local conventions in touched files first.
 ### Control flow and validation
 - Use guard clauses and early `continue`/`return` to keep nesting shallow
 - Keep command validation (`Validate`) separate from state validity checks (`IsValid`)
-- Return domain validation objects for business-rule failures
+- Return domain validation objects for business-rule failures (cases of the `CommandValidation` union)
 - Throw exceptions only for invariant violations or impossible states
 
 ### Error handling
@@ -129,6 +135,7 @@ Follow local conventions in touched files first.
 
 ### Collections and LINQ
 - Prefer existing helper extensions (`Merge`, `MergeOrOverwrite`, `Sum`)
+- New extension members go into `extension(...)` blocks (C# 14), not `this`-parameter methods
 - Keep LINQ readable; split long chains if intent is hard to parse
 - Avoid repeated expensive enumerations in hot paths
 - Favor clarity over terse one-liners in state transition code

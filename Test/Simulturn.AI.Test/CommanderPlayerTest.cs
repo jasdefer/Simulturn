@@ -6,7 +6,7 @@ using Simulturn.Core.Setup;
 
 namespace Simulturn.AI.Test;
 
-public class CommanderPlayerTest
+public sealed class CommanderPlayerTest
 {
     [Test]
     public void ProducesValidCommandsFromTheStart()

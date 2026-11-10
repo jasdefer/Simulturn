@@ -8,7 +8,7 @@ namespace Simulturn.AI.Test;
 /// <summary>
 /// A test player that delegates the command generation to a function.
 /// </summary>
-public class ScriptedPlayer : IArtificialPlayer
+public sealed class ScriptedPlayer : IArtificialPlayer
 {
     private readonly Func<PlayerGameState, IReadOnlyDictionary<Hexagon, Command>> _getCommands;
 

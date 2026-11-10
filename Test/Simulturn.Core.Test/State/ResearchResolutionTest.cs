@@ -12,7 +12,7 @@ namespace Simulturn.Core.Test.State;
 /// a research costs the matter of its level when it starts, completes after the duration of that
 /// level, and is canceled without refund once its hexagon has no dot left at the end of a turn.
 /// </summary>
-public class ResearchResolutionTest
+public sealed class ResearchResolutionTest
 {
     private static readonly Hexagon _start = new(-1, 0);
     private static readonly Hexagon _center = new(0, 0);

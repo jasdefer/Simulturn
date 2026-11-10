@@ -4,7 +4,7 @@ using Simulturn.Core.Setup;
 
 namespace Simulturn.AI.Test;
 
-public class ArenaTest
+public sealed class ArenaTest
 {
     [Test]
     public void RoundRobin_PlaysAllPairingsInBothSeats()

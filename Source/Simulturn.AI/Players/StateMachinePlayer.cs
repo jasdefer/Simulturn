@@ -13,7 +13,7 @@ namespace Simulturn.AI.Players;
 /// against the estimated enemy army (unit counts are known, the composition is assumed
 /// to be a uniform mix) predicts a win with a safety margin.
 /// </summary>
-public class StateMachinePlayer : IArtificialPlayer
+public sealed class StateMachinePlayer : IArtificialPlayer
 {
     public enum EconomyMode { Eco, Expand, BuildArmy }
     public enum MilitaryMode { Scout, Guard, Attack }
@@ -211,7 +211,7 @@ public class StateMachinePlayer : IArtificialPlayer
         // Training buildings per fighter type, cheapest buildings first.
         foreach (Unit fighter in _analysis!.Fighters)
         {
-            Building building = GameSettings.TrainingBuildingPerUnit[fighter];
+            Building building = GameSettings.TrainingBuilding(fighter);
             if (turn.CountOwnedOrPendingBuildings(turn.MainBase, building) < _options.TrainingBuildingsPerFighter &&
                 turn.IdleWorkers(turn.MainBase) > 0 &&
                 turn.Matter >= gameSettings.CompoundCost[building])

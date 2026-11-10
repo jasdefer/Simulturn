@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using Simulturn.Core.Extensions;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
@@ -8,7 +9,7 @@ using System.Collections.Immutable;
 
 namespace Simulturn.Core.Test.State;
 
-public class PlayerGameStateTest
+public sealed class PlayerGameStateTest
 {
     private static readonly Hexagon _player1Start = new Hexagon(-3, 0);
     private static readonly Hexagon _player2Start = new Hexagon(3, 0);
@@ -33,13 +34,13 @@ public class PlayerGameStateTest
     /// </summary>
     private static GameSettings WithPlayer2At(Hexagon hexagon)
     {
-        var builder = _gameSettings.HexagonSettings.ToBuilder();
-        builder[_player2Start] = builder[_player2Start] with { PlayerInitialization = null };
-        builder[hexagon] = builder[hexagon] with
+        var hexagonSettings = _gameSettings.HexagonSettings.ToDictionary();
+        hexagonSettings[_player2Start] = hexagonSettings[_player2Start] with { PlayerInitialization = null };
+        hexagonSettings[hexagon] = hexagonSettings[hexagon] with
         {
             PlayerInitialization = ("Player02", new Army() { Dot = 5 }, new Compound() { Plane = 1 })
         };
-        return _gameSettings with { HexagonSettings = builder.ToImmutableDictionary() };
+        return _gameSettings with { HexagonSettings = hexagonSettings.ToFrozenDictionary() };
     }
 
     [Test]

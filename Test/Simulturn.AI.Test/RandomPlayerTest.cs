@@ -6,7 +6,7 @@ using Simulturn.Test.Common;
 
 namespace Simulturn.AI.Test;
 
-public class RandomPlayerTest
+public sealed class RandomPlayerTest
 {
     /// <summary>
     /// A hexagon disc with radius 2 (19 hexagons). The players start on opposite edges,

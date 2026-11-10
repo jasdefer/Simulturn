@@ -5,7 +5,7 @@ namespace Simulturn.Core.Test.Model;
 /// <summary>
 /// The geometry of <see cref="Hexagon"/>: neighbors, rotation, rings and discs around the origin.
 /// </summary>
-public class HexagonTest
+public sealed class HexagonTest
 {
     [Test]
     public void Neighbors_AreTheSixHexagonsAtDistanceOne()

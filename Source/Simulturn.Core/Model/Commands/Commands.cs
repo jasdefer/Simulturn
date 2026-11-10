@@ -1,6 +1,6 @@
 ﻿namespace Simulturn.Core.Model.Commands;
 
-public record Command
+public sealed record Command
 {
     public Compound Construction { get; init; } = Compound.Empty;
     public ImmutableArray<MovementCommand> MovementCommands { get; init; } = [];

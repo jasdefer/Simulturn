@@ -1,27 +1,28 @@
 ﻿using Simulturn.Core.Model;
 using Simulturn.Core.Model.Upgrades;
+using System.Collections.Frozen;
 
 namespace Simulturn.Core.Extensions;
 
 public static class CollectionExtensions
 {
-    public static Army Sum(this IEnumerable<Army> armies)
+    extension(IEnumerable<Army> armies)
     {
-        return armies.Aggregate(new Army(), (acc, army) => acc + army);
+        public Army Sum() => armies.Aggregate(new Army(), (acc, army) => acc + army);
     }
 
-    public static Compound Sum(this IEnumerable<Compound> armies)
+    extension(IEnumerable<Compound> compounds)
     {
-        return armies.Aggregate(new Compound(), (acc, compound) => acc + compound);
+        public Compound Sum() => compounds.Aggregate(new Compound(), (acc, compound) => acc + compound);
     }
 
-    public static ImmutableDictionary<Upgrade, ImmutableArray<IUpgradeLevel>> ToDictionary(this IEnumerable<IUpgradeLevel> upgrades)
+    extension(IEnumerable<IUpgradeLevel> upgrades)
     {
-        return upgrades
-            .GroupBy(u => u.Upgrade)
-            .ToImmutableDictionary(
-                g => g.Key,
-                g => g.ToImmutableArray()
-            );
+        public FrozenDictionary<Upgrade, ImmutableArray<IUpgradeLevel>> ToDictionary() =>
+            upgrades
+                .GroupBy(u => u.Upgrade)
+                .ToFrozenDictionary(
+                    g => g.Key,
+                    g => g.ToImmutableArray());
     }
 }

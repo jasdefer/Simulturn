@@ -1,0 +1,13 @@
+root = true
+
+[*.cs]
+indent_style = space
+indent_size = 4
+
+# Style
+csharp_style_namespace_declarations = file_scoped:warning
+
+# Analyzers
+# CA1852 only fires for types that are not visible outside the assembly;
+# public types are sealed by convention (see AGENTS.md).
+dotnet_diagnostic.CA1852.severity = warning

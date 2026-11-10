@@ -4,7 +4,7 @@ using Simulturn.Core.Setup;
 
 namespace Simulturn.AI.Test;
 
-public class CompositionOptimizerTest
+public sealed class CompositionOptimizerTest
 {
     private static readonly GameSettings _gameSettings = DefaultSettings.Create(MapGeneratorOptions.Open);
     private static readonly SettingsAnalysis _analysis = GameSettingsAnalyzer.Analyze(_gameSettings);

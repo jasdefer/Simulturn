@@ -4,7 +4,6 @@ Cards grouped into columns by `status`.
 
 ## todo
 - [Kampfausgang vorab berechnen können](../workdown-items/combat-forecast-core.md)
-- [Auf die nächste .NET-Version wechseln und neue Sprachfeatures nutzen](../workdown-items/dotnet-upgrade-and-union-types.md)
 - [Spielstände speichern und wiederherstellen](../workdown-items/game-persistence.md)
 - [Bewegungsreichweite pro Einheitentyp](../workdown-items/movement-range.md)
 - [Nachvollziehbarkeit der Zugauflösung](../workdown-items/turn-report.md)
@@ -15,6 +14,7 @@ Cards grouped into columns by `status`.
 - [Karten erzeugen und Settings nicht sechsfach pflegen](../workdown-items/map-generator-and-default-settings.md)
 
 ## done
+- [Auf die nächste .NET-Version wechseln und neue Sprachfeatures nutzen](../workdown-items/dotnet-upgrade-and-union-types.md)
 - [Warteschlangen enthalten nur offene Aufträge](../workdown-items/pending-only-queues.md)
 - [Forschung kostet nichts und nutzt die falsche Stufe](../workdown-items/research-cost-and-duration.md)
 - [Forschung kann über die Upgrade-Tabelle hinaus gestartet werden](../workdown-items/research-level-validation.md)

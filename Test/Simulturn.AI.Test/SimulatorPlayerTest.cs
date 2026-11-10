@@ -5,7 +5,7 @@ using Simulturn.Core.Setup;
 
 namespace Simulturn.AI.Test;
 
-public class SimulatorPlayerTest
+public sealed class SimulatorPlayerTest
 {
     [Test]
     public void ProducesValidCommandsFromTheStart()

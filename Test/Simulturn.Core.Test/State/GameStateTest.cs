@@ -2,14 +2,14 @@ using Simulturn.Core.Extensions;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
-using Simulturn.Core.Model.State.StateValidation;
+using Simulturn.Core.Model.State.Validation;
 using Simulturn.Core.Setup;
 using Simulturn.Test.Common;
 using System.Collections.Immutable;
 
 namespace Simulturn.Core.Test.State;
 
-public class GameStateTest
+public sealed class GameStateTest
 {
     private static readonly Hexagon _player1Start = new Hexagon(-1, 0);
     private static readonly Hexagon _player2Start = new Hexagon(1, 0);
@@ -30,7 +30,7 @@ public class GameStateTest
     /// </summary>
     private static GameSettings WithStarts((Army Army, Compound Compound) player1, (Army Army, Compound Compound) player2)
     {
-        return TestSettings.Create(_gameSettings.HexagonSettings
+        return TestSettings.Create(_gameSettings.HexagonSettings.ToImmutableDictionary()
             .SetItem(_player1Start, Maps.Start("Player01", matter: 10000, army: player1.Army, compound: player1.Compound))
             .SetItem(_player2Start, Maps.Start("Player02", matter: 10000, army: player2.Army, compound: player2.Compound)));
     }
@@ -435,7 +435,7 @@ public class GameStateTest
     [Test]
     public void IncomeIsCappedByMaxNumberOfUnitsGeneratingMatter()
     {
-        var gameSettings = TestSettings.Create(_gameSettings.HexagonSettings
+        var gameSettings = TestSettings.Create(_gameSettings.HexagonSettings.ToImmutableDictionary()
             .SetItem(_player1Start, Maps.Start("Player01", matter: 10000, army: new Army() { Dot = 15 }) with
             {
                 MaxNumberOfUnitsGeneratingMatter = new Army() { Dot = 3 }
@@ -478,7 +478,7 @@ public class GameStateTest
 
         var validations = gameState.Validate("Player01", commands["Player01"]);
 
-        validations.OfType<InsufficientMatter>().ShouldHaveSingleItem();
+        validations.Select(x => x.Value).OfType<InsufficientMatter>().ShouldHaveSingleItem();
     }
 
     [Test]
@@ -505,8 +505,7 @@ public class GameStateTest
 
         // Act
         var validations = gameState.Validate(commands.Keys.Single(), commands.Single().Value);
-        (validations.ShouldHaveSingleItem()
-             as InsufficientSpace)!.Required.ShouldBe(9 + 9);
+        validations.ShouldHaveSingleItem().Value.ShouldBeOfType<InsufficientSpace>().Required.ShouldBe(9 + 9);
     }
 
     [Test]

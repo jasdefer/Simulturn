@@ -1,7 +1,7 @@
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
-using Simulturn.Core.Model.State.StateValidation;
+using Simulturn.Core.Model.State.Validation;
 using Simulturn.Core.Setup;
 using Simulturn.Test.Common;
 
@@ -12,7 +12,7 @@ namespace Simulturn.Core.Test.State;
 /// hexagon other than the commanded one, or no army at all on the commanded hexagon.
 /// Regression tests for a KeyNotFoundException fixed in PR #5 and #7.
 /// </summary>
-public class ValidatePendingWorkTest
+public sealed class ValidatePendingWorkTest
 {
     private static readonly Hexagon _start = new(-1, 0);
     private static readonly Hexagon _center = new(0, 0);
@@ -45,7 +45,7 @@ public class ValidatePendingWorkTest
         var validations = Should.NotThrow(() => state.Validate("Player01", commands["Player01"]).ToList());
 
         // Assert
-        var validation = validations.ShouldHaveSingleItem().ShouldBeOfType<MissingBuildingForTraining>();
+        var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<MissingBuildingForTraining>();
         validation.Hexagon.ShouldBe(_center);
         validation.Unit.ShouldBe(Unit.Dot);
         validation.TrainedCount.ShouldBe((short)1);
@@ -65,7 +65,7 @@ public class ValidatePendingWorkTest
         var validations = Should.NotThrow(() => state.Validate("Player01", commands["Player01"]).ToList());
 
         // Assert
-        var validation = validations.ShouldHaveSingleItem().ShouldBeOfType<MissingDotsForConstruction>();
+        var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<MissingDotsForConstruction>();
         validation.Hexagon.ShouldBe(_center);
         validation.Constructions.ShouldBe(new Compound() { Axis = 1 });
         validation.AvailableDots.ShouldBe((short)0);
@@ -79,7 +79,7 @@ public class ValidatePendingWorkTest
         var commands = Player1(_center, new Command() { Construction = new Compound() { Dome = 1 } });
         var validations = Should.NotThrow(() => state.Validate("Player01", commands["Player01"]).ToList());
 
-        var validation = validations.ShouldHaveSingleItem().ShouldBeOfType<MissingDotsForConstruction>();
+        var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<MissingDotsForConstruction>();
         validation.Hexagon.ShouldBe(_center);
         validation.Constructions.ShouldBe(new Compound() { Dome = 1 });
         validation.AvailableDots.ShouldBe((short)0);
@@ -105,7 +105,7 @@ public class ValidatePendingWorkTest
         var validations = Should.NotThrow(() => state.Validate("Player01", commands["Player01"]).ToList());
 
         // Assert
-        var validation = validations.ShouldHaveSingleItem().ShouldBeOfType<MissingBuildingForTraining>();
+        var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<MissingBuildingForTraining>();
         validation.Hexagon.ShouldBe(_center);
         validation.Unit.ShouldBe(Unit.Dot);
     }

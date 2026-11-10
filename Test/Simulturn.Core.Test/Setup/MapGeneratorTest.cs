@@ -10,7 +10,7 @@ namespace Simulturn.Core.Test.Setup;
 /// produce the same map, every player has a start hexagon, the map looks the same from every seat,
 /// and it is a valid game with the <see cref="DefaultSettings"/>.
 /// </summary>
-public class MapGeneratorTest
+public sealed class MapGeneratorTest
 {
     private static readonly int[] _playerCounts = [2, 3, 6];
 
