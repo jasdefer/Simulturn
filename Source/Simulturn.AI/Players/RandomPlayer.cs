@@ -92,7 +92,7 @@ public class RandomPlayer : IArtificialPlayer
         GameSettings gameSettings = playerGameState.GameSettings;
 
         // One pending research per upgrade and per hexagon, as the engine demands.
-        var pendingUpgrades = playerState.PendingUpgrades();
+        var upgradesInResearch = playerState.UpgradesInResearch();
 
         List<(Hexagon Hexagon, Upgrade Upgrade, short Cost)> candidates = [];
         foreach (Hexagon hexagon in armyHexagons)
@@ -103,7 +103,7 @@ public class RandomPlayer : IArtificialPlayer
             }
             foreach (Upgrade upgrade in gameSettings.HexagonSettings[hexagon].ResearchableUpgrades.OrderBy(x => x))
             {
-                if (pendingUpgrades.Contains(upgrade))
+                if (upgradesInResearch.Contains(upgrade))
                 {
                     continue;
                 }

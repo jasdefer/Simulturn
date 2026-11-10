@@ -11,13 +11,13 @@ Alle sieben Projekte laufen auf der nächsten .NET-Version (.NET 11, C# 15) mit 
 ## Ausgangslage
 
 - `global.json` pinnt SDK 10.0.102 mit `rollForward: latestFeature`, alle Projekte zielen auf `net10.0`.
-- Das Modell hat mehrere geschlossene Typmengen, die heute über Interfaces mit vielen Record-Implementierungen abgebildet sind: `IStateValidation` und `ICommandValidation` (je ein Record pro Regel), `IUpgrade` (`DotUpgrade`, `UpgradeStartMatter`). Konsumenten unterscheiden sie per `switch` auf den Typ oder per `ShouldBeOfType` in Tests. Nichts erzwingt Vollständigkeit beim Verzweigen.
-- Das Persistenz-Item hat festgehalten, dass `IUpgrade` polymorph ohne Diskriminator ist und `System.Text.Json` daran scheitert ([[game-persistence]]). Ein Union Type ist eine mögliche Antwort darauf.
+- Das Modell hat mehrere geschlossene Typmengen, die heute über Interfaces mit vielen Record-Implementierungen abgebildet sind: `IStateValidation` und `ICommandValidation` (je ein Record pro Regel), `IUpgradeLevel` (`DotUpgrade`, `UpgradeStartMatter`). Konsumenten unterscheiden sie per `switch` auf den Typ oder per `ShouldBeOfType` in Tests. Nichts erzwingt Vollständigkeit beim Verzweigen.
+- Das Persistenz-Item hat festgehalten, dass `IUpgradeLevel` polymorph ohne Diskriminator ist und `System.Text.Json` daran scheitert ([[game-persistence]]). Ein Union Type ist eine mögliche Antwort darauf.
 
 ## Kandidaten für Union Types
 
 - `IStateValidation` / `ICommandValidation`: geschlossene Menge, die Engine kennt alle Fälle. Ein `switch` in UI oder AI kann dann vollständig sein.
-- `IUpgrade`: zwei Fälle, die Settings-Tabelle `GameSettings.Upgrades` enthält sie gemischt.
+- `IUpgradeLevel`: zwei Fälle, die Settings-Tabelle `GameSettings.Upgrades` enthält sie gemischt.
 - Prüfen, ob weitere geschlossene Mengen existieren (`GameEndReason`, Ergebnistypen der Arena).
 
 Weitere Features nur, wo sie heutigen Code vereinfachen. Kein Umbau um des Features willen.
@@ -32,4 +32,4 @@ Weitere Features nur, wo sie heutigen Code vereinfachen. Kein Umbau um des Featu
 ## Zu entscheiden
 
 - Ob der Wechsel sofort beim Release geschieht oder erst mit dem ersten Patch des SDK.
-- Ob `IUpgrade` ein Union Type wird oder im Zuge von [[game-persistence]] einen Diskriminator bekommt. Beides zusammen ist nicht nötig.
+- Ob `IUpgradeLevel` ein Union Type wird oder im Zuge von [[game-persistence]] einen Diskriminator bekommt. Beides zusammen ist nicht nötig.

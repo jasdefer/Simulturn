@@ -27,7 +27,7 @@ public record GameSettings
     public required Compound Armor { get; init; }
     public required ImmutableDictionary<Hexagon, HexagonSettings> HexagonSettings { get; init; }
     public required ImmutableDictionary<string, ImmutableArray<Upgrade>> StartUpgrades { get; init; }
-    public required ImmutableDictionary<Upgrade, ImmutableArray<IUpgrade>> Upgrades { get; init; }
+    public required ImmutableDictionary<Upgrade, ImmutableArray<IUpgradeLevel>> Upgrades { get; init; }
     public int Seed { get; init; }
 
     /// <summary>

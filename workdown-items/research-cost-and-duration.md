@@ -13,7 +13,7 @@ Drei Fehler rund um Forschung in `GameState`:
 
 1. **Forschung ist kostenlos.** `Validate` rechnet die Kosten in die Matter-Prüfung ein, aber `NextTurn` zieht sie nie von `PlayerState.Matter` ab. Training und Bau werden abgezogen, Forschung nicht.
 2. **Forschungen gehen verloren.** `PlayerState.Researches` ist nach Abschlussrunde und Hexagon indiziert. Zwei Forschungen auf demselben Hexagon, die in derselben Runde fertig werden, fallen auf denselben Schlüssel; die zweite überschreibt die erste. Der Spieler zahlt zweimal und bekommt eine Stufe. Der Review zu PR #8 fand den Fall für dieselbe Forschung in aufeinanderfolgenden Runden (Stufe 1 Dauer 3 in Runde t, Stufe 2 Dauer 2 in Runde t+1). Er tritt genauso mit zwei verschiedenen Upgrades auf.
-3. **Forschung ohne Punkt läuft weiter.** Ein Punkt ist beim Start Voraussetzung (`UpgradeRequiresDot`), und `IsValid` meldet eine laufende Forschung ohne Punkt als ungültigen Zustand. `NextTurn` setzt das aber nicht durch: Stirbt der Punkt im Kampf oder zieht er weg, wird die Forschung trotzdem fertig.
+3. **Forschung ohne Punkt läuft weiter.** Ein Punkt ist beim Start Voraussetzung (`ResearchRequiresDot`), und `IsValid` meldet eine laufende Forschung ohne Punkt als ungültigen Zustand. `NextTurn` setzt das aber nicht durch: Stirbt der Punkt im Kampf oder zieht er weg, wird die Forschung trotzdem fertig.
 
 Der ursprüngliche vierte Punkt, die falsche Stufe bei gestapelten Forschungen, entfällt mit den Spielregeln unten: Es gibt kein Stapeln mehr, deshalb ist "abgeschlossene Stufe plus eins" immer die richtige Stufe.
 
@@ -56,8 +56,8 @@ Entschieden am 2026-11-10: `PlayerState.Researches` ist nach Hexagon geschlüsse
 
 - `NextTurn` zieht die Kosten beim Einreihen ab, schließt fällige Forschungen vor Bewegungen und Kämpfen ab und streicht nach den Kämpfen jede Forschung, auf deren Hexagon kein eigener Punkt mehr steht.
 - `Validate` meldet `UpgradeAlreadyInResearch` (Regel 1), `UpgradeRequestedOnMultipleHexagons` für jeden betroffenen Command (Regel 2), `HexagonAlreadyResearching` (Regel 3) und `MovementLeavesResearchWithoutDot` (Regel 4). Ankommende Punkte derselben Runde zählen mit, ein Tausch des Punkts ist erlaubt. `UpgradeExceedsAvailableLevel` meldet nur noch das Tabellenende.
-- `IsValid` meldet zusätzlich `UpgradeResearchedOnMultipleHexagons`.
-- `PlayerState.PendingUpgrades()` ersetzt `PendingResearchLevels()`; die drei AI-Spieler nutzen es, `TurnPlan` ankert einen Punkt auf jedem Hexagon mit laufender Forschung, `CommanderPlayer` und `RandomPlayer` überspringen belegte Hexagons.
+- `IsValid` meldet zusätzlich `UpgradeInResearchOnMultipleHexagons`.
+- `PlayerState.UpgradesInResearch()` ersetzt `PendingResearchLevels()`; die drei AI-Spieler nutzen es, `TurnPlan` ankert einen Punkt auf jedem Hexagon mit laufender Forschung, `CommanderPlayer` und `RandomPlayer` überspringen belegte Hexagons.
 - `TestSettings` definiert eine Stufe `UpgradeStartMatter`, damit Regel 3 mit zwei verschiedenen Upgrades testbar ist.
 
 Tests: `ResearchValidationTest` (Validate und IsValid) und `ResearchResolutionTest` (NextTurn) in `Simulturn.Core.Test`; `RandomGamesWithResearch_ConserveMatter` läuft ohne Skip.

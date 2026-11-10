@@ -194,7 +194,7 @@ public static class StateInvariants
             if (command.Upgrade is Upgrade upgrade && requestedUpgrades.Add(upgrade))
             {
                 int level = player.UpgradeLevels.GetValueOrDefault(upgrade);
-                ImmutableArray<IUpgrade> levels = settings.Upgrades[upgrade];
+                ImmutableArray<IUpgradeLevel> levels = settings.Upgrades[upgrade];
                 if (level < levels.Length)
                 {
                     cost += levels[level].Cost;

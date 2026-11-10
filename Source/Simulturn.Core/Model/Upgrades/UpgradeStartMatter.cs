@@ -1,6 +1,6 @@
 ﻿namespace Simulturn.Core.Model.Upgrades;
 
-public readonly struct UpgradeStartMatter : IUpgrade
+public readonly struct UpgradeStartMatter : IUpgradeLevel
 {
     public short Cost { get; init; }
     public byte Duration { get; init; }

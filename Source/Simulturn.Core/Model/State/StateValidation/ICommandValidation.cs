@@ -37,11 +37,11 @@ public record UpgradeRequestedOnMultipleHexagons(string PlayerId, Hexagon Hexago
 /// <summary>
 /// The hexagon hosts a pending research. A hexagon researches one upgrade at a time.
 /// </summary>
-public record HexagonAlreadyResearching(string PlayerId, Hexagon Hexagon, Upgrade Upgrade, Upgrade PendingUpgrade) : ICommandValidation;
+public record HexagonAlreadyResearching(string PlayerId, Hexagon Hexagon, Upgrade Upgrade, Upgrade UpgradeInResearch) : ICommandValidation;
 
 public record UpgradeNotResearchableOnHexagon(string PlayerId, Hexagon Hexagon, Upgrade Upgrade) : ICommandValidation, IPlayerStateValidation;
 
-public record UpgradeRequiresDot(string PlayerId, Hexagon Hexagon, Upgrade Upgrade) : ICommandValidation, IPlayerStateValidation;
+public record ResearchRequiresDot(string PlayerId, Hexagon Hexagon, Upgrade Upgrade) : ICommandValidation, IPlayerStateValidation;
 
 /// <summary>
 /// The movements take the last dot off a hexagon with a pending or requested research. A research

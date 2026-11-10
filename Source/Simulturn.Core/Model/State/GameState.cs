@@ -590,7 +590,7 @@ public record GameState
                 }
                 if (!playerState.Armies.TryGetValue(hexagon, out var army) || army.Dot <= 0)
                 {
-                    yield return new UpgradeRequiresDot(playerId, hexagon, research.Upgrade);
+                    yield return new ResearchRequiresDot(playerId, hexagon, research.Upgrade);
                 }
             }
 
@@ -601,7 +601,7 @@ public record GameState
                 byte pendingLevels = (byte)playerState.Researches.Values.Count(research => research.Upgrade == upgrade);
                 if (pendingLevels > 1)
                 {
-                    yield return new UpgradeResearchedOnMultipleHexagons(playerId, upgrade, pendingLevels);
+                    yield return new UpgradeInResearchOnMultipleHexagons(playerId, upgrade, pendingLevels);
                 }
                 int maxLevel = GameSettings.MaxUpgradeLevel(upgrade);
                 if (completedLevels + pendingLevels > maxLevel)
@@ -633,7 +633,7 @@ public record GameState
 
         // Researches: one pending research per upgrade and per hexagon (work item research-cost-and-duration).
         // Counting the requests per upgrade keeps the result independent of the command order.
-        var pendingUpgrades = playerState.PendingUpgrades();
+        var upgradesInResearch = playerState.UpgradesInResearch();
         var requestedUpgradeCounts = commands.Values
             .Where(command => command.Upgrade is not null)
             .GroupBy(command => command.Upgrade!.Value)
@@ -706,7 +706,7 @@ public record GameState
                 {
                     yield return new UpgradeExceedsAvailableLevel(playerId, hexagon, upgrade, completedLevels, maxLevel);
                 }
-                if (pendingUpgrades.Contains(upgrade))
+                if (upgradesInResearch.Contains(upgrade))
                 {
                     yield return new UpgradeAlreadyInResearch(playerId, hexagon, upgrade);
                 }
@@ -720,7 +720,7 @@ public record GameState
                 }
                 if (!playerState.Armies.TryGetValue(hexagon, out var army) || army.Dot <= 0)
                 {
-                    yield return new UpgradeRequiresDot(playerId, hexagon, upgrade);
+                    yield return new ResearchRequiresDot(playerId, hexagon, upgrade);
                 }
             }
 

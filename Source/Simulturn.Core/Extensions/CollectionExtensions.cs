@@ -15,7 +15,7 @@ public static class CollectionExtensions
         return armies.Aggregate(new Compound(), (acc, compound) => acc + compound);
     }
 
-    public static ImmutableDictionary<Upgrade, ImmutableArray<IUpgrade>> ToDictionary(this IEnumerable<IUpgrade> upgrades)
+    public static ImmutableDictionary<Upgrade, ImmutableArray<IUpgradeLevel>> ToDictionary(this IEnumerable<IUpgradeLevel> upgrades)
     {
         return upgrades
             .GroupBy(u => u.Upgrade)

@@ -29,4 +29,4 @@ public record UpgradeLevelsExceedTable(string PlayerId, Upgrade Upgrade, byte Co
 /// The upgrade is pending on more than one hexagon. Researches never stack, so such a state cannot
 /// be reached through validated commands.
 /// </summary>
-public record UpgradeResearchedOnMultipleHexagons(string PlayerId, Upgrade Upgrade, byte PendingCount) : IPlayerStateValidation;
+public record UpgradeInResearchOnMultipleHexagons(string PlayerId, Upgrade Upgrade, byte PendingCount) : IPlayerStateValidation;

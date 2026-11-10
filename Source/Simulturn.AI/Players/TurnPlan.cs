@@ -231,7 +231,7 @@ internal sealed class TurnPlan
         {
             return false;
         }
-        if (playerState.PendingUpgrades().Contains(upgrade))
+        if (playerState.UpgradesInResearch().Contains(upgrade))
         {
             return false;
         }

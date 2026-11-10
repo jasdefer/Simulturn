@@ -44,7 +44,7 @@ public record PlayerState
     /// The upgrades with a pending research. The next level of such an upgrade can only be
     /// started once the pending research has completed.
     /// </summary>
-    public ImmutableHashSet<Upgrade> PendingUpgrades()
+    public ImmutableHashSet<Upgrade> UpgradesInResearch()
     {
         return Researches.Values.Select(research => research.Upgrade).ToImmutableHashSet();
     }
