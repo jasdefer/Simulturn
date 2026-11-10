@@ -47,9 +47,7 @@ public sealed class RandomPlayer : IArtificialPlayer
         // Dots occupied by pending constructions must stay on their hexagon;
         // a pending research requires at least one dot to remain.
         Dictionary<Hexagon, int> constructionDots = GetPendingConstructionDots(playerState);
-        HashSet<Hexagon> researchHexagons = playerState.Researches
-            .SelectMany(x => x.Value.Keys)
-            .ToHashSet();
+        HashSet<Hexagon> researchHexagons = playerState.Researches.Keys.ToHashSet();
 
         (Hexagon Hexagon, Upgrade Upgrade)? research = TryPickResearch(playerGameState, armyHexagons, ref matter);
         if (research is not null)
@@ -76,7 +74,7 @@ public sealed class RandomPlayer : IArtificialPlayer
                 Construction = constructions.GetValueOrDefault(hexagon),
                 Training = trainings.GetValueOrDefault(hexagon),
                 MovementCommands = movements.TryGetValue(hexagon, out var movement) ? [movement] : [],
-                Upgrade = research?.Hexagon == hexagon ? research.Value.Upgrade : null
+                Research = research?.Hexagon == hexagon ? research.Value.Upgrade : null
             };
         }
         return commands;
@@ -93,27 +91,24 @@ public sealed class RandomPlayer : IArtificialPlayer
         PlayerState playerState = playerGameState.PlayerState;
         GameSettings gameSettings = playerGameState.GameSettings;
 
-        // Researching an upgrade that is already in progress could exceed the available level on completion.
-        HashSet<Upgrade> pendingUpgrades = playerState.Researches
-            .SelectMany(x => x.Value.Values)
-            .ToHashSet();
+        // One pending research per upgrade and per hexagon, as the engine demands.
+        var upgradesInResearch = playerState.UpgradesInResearch();
 
         List<(Hexagon Hexagon, Upgrade Upgrade, short Cost)> candidates = [];
         foreach (Hexagon hexagon in armyHexagons)
         {
-            if (playerState.Armies[hexagon].Dot <= 0)
+            if (playerState.Armies[hexagon].Dot <= 0 || playerState.Researches.ContainsKey(hexagon))
             {
                 continue;
             }
-            foreach (Upgrade upgrade in gameSettings.HexagonSettings[hexagon].ResearchableUpgrades.Distinct().OrderBy(x => x))
+            foreach (Upgrade upgrade in gameSettings.HexagonSettings[hexagon].ResearchableUpgrades.OrderBy(x => x))
             {
-                if (pendingUpgrades.Contains(upgrade))
+                if (upgradesInResearch.Contains(upgrade))
                 {
                     continue;
                 }
                 byte currentLevel = playerState.UpgradeLevels.GetValueOrDefault(upgrade);
-                int availableLevels = gameSettings.HexagonSettings[hexagon].ResearchableUpgrades.Count(x => x == upgrade);
-                if (currentLevel >= availableLevels || currentLevel >= gameSettings.Upgrades[upgrade].Length)
+                if (currentLevel >= gameSettings.MaxUpgradeLevel(upgrade))
                 {
                     continue;
                 }

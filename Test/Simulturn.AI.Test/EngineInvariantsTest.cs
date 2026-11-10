@@ -1,8 +1,8 @@
-using Simulturn.AI.Evaluation;
 using Simulturn.AI.Players;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
+using Simulturn.Core.Setup;
 using Simulturn.Test.Common;
 
 namespace Simulturn.AI.Test;
@@ -26,7 +26,7 @@ public sealed class EngineInvariantsTest
     ];
 
     /// <summary>
-    /// A small disc with matter everywhere and upgrades in the center, plus the arena presets.
+    /// A small disc with matter everywhere and upgrades in the center, plus the map types of the generator.
     /// </summary>
     private static IEnumerable<(string Name, GameSettings Settings)> MapPresets()
     {
@@ -34,9 +34,9 @@ public sealed class EngineInvariantsTest
             .SetItem(new Hexagon(-2, 0), Maps.Start("Player01"))
             .SetItem(new Hexagon(2, 0), Maps.Start("Player02"))
             .SetItem(new Hexagon(0, 0), Maps.Hexagon(1000).WithResearch(Upgrade.DotUpgrade, Upgrade.DotUpgrade))));
-        yield return ("HexDisc", GameSettingsFactory.HexDisc());
-        yield return ("NoExpansion", GameSettingsFactory.NoExpansion());
-        yield return ("RichExpansions", GameSettingsFactory.RichExpansions());
+        yield return ("Open", DefaultSettings.Create(MapGeneratorOptions.Open));
+        yield return ("HomeOnly", DefaultSettings.Create(MapGeneratorOptions.HomeOnly));
+        yield return ("Expansions", DefaultSettings.Create(MapGeneratorOptions.Expansions));
     }
 
     private static Dictionary<string, IArtificialPlayer> RandomPlayers(int seed, Func<RandomPlayerOptions, RandomPlayerOptions>? adjust = null)
@@ -103,7 +103,6 @@ public sealed class EngineInvariantsTest
     }
 
     [Test]
-    [Skip("research-cost-and-duration: NextTurn never deducts the cost of a research.")]
     public void RandomGamesWithResearch_ConserveMatter()
     {
         foreach ((string map, GameSettings gameSettings) in MapPresets())

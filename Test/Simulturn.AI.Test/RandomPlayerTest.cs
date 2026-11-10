@@ -1,6 +1,7 @@
 using Simulturn.AI.Players;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.State;
+using Simulturn.Core.Setup;
 using Simulturn.Test.Common;
 
 namespace Simulturn.AI.Test;

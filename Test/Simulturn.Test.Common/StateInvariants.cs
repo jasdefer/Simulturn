@@ -184,14 +184,17 @@ public static class StateInvariants
         GameSettings settings = state.GameSettings;
         PlayerState player = state.PlayerStates[playerId];
         int cost = 0;
+        // Every requested upgrade pays the level after the completed ones. Researches never stack,
+        // so an upgrade requested twice is invalid and counted once, like in Validate.
+        HashSet<Upgrade> requestedUpgrades = [];
         foreach (Command command in commands.Values)
         {
             cost += command.Training * settings.ArmyCost;
             cost += command.Construction * settings.CompoundCost;
-            if (command.Upgrade is Upgrade upgrade)
+            if (command.Research is Upgrade upgrade && requestedUpgrades.Add(upgrade))
             {
-                byte level = player.UpgradeLevels.GetValueOrDefault(upgrade);
-                ImmutableArray<IUpgrade> levels = settings.Upgrades[upgrade];
+                int level = player.UpgradeLevels.GetValueOrDefault(upgrade);
+                ImmutableArray<IUpgradeLevel> levels = settings.Upgrades[upgrade];
                 if (level < levels.Length)
                 {
                     cost += levels[level].Cost;

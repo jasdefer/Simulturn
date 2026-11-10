@@ -3,6 +3,7 @@ using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
 using Simulturn.Core.Model.State.StateValidation;
+using Simulturn.Core.Setup;
 using Simulturn.Test.Common;
 
 namespace Simulturn.Core.Test.State;
@@ -82,13 +83,13 @@ public sealed class PendingQueueTest
         var state = new GameState(_gameSettings);
 
         // Act
-        var turn1 = state.PlayTurn(Player1(new Command() { Upgrade = Upgrade.DotUpgrade }));
+        var turn1 = state.PlayTurn(Player1(new Command() { Research = Upgrade.DotUpgrade }));
         var turn2 = turn1.PlayEmptyTurn();
         var turn3 = turn2.PlayEmptyTurn();
 
         // Assert
-        turn1.PlayerStates["Player01"].Researches.ShouldHaveSingleItem().Key.ShouldBe((ushort)2);
-        turn2.PlayerStates["Player01"].Researches.ShouldHaveSingleItem().Key.ShouldBe((ushort)2);
+        turn1.PlayerStates["Player01"].Researches.ShouldHaveSingleItem().Value.CompletionTurn.ShouldBe((ushort)2);
+        turn2.PlayerStates["Player01"].Researches.ShouldHaveSingleItem().Value.CompletionTurn.ShouldBe((ushort)2);
         turn2.PlayerStates["Player01"].UpgradeLevels.ShouldBeEmpty();
         turn3.PlayerStates["Player01"].Researches.ShouldBeEmpty();
         turn3.PlayerStates["Player01"].UpgradeLevels[Upgrade.DotUpgrade].ShouldBe((byte)1);
@@ -129,8 +130,7 @@ public sealed class PendingQueueTest
     {
         var state = WithPlayer1(player => player with
         {
-            Researches = ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Upgrade>>.Empty
-                .Add(0, ImmutableDictionary<Hexagon, Upgrade>.Empty.Add(_start, Upgrade.DotUpgrade))
+            Researches = ImmutableDictionary<Hexagon, Research>.Empty.Add(_start, new Research(Upgrade.DotUpgrade, 0))
         });
 
         var validation = state.IsValid().ShouldHaveSingleItem().ShouldBeOfType<ExpiredResearch>();

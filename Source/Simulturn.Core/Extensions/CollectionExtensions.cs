@@ -16,9 +16,9 @@ public static class CollectionExtensions
         public Compound Sum() => compounds.Aggregate(new Compound(), (acc, compound) => acc + compound);
     }
 
-    extension(IEnumerable<IUpgrade> upgrades)
+    extension(IEnumerable<IUpgradeLevel> upgrades)
     {
-        public FrozenDictionary<Upgrade, ImmutableArray<IUpgrade>> ToDictionary() =>
+        public FrozenDictionary<Upgrade, ImmutableArray<IUpgradeLevel>> ToDictionary() =>
             upgrades
                 .GroupBy(u => u.Upgrade)
                 .ToFrozenDictionary(

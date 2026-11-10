@@ -65,15 +65,14 @@ Goal: `GameRunner` and `Arena` keep their contract, and the AI players have the 
 
 A test that fails because of a known, not yet fixed bug is written anyway and marked `[Skip("<work-item-id>: <reason>")]`. The fix removes the skip. This way the suite describes the intended behaviour, and the fix already has its test.
 
-Example: matter conservation fails in games with research today, because research costs nothing (`research-cost-and-duration`).
+Example: until `research-cost-and-duration` was fixed, matter conservation failed in games with research because research cost nothing. The invariant test carried the skip, the fix removed it.
 
 ## Projects
 
 ```
 Test/
   Simulturn.Test.Common/    class library, referenced by both test projects
-    TestSettings.cs         the standard rules (costs, durations, armor, ...) as one source
-    Maps.cs                 map builders: disc, line, start hexagons
+    TestSettings.cs         the standard rules for tests, delegates to DefaultSettings in Simulturn.Core
     StateInvariants.cs      the invariants of layer 3, also usable in scenario tests
     GameStateSnapshot.cs    canonical string of a state for determinism checks
     GameStateExtensions.cs  PlayTurn: validate the commands, resolve the turn, check the state invariants
@@ -82,13 +81,13 @@ Test/
   Simulturn.Core.Console/   not a test, manual play
 ```
 
-`Simulturn.Test.Common` references `Simulturn.Core` and Shouldly, never `Simulturn.AI`. Production code gets no test dependency. The settings copies in `ConsoleGameSettings` and `GameSettingsFactory` stay until the item `map-generator-and-default-settings` creates a shared source in production code. `TestSettings` then delegates to that source.
+`Simulturn.Test.Common` references `Simulturn.Core` and Shouldly, never `Simulturn.AI`. Production code gets no test dependency. The standard rules and the maps live in production code, in `Simulturn.Core/Setup`: `DefaultSettings` is the only copy of the rules, `Maps` builds fixed maps by hand, `MapGenerator` builds fair maps from `MapGeneratorOptions` (types `Open`, `HomeOnly`, `Expansions`). `TestSettings` delegates to `DefaultSettings`; console, arena and tests share that source.
 
 ## Conventions
 
 - TUnit and Shouldly. No `Retry`.
 - Test names: `Scenario_Expectation`, for example `TrainingWithoutBuilding_YieldsMissingBuildingForTraining`.
-- A test builds its state with `TestSettings` and `Maps`, changes it only through `NextTurn` (via `PlayTurn`), and validates commands before resolving them, unless the test checks the opposite.
+- A test builds its state with `TestSettings` and `Maps` (a small hand-built map for layers 1 and 2) or with `DefaultSettings.Create(MapGeneratorOptions)` (a generated map for layers 3 and 4), changes it only through `NextTurn` (via `PlayTurn`), and validates commands before resolving them, unless the test checks the opposite.
 - A test asserts validation types exactly (`ShouldBeOfType<...>`), not just "not empty".
 
 ## Commands

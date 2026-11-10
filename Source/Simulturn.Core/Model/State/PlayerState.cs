@@ -11,7 +11,11 @@ public sealed record PlayerState
     public required ImmutableDictionary<Hexagon, Compound> Compounds { get; init; }
     public required Trainings Trainings { get; init; }
     public required Constructions Constructions { get; init; }
-    public required ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Upgrade>> Researches { get; init; }
+    /// <summary>
+    /// The pending researches, keyed by hexagon. A hexagon hosts at most one research, and an
+    /// upgrade is researched on at most one hexagon at a time (work item research-cost-and-duration).
+    /// </summary>
+    public required ImmutableDictionary<Hexagon, Research> Researches { get; init; }
     public required ImmutableDictionary<Hexagon, Visibility> Visibilities { get; init; }
     /// <summary>
     /// The losses of the player in the current turn.
@@ -35,6 +39,15 @@ public sealed record PlayerState
     /// armies (as they entered the fight, before losses).
     /// </summary>
     public ImmutableDictionary<Hexagon, ImmutableDictionary<string, Army>> RevealedArmies { get; init; } = ImmutableDictionary<Hexagon, ImmutableDictionary<string, Army>>.Empty;
+
+    /// <summary>
+    /// The upgrades with a pending research. The next level of such an upgrade can only be
+    /// started once the pending research has completed.
+    /// </summary>
+    public ImmutableHashSet<Upgrade> UpgradesInResearch()
+    {
+        return Researches.Values.Select(research => research.Upgrade).ToImmutableHashSet();
+    }
 
     public Army ExponentBonusFromUpgrades(GameSettings gameSettings)
     {

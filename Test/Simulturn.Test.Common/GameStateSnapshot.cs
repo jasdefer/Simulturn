@@ -28,7 +28,7 @@ public static class GameStateSnapshot
             AppendPerHexagon(text, "  Visibility", player.Visibilities);
             AppendPerTurn(text, "  Training", player.Trainings);
             AppendPerTurn(text, "  Construction", player.Constructions);
-            AppendPerTurn(text, "  Research", player.Researches);
+            AppendPerHexagon(text, "  Research", player.Researches);
             foreach ((Upgrade upgrade, byte level) in player.UpgradeLevels.OrderBy(x => x.Key))
             {
                 text.Append(CultureInfo.InvariantCulture, $"  Upgrade {upgrade} {level}\n");

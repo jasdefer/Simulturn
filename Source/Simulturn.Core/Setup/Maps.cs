@@ -1,16 +1,26 @@
 using Simulturn.Core.Model;
 
-namespace Simulturn.Test.Common;
+namespace Simulturn.Core.Setup;
 
 /// <summary>
-/// Builds the hexagon settings of a test map. Start with <see cref="Disc"/> or <see cref="Line"/>
+/// Builds fixed maps by hand, without randomness. Start with <see cref="Disc"/> or <see cref="Line"/>
 /// and place players with <c>SetItem(hexagon, Maps.Start(...))</c>.
+/// For maps from a few parameters and a seed see <see cref="MapGenerator"/>.
 /// </summary>
 public static class Maps
 {
     public static readonly Army StartArmy = new() { Dot = 5 };
     public static readonly Compound StartCompound = new() { Plane = 1 };
     public static readonly Army MaxHarvestingUnits = new() { Dot = 12 };
+
+    /// <summary>
+    /// The standard player ids "Player01", "Player02", ... in seat order.
+    /// </summary>
+    public static ImmutableArray<string> PlayerIds(int count)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+        return [.. Enumerable.Range(1, count).Select(x => $"Player{x:00}")];
+    }
 
     /// <summary>
     /// A plain hexagon. Without matter it yields no income, no matter how many dots sit on it.
@@ -45,19 +55,7 @@ public static class Maps
     /// </summary>
     public static ImmutableDictionary<Hexagon, HexagonSettings> Disc(int radius, int matter = 0)
     {
-        var builder = ImmutableDictionary.CreateBuilder<Hexagon, HexagonSettings>();
-        for (short x = (short)-radius; x <= radius; x++)
-        {
-            for (short y = (short)-radius; y <= radius; y++)
-            {
-                if (Math.Abs(x + y) > radius)
-                {
-                    continue;
-                }
-                builder[new Hexagon(x, y)] = Hexagon(matter);
-            }
-        }
-        return builder.ToImmutable();
+        return Model.Hexagon.Disc(radius).ToImmutableDictionary(x => x, _ => Hexagon(matter));
     }
 
     /// <summary>

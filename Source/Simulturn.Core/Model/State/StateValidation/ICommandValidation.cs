@@ -17,6 +17,35 @@ public sealed record MissingDotsForConstruction(string PlayerId, Hexagon Hexagon
 
 public sealed record MissingArmyForMovement(string PlayerId, Hexagon Hexagon, Unit Unit, short MovingUnits, short AvailableUnits) : ICommandValidation;
 
-public sealed record UpgradeExceedsAvailableLevel(string PlayerId, Hexagon Hexagon, Upgrade Upgrade, byte CurrentLevel, int AvailableLevel) : ICommandValidation, IPlayerStateValidation;
+/// <summary>
+/// Every level of the upgrade defined in <see cref="GameSettings.Upgrades"/> is already completed.
+/// </summary>
+public sealed record UpgradeExceedsAvailableLevel(string PlayerId, Hexagon Hexagon, Upgrade Upgrade, byte CompletedLevels, int MaxLevel) : ICommandValidation;
 
-public sealed record UpgradeRequiresDot(string PlayerId, Hexagon Hexagon, Upgrade Upgrade) : ICommandValidation, IPlayerStateValidation;
+/// <summary>
+/// A research of the upgrade is pending. The next level can only be started once it has completed;
+/// researches never stack, on no hexagon.
+/// </summary>
+public sealed record UpgradeAlreadyInResearch(string PlayerId, Hexagon Hexagon, Upgrade Upgrade) : ICommandValidation;
+
+/// <summary>
+/// The upgrade is requested on more than one hexagon this turn. Reported for every research command
+/// of that upgrade, so the result does not depend on the order of the commands.
+/// </summary>
+public sealed record UpgradeRequestedOnMultipleHexagons(string PlayerId, Hexagon Hexagon, Upgrade Upgrade, byte RequestedCount) : ICommandValidation;
+
+/// <summary>
+/// The hexagon hosts a pending research. A hexagon researches one upgrade at a time.
+/// </summary>
+public sealed record HexagonAlreadyResearching(string PlayerId, Hexagon Hexagon, Upgrade Upgrade, Upgrade UpgradeInResearch) : ICommandValidation;
+
+public sealed record UpgradeNotResearchableOnHexagon(string PlayerId, Hexagon Hexagon, Upgrade Upgrade) : ICommandValidation, IPlayerStateValidation;
+
+public sealed record ResearchRequiresDot(string PlayerId, Hexagon Hexagon, Upgrade Upgrade) : ICommandValidation, IPlayerStateValidation;
+
+/// <summary>
+/// The movements take the last dot off a hexagon with a pending or requested research. A research
+/// needs a dot on its hexagon until it completes; without one it is canceled and the matter is lost,
+/// so leaving voluntarily is refused.
+/// </summary>
+public sealed record MovementLeavesResearchWithoutDot(string PlayerId, Hexagon Hexagon, Upgrade Upgrade) : ICommandValidation;

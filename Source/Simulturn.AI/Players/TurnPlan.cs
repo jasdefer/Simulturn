@@ -52,6 +52,12 @@ internal sealed class TurnPlan
                 _anchoredDots[hexagon] = _anchoredDots.GetValueOrDefault(hexagon) + compound.Sum();
             }
         }
+        foreach (Hexagon hexagon in playerState.Researches.Keys)
+        {
+            // A pending research keeps one dot on its hexagon: the engine refuses to move the last
+            // dot away and cancels the research if it dies.
+            _anchoredDots[hexagon] = Math.Max(_anchoredDots.GetValueOrDefault(hexagon), 1);
+        }
         foreach ((ushort completionTurn, var trainingsPerHexagon) in playerState.Trainings)
         {
             foreach (Unit unit in Enum.GetValues<Unit>())
@@ -202,13 +208,13 @@ internal sealed class TurnPlan
 
     /// <summary>
     /// Researches an upgrade on the hexagon if it is affordable, a level is available there,
-    /// no research of the same upgrade is pending and a dot is present (one dot is anchored
-    /// to the hexagon, because the engine requires it for the whole research duration).
+    /// neither the upgrade nor the hexagon has a pending research and a dot is present (one dot
+    /// is anchored to the hexagon, because the engine requires it for the whole research duration).
     /// At most one research is issued per turn. Returns whether the research was issued.
     /// </summary>
     public bool Research(Hexagon hexagon, Upgrade upgrade)
     {
-        if (_research is not null)
+        if (_research is not null || View.PlayerState.Researches.ContainsKey(hexagon))
         {
             return false;
         }
@@ -220,15 +226,12 @@ internal sealed class TurnPlan
             return false;
         }
         byte currentLevel = playerState.UpgradeLevels.GetValueOrDefault(upgrade);
-        int availableLevels = gameSettings.HexagonSettings[hexagon].ResearchableUpgrades.Count(x => x == upgrade);
-        if (currentLevel >= availableLevels || currentLevel >= gameSettings.Upgrades[upgrade].Length)
+        if (!gameSettings.HexagonSettings[hexagon].ResearchableUpgrades.Contains(upgrade) ||
+            currentLevel >= gameSettings.MaxUpgradeLevel(upgrade))
         {
             return false;
         }
-        bool pending = playerState.Researches
-            .SelectMany(x => x.Value.Values)
-            .Contains(upgrade);
-        if (pending)
+        if (playerState.UpgradesInResearch().Contains(upgrade))
         {
             return false;
         }
@@ -283,7 +286,7 @@ internal sealed class TurnPlan
                 MovementCommands = _movements.TryGetValue(hexagon, out var movements)
                     ? [.. movements]
                     : [],
-                Upgrade = _research?.Hexagon == hexagon ? _research.Value.Upgrade : null
+                Research = _research?.Hexagon == hexagon ? _research.Value.Upgrade : null
             };
         }
         return commands;

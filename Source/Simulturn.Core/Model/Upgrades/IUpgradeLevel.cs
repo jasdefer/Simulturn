@@ -1,6 +1,6 @@
 ﻿namespace Simulturn.Core.Model.Upgrades;
 
-public interface IUpgrade
+public interface IUpgradeLevel
 {
     short Cost { get; }
     byte Duration { get; }

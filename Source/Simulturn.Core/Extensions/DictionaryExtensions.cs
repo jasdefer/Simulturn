@@ -63,27 +63,6 @@ internal static class DictionaryExtensions
     extension<TKey1, TKey2, TValue>(ImmutableDictionary<TKey1, ImmutableDictionary<TKey2, TValue>.Builder>.Builder dict)
         where TKey1 : notnull
         where TKey2 : notnull
-    {
-        public void MergeOrOverwrite(ImmutableDictionary<TKey1, ImmutableDictionary<TKey2, TValue>.Builder>.Builder other)
-        {
-            foreach (var kvp in other)
-            {
-                if (!dict.TryGetValue(kvp.Key, out var innerDict))
-                {
-                    dict[kvp.Key] = kvp.Value;
-                    continue;
-                }
-                foreach (var innerKvp in kvp.Value)
-                {
-                    innerDict[innerKvp.Key] = innerKvp.Value;
-                }
-            }
-        }
-    }
-
-    extension<TKey1, TKey2, TValue>(ImmutableDictionary<TKey1, ImmutableDictionary<TKey2, TValue>.Builder>.Builder dict)
-        where TKey1 : notnull
-        where TKey2 : notnull
         where TValue : IAdditionOperators<TValue, TValue, TValue>
     {
         public void Merge(ImmutableDictionary<TKey1, ImmutableDictionary<TKey2, TValue>.Builder>.Builder other)

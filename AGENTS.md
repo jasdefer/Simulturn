@@ -76,6 +76,7 @@ At generation time, `dotnet build Simulturn.sln` and
 ## Project Structure Expectations
 - Core game model types live in `Source/Simulturn.Core/Model/`
 - Game state transition logic lives in `Source/Simulturn.Core/Model/State/GameState.cs`
+- Standard rules and maps live in `Source/Simulturn.Core/Setup/`: `DefaultSettings` (the only copy of the rules), `Maps` (fixed maps), `MapGenerator` (seeded, symmetric maps)
 - Mutable transition helpers use builders in `PlayerStateBuilder`
 - Cross-cutting helpers are in `Source/Simulturn.Core/Extensions/`
 - Global aliases/usings are in `Source/Simulturn.Core/GlobalUsings.cs`
@@ -142,7 +143,7 @@ Follow local conventions in touched files first.
 - Follow `docs/test-strategy.md`: pick the layer, reuse `Simulturn.Test.Common`, no new settings copies
 - Use TUnit attributes (`[Test]`, hooks) and Shouldly assertions
 - Keep Arrange/Act/Assert structure, especially in larger scenarios
-- Reuse helper setup methods for repeated game state construction
+- Reuse helper setup methods for repeated game state construction; never copy the game settings, start from `DefaultSettings`
 - Assert exact outcomes and validation types when behavior is strict
 - For new game mechanics, add both happy-path and invalid-command tests
 

@@ -1,6 +1,7 @@
 using Simulturn.AI.Evaluation;
 using Simulturn.AI.Players;
 using Simulturn.Core.Model.State;
+using Simulturn.Core.Setup;
 
 namespace Simulturn.AI.Test;
 
@@ -9,7 +10,7 @@ public sealed class TacticianPlayerTest
     [Test]
     public void ProducesValidCommandsFromTheStart()
     {
-        var gameSettings = GameSettingsFactory.HexDisc();
+        var gameSettings = DefaultSettings.Create(MapGeneratorOptions.Open);
         var gameState = new GameState(gameSettings);
         var player = new TacticianPlayer();
 
@@ -22,7 +23,7 @@ public sealed class TacticianPlayerTest
     [Test]
     public void DefeatsTheIdlePlayer()
     {
-        var gameSettings = GameSettingsFactory.HexDisc();
+        var gameSettings = DefaultSettings.Create(MapGeneratorOptions.Open);
         var players = new Dictionary<string, IArtificialPlayer>()
         {
             { "Player01", new TacticianPlayer() },
@@ -38,7 +39,7 @@ public sealed class TacticianPlayerTest
     [Test]
     public void DefeatsTheCommanderThroughCounterComposition()
     {
-        var gameSettings = GameSettingsFactory.HexDisc();
+        var gameSettings = DefaultSettings.Create(MapGeneratorOptions.Open);
         var tactician = new ArenaPlayer()
         {
             Name = "Tactician",

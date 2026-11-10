@@ -18,3 +18,15 @@ public sealed record NegativeConstructionCount(string PlayerId, Hexagon Hexagon,
 public sealed record ExpiredTraining(string PlayerId, ushort CompletionTurn) : IPlayerStateValidation;
 public sealed record ExpiredConstruction(string PlayerId, ushort CompletionTurn) : IPlayerStateValidation;
 public sealed record ExpiredResearch(string PlayerId, ushort CompletionTurn) : IPlayerStateValidation;
+
+/// <summary>
+/// The completed and pending levels of an upgrade exceed the levels defined in
+/// <see cref="GameSettings.Upgrades"/>. Such a state cannot be reached through validated commands.
+/// </summary>
+public sealed record UpgradeLevelsExceedTable(string PlayerId, Upgrade Upgrade, byte CompletedLevels, byte PendingLevels, int MaxLevel) : IPlayerStateValidation;
+
+/// <summary>
+/// The upgrade is pending on more than one hexagon. Researches never stack, so such a state cannot
+/// be reached through validated commands.
+/// </summary>
+public sealed record UpgradeInResearchOnMultipleHexagons(string PlayerId, Upgrade Upgrade, byte PendingCount) : IPlayerStateValidation;

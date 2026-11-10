@@ -3,11 +3,18 @@ using Simulturn.Core.Helper;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
+using Simulturn.Core.Setup;
 using System.Collections.Immutable;
 
 Console.WriteLine("Hello, Simulturn World!");
 
-GameState gameState = new(ConsoleGameSettings.DefaultGame);
+// Two players on opposite sides of a 7 hexagon disc, all matter at home, research in the center.
+GameState gameState = new(DefaultSettings.Create(MapGeneratorOptions.Open with
+{
+    Radius = 1,
+    HexagonMatter = 0,
+    StartHexagonMatter = 10000
+}));
 string stateString = Printer.PrintState(gameState, Printer.GetFullInfo);
 File.WriteAllText($"Turn{gameState.Turn}.svg", stateString);
 File.WriteAllText($"CurrentTurn.svg", stateString);

@@ -33,4 +33,17 @@ public static class GameStateExtensions
     {
         return state.PlayTurn(new Dictionary<string, Dictionary<Hexagon, Command>>());
     }
+
+    /// <summary>
+    /// Resolves empty turns until the player has no pending research, at most ten.
+    /// </summary>
+    public static GameState PlayUntilResearchesComplete(this GameState state, string playerId)
+    {
+        for (int turn = 0; turn < 10 && !state.PlayerStates[playerId].Researches.IsEmpty; turn++)
+        {
+            state = state.PlayEmptyTurn();
+        }
+        state.PlayerStates[playerId].Researches.ShouldBeEmpty($"The researches of {playerId} did not complete within ten turns.");
+        return state;
+    }
 }

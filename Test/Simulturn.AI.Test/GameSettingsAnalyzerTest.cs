@@ -1,6 +1,6 @@
 using Simulturn.AI.Analysis;
-using Simulturn.AI.Evaluation;
 using Simulturn.Core.Model;
+using Simulturn.Core.Setup;
 
 namespace Simulturn.AI.Test;
 
@@ -9,7 +9,7 @@ public sealed class GameSettingsAnalyzerTest
     [Test]
     public void Analyze_DerivesRolesFromDefaultSettings()
     {
-        var gameSettings = GameSettingsFactory.HexDisc();
+        var gameSettings = DefaultSettings.Create(MapGeneratorOptions.Open);
 
         var analysis = GameSettingsAnalyzer.Analyze(gameSettings);
 

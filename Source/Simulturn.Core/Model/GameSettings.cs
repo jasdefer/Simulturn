@@ -28,8 +28,18 @@ public sealed record GameSettings
     public required Compound Armor { get; init; }
     public required FrozenDictionary<Hexagon, HexagonSettings> HexagonSettings { get; init; }
     public required FrozenDictionary<string, ImmutableArray<Upgrade>> StartUpgrades { get; init; }
-    public required FrozenDictionary<Upgrade, ImmutableArray<IUpgrade>> Upgrades { get; init; }
+    public required FrozenDictionary<Upgrade, ImmutableArray<IUpgradeLevel>> Upgrades { get; init; }
     public int Seed { get; init; }
+
+    /// <summary>
+    /// The number of levels defined for the upgrade in <see cref="Upgrades"/>. An upgrade without
+    /// a table has no levels and can never be researched, no matter which hexagon offers it.
+    /// </summary>
+    public int MaxUpgradeLevel(Upgrade upgrade)
+    {
+        return Upgrades.TryGetValue(upgrade, out var levels) ? levels.Length : 0;
+    }
+
     public static Building TrainingBuilding(Unit unit) => unit switch
     {
         Unit.Dot => Building.Plane,
