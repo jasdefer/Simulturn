@@ -1,5 +1,6 @@
 using Simulturn.AI.Evaluation;
 using Simulturn.AI.Players;
+using Simulturn.Core.Setup;
 
 namespace Simulturn.AI.Test;
 
@@ -8,7 +9,7 @@ public class ArenaTest
     [Test]
     public void RoundRobin_PlaysAllPairingsInBothSeats()
     {
-        var gameSettings = GameSettingsFactory.HexDisc(radius: 2, matterPerHexagon: 500);
+        var gameSettings = DefaultSettings.Create(MapGeneratorOptions.Open with { Radius = 2, HexagonMatter = 500, StartHexagonMatter = 500 });
         List<ArenaPlayer> players =
         [
             new ArenaPlayer() { Name = "Idle A", CreatePlayer = _ => new IdlePlayer() },

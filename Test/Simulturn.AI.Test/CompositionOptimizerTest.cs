@@ -1,12 +1,12 @@
 using Simulturn.AI.Analysis;
-using Simulturn.AI.Evaluation;
 using Simulturn.Core.Model;
+using Simulturn.Core.Setup;
 
 namespace Simulturn.AI.Test;
 
 public class CompositionOptimizerTest
 {
-    private static readonly GameSettings _gameSettings = GameSettingsFactory.HexDisc();
+    private static readonly GameSettings _gameSettings = DefaultSettings.Create(MapGeneratorOptions.Open);
     private static readonly SettingsAnalysis _analysis = GameSettingsAnalyzer.Analyze(_gameSettings);
 
     [Test]

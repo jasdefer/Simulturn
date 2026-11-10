@@ -1,6 +1,7 @@
 using Simulturn.AI.Evaluation;
 using Simulturn.AI.Players;
 using Simulturn.Core.Model.State;
+using Simulturn.Core.Setup;
 
 namespace Simulturn.AI.Test;
 
@@ -9,7 +10,7 @@ public class StateMachinePlayerTest
     [Test]
     public void ProducesValidCommandsFromTheStart()
     {
-        var gameSettings = GameSettingsFactory.HexDisc();
+        var gameSettings = DefaultSettings.Create(MapGeneratorOptions.Open);
         var gameState = new GameState(gameSettings);
         var player = new StateMachinePlayer();
 
@@ -22,7 +23,7 @@ public class StateMachinePlayerTest
     [Test]
     public void DefeatsTheIdlePlayer()
     {
-        var gameSettings = GameSettingsFactory.HexDisc();
+        var gameSettings = DefaultSettings.Create(MapGeneratorOptions.Open);
         var players = new Dictionary<string, IArtificialPlayer>()
         {
             { "Player01", new StateMachinePlayer() },
@@ -39,7 +40,7 @@ public class StateMachinePlayerTest
     [Test]
     public void WinsMoreThan60PercentAgainstRandomPlayers()
     {
-        var gameSettings = GameSettingsFactory.HexDisc();
+        var gameSettings = DefaultSettings.Create(MapGeneratorOptions.Open);
         var stateMachine = new ArenaPlayer()
         {
             Name = "StateMachine",
