@@ -107,6 +107,7 @@ Follow local conventions in touched files first.
 - Data that is built once and read every turn (`GameSettings` maps) uses `FrozenDictionary`; state that changes per turn uses `ImmutableDictionary`
 - Accept `IReadOnlyDictionary`/`IReadOnlyList` as parameters, never store them as properties
 - Static enum mappings are switch expressions (`GameSettings.TrainingBuilding`), not dictionaries
+- Closed sets of result types are `union` types (C# 15): `CommandValidation` and `StateValidation` in `Model/State/Validation/`. A `switch` over them is exhaustive, the cases are plain sealed records without a shared interface. In tests, match the case through `.Value` (`validation.Value.ShouldBeOfType<...>()`), the union itself is a struct
 
 ### Naming conventions
 - Public types, methods, properties: PascalCase
@@ -123,7 +124,7 @@ Follow local conventions in touched files first.
 ### Control flow and validation
 - Use guard clauses and early `continue`/`return` to keep nesting shallow
 - Keep command validation (`Validate`) separate from state validity checks (`IsValid`)
-- Return domain validation objects for business-rule failures
+- Return domain validation objects for business-rule failures (cases of the `CommandValidation` union)
 - Throw exceptions only for invariant violations or impossible states
 
 ### Error handling

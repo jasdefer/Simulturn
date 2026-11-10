@@ -1,6 +1,6 @@
 using Simulturn.Core.Extensions;
 using Simulturn.Core.Model.Commands;
-using Simulturn.Core.Model.State.StateValidation;
+using Simulturn.Core.Model.State.Validation;
 
 namespace Simulturn.Core.Model.State;
 
@@ -462,7 +462,7 @@ public sealed record GameState
         return newConstructions;
     }
 
-    public IEnumerable<IStateValidation> IsValid()
+    public IEnumerable<StateValidation> IsValid()
     {
         // Remaining Matter
         foreach ((var hexagon, int remainingMatter) in RemainingMatter)
@@ -612,7 +612,7 @@ public sealed record GameState
         }
     }
 
-    public IEnumerable<ICommandValidation> Validate(string playerId, IReadOnlyDictionary<Hexagon, Command> commands)
+    public IEnumerable<CommandValidation> Validate(string playerId, IReadOnlyDictionary<Hexagon, Command> commands)
     {
         if (!PlayerIds.Contains(playerId))
         {

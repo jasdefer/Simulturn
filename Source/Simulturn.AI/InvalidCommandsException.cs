@@ -1,4 +1,4 @@
-using Simulturn.Core.Model.State.StateValidation;
+using Simulturn.Core.Model.State.Validation;
 
 namespace Simulturn.AI;
 
@@ -9,9 +9,9 @@ namespace Simulturn.AI;
 public sealed class InvalidCommandsException : Exception
 {
     public string PlayerId { get; }
-    public IReadOnlyList<ICommandValidation> Validations { get; }
+    public IReadOnlyList<CommandValidation> Validations { get; }
 
-    public InvalidCommandsException(string playerId, IReadOnlyList<ICommandValidation> validations)
+    public InvalidCommandsException(string playerId, IReadOnlyList<CommandValidation> validations)
         : base($"Player '{playerId}' issued invalid commands: {string.Join(", ", validations)}")
     {
         PlayerId = playerId;

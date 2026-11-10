@@ -25,7 +25,7 @@ Not planned: integration tests across process or system boundaries. There is no 
 
 Goal: every rule of the engine has at least one test that shows it in isolation.
 
-- Every `ICommandValidation` type has a test that produces exactly that validation, and a neighbour that shows when it does not appear.
+- Every case of the `CommandValidation` union has a test that produces exactly that validation, and a neighbour that shows when it does not appear.
 - Every phase of `NextTurn` (income, training, construction, research, movement, fight, building destruction, cancellation of constructions and trainings) has a test with exactly one turn.
 - One class per rule area, for example `ValidatePendingWorkTest`, `NextTurnIncomeTest`, `FightTest`. The existing `GameStateTest` is not split in one go. When an area is touched, its tests move into the matching class.
 

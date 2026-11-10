@@ -2,7 +2,7 @@ using Simulturn.Core.Extensions;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
-using Simulturn.Core.Model.State.StateValidation;
+using Simulturn.Core.Model.State.Validation;
 using Simulturn.Core.Setup;
 using Simulturn.Test.Common;
 using System.Collections.Immutable;
@@ -478,7 +478,7 @@ public sealed class GameStateTest
 
         var validations = gameState.Validate("Player01", commands["Player01"]);
 
-        validations.OfType<InsufficientMatter>().ShouldHaveSingleItem();
+        validations.Select(x => x.Value).OfType<InsufficientMatter>().ShouldHaveSingleItem();
     }
 
     [Test]
@@ -505,8 +505,7 @@ public sealed class GameStateTest
 
         // Act
         var validations = gameState.Validate(commands.Keys.Single(), commands.Single().Value);
-        (validations.ShouldHaveSingleItem()
-             as InsufficientSpace)!.Required.ShouldBe(9 + 9);
+        validations.ShouldHaveSingleItem().Value.ShouldBeOfType<InsufficientSpace>().Required.ShouldBe(9 + 9);
     }
 
     [Test]

@@ -2,7 +2,7 @@ using System.Collections.Immutable;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
-using Simulturn.Core.Model.State.StateValidation;
+using Simulturn.Core.Model.State.Validation;
 using Simulturn.Core.Setup;
 using Simulturn.Test.Common;
 
@@ -104,7 +104,7 @@ public sealed class PendingQueueTest
                 .Add(0, ImmutableDictionary<Hexagon, Army>.Empty.Add(_start, new Army() { Dot = 1 }))
         });
 
-        var validation = state.IsValid().ShouldHaveSingleItem().ShouldBeOfType<ExpiredTraining>();
+        var validation = state.IsValid().ShouldHaveSingleItem().Value.ShouldBeOfType<ExpiredTraining>();
 
         validation.PlayerId.ShouldBe("Player01");
         validation.CompletionTurn.ShouldBe((ushort)0);
@@ -119,7 +119,7 @@ public sealed class PendingQueueTest
                 .Add(0, ImmutableDictionary<Hexagon, Compound>.Empty.Add(_start, new Compound() { Axis = 1 }))
         });
 
-        var validation = state.IsValid().ShouldHaveSingleItem().ShouldBeOfType<ExpiredConstruction>();
+        var validation = state.IsValid().ShouldHaveSingleItem().Value.ShouldBeOfType<ExpiredConstruction>();
 
         validation.PlayerId.ShouldBe("Player01");
         validation.CompletionTurn.ShouldBe((ushort)0);
@@ -133,7 +133,7 @@ public sealed class PendingQueueTest
             Researches = ImmutableDictionary<Hexagon, Research>.Empty.Add(_start, new Research(Upgrade.DotUpgrade, 0))
         });
 
-        var validation = state.IsValid().ShouldHaveSingleItem().ShouldBeOfType<ExpiredResearch>();
+        var validation = state.IsValid().ShouldHaveSingleItem().Value.ShouldBeOfType<ExpiredResearch>();
 
         validation.PlayerId.ShouldBe("Player01");
         validation.CompletionTurn.ShouldBe((ushort)0);

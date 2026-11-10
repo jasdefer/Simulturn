@@ -2,7 +2,7 @@ using Simulturn.Core.Extensions;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
-using Simulturn.Core.Model.State.StateValidation;
+using Simulturn.Core.Model.State.Validation;
 using Simulturn.Core.Setup;
 using Simulturn.Test.Common;
 using System.Collections.Immutable;
@@ -50,7 +50,7 @@ public sealed class ResearchValidationTest
         return DictionaryExtensions.MovementsToDictionary([("Player01", _start, _center, new Army() { Dot = dots })]);
     }
 
-    private static List<ICommandValidation> Validate(GameState state, Dictionary<string, Dictionary<Hexagon, Command>> commands)
+    private static List<CommandValidation> Validate(GameState state, Dictionary<string, Dictionary<Hexagon, Command>> commands)
     {
         return state.Validate("Player01", commands["Player01"]).ToList();
     }
@@ -78,7 +78,7 @@ public sealed class ResearchValidationTest
         var validations = Validate(state, Research("Player01", _start));
 
         // Assert
-        var validation = validations.ShouldHaveSingleItem().ShouldBeOfType<UpgradeExceedsAvailableLevel>();
+        var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<UpgradeExceedsAvailableLevel>();
         validation.Hexagon.ShouldBe(_start);
         validation.Upgrade.ShouldBe(Upgrade.DotUpgrade);
         validation.CompletedLevels.ShouldBe((byte)2);
@@ -97,7 +97,7 @@ public sealed class ResearchValidationTest
         var validations = Validate(state, Research("Player01", _center));
 
         // Assert
-        var validation = validations.ShouldHaveSingleItem().ShouldBeOfType<UpgradeAlreadyInResearch>();
+        var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<UpgradeAlreadyInResearch>();
         validation.Hexagon.ShouldBe(_center);
         validation.Upgrade.ShouldBe(Upgrade.DotUpgrade);
     }
@@ -114,8 +114,8 @@ public sealed class ResearchValidationTest
 
         // Assert
         validations.Count.ShouldBe(2);
-        validations.ShouldContain(x => x is UpgradeAlreadyInResearch);
-        validations.ShouldContain(x => x is HexagonAlreadyResearching);
+        validations.ShouldContain(x => x.Value is UpgradeAlreadyInResearch);
+        validations.ShouldContain(x => x.Value is HexagonAlreadyResearching);
     }
 
     [Test]
@@ -131,9 +131,9 @@ public sealed class ResearchValidationTest
 
         // Assert: both commands are reported, and the order does not change the result.
         validationsStartFirst.Count.ShouldBe(2);
-        validationsStartFirst.ShouldAllBe(x => x is UpgradeRequestedOnMultipleHexagons);
-        validationsStartFirst.Cast<UpgradeRequestedOnMultipleHexagons>().Select(x => x.Hexagon).ShouldBe([_start, _center], ignoreOrder: true);
-        validationsStartFirst.Cast<UpgradeRequestedOnMultipleHexagons>().ShouldAllBe(x => x.Upgrade == Upgrade.DotUpgrade && x.RequestedCount == 2);
+        validationsStartFirst.ShouldAllBe(x => x.Value is UpgradeRequestedOnMultipleHexagons);
+        validationsStartFirst.Select(x => x.Value).Cast<UpgradeRequestedOnMultipleHexagons>().Select(x => x.Hexagon).ShouldBe([_start, _center], ignoreOrder: true);
+        validationsStartFirst.Select(x => x.Value).Cast<UpgradeRequestedOnMultipleHexagons>().ShouldAllBe(x => x.Upgrade == Upgrade.DotUpgrade && x.RequestedCount == 2);
         validationsCenterFirst.ShouldBe(validationsStartFirst, ignoreOrder: true);
     }
 
@@ -148,7 +148,7 @@ public sealed class ResearchValidationTest
         var validations = Validate(state, Research("Player01", Upgrade.UpgradeStartMatter, _start));
 
         // Assert
-        var validation = validations.ShouldHaveSingleItem().ShouldBeOfType<HexagonAlreadyResearching>();
+        var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<HexagonAlreadyResearching>();
         validation.Hexagon.ShouldBe(_start);
         validation.Upgrade.ShouldBe(Upgrade.UpgradeStartMatter);
         validation.UpgradeInResearch.ShouldBe(Upgrade.DotUpgrade);
@@ -176,7 +176,7 @@ public sealed class ResearchValidationTest
 
         var validations = state.Validate("Player02", Research("Player02", _opponentStart)["Player02"]).ToList();
 
-        var validation = validations.ShouldHaveSingleItem().ShouldBeOfType<UpgradeNotResearchableOnHexagon>();
+        var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<UpgradeNotResearchableOnHexagon>();
         validation.PlayerId.ShouldBe("Player02");
         validation.Hexagon.ShouldBe(_opponentStart);
         validation.Upgrade.ShouldBe(Upgrade.DotUpgrade);
@@ -189,7 +189,7 @@ public sealed class ResearchValidationTest
 
         var validations = Validate(state, Research("Player01", _center));
 
-        var validation = validations.ShouldHaveSingleItem().ShouldBeOfType<ResearchRequiresDot>();
+        var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<ResearchRequiresDot>();
         validation.Hexagon.ShouldBe(_center);
         validation.Upgrade.ShouldBe(Upgrade.DotUpgrade);
     }
@@ -201,7 +201,7 @@ public sealed class ResearchValidationTest
 
         var validations = Validate(state, Research("Player01", _start));
 
-        var validation = validations.ShouldHaveSingleItem().ShouldBeOfType<InsufficientMatter>();
+        var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<InsufficientMatter>();
         validation.Required.ShouldBe(150);
         validation.Available.ShouldBe(149);
     }
@@ -219,7 +219,7 @@ public sealed class ResearchValidationTest
         var validations = Validate(state, Research("Player01", _start));
 
         // Assert
-        var validation = validations.ShouldHaveSingleItem().ShouldBeOfType<InsufficientMatter>();
+        var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<InsufficientMatter>();
         validation.Required.ShouldBe(175);
         validation.Available.ShouldBe(174);
     }
@@ -235,7 +235,7 @@ public sealed class ResearchValidationTest
         var validations = Validate(state, MoveDotsToCenter(5));
 
         // Assert
-        var validation = validations.ShouldHaveSingleItem().ShouldBeOfType<MovementLeavesResearchWithoutDot>();
+        var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<MovementLeavesResearchWithoutDot>();
         validation.Hexagon.ShouldBe(_start);
         validation.Upgrade.ShouldBe(Upgrade.DotUpgrade);
     }
@@ -261,7 +261,7 @@ public sealed class ResearchValidationTest
         var validations = Validate(state, commands);
 
         // Assert
-        var validation = validations.ShouldHaveSingleItem().ShouldBeOfType<MovementLeavesResearchWithoutDot>();
+        var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<MovementLeavesResearchWithoutDot>();
         validation.Hexagon.ShouldBe(_start);
         validation.Upgrade.ShouldBe(Upgrade.DotUpgrade);
     }
@@ -300,7 +300,7 @@ public sealed class ResearchValidationTest
         var validations = state.IsValid().ToList();
 
         // Assert
-        var validation = validations.ShouldHaveSingleItem().ShouldBeOfType<UpgradeLevelsExceedTable>();
+        var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<UpgradeLevelsExceedTable>();
         validation.PlayerId.ShouldBe("Player01");
         validation.Upgrade.ShouldBe(Upgrade.DotUpgrade);
         validation.CompletedLevels.ShouldBe((byte)2);
@@ -326,7 +326,7 @@ public sealed class ResearchValidationTest
         var validations = state.IsValid().ToList();
 
         // Assert
-        var validation = validations.ShouldHaveSingleItem().ShouldBeOfType<UpgradeInResearchOnMultipleHexagons>();
+        var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<UpgradeInResearchOnMultipleHexagons>();
         validation.PlayerId.ShouldBe("Player01");
         validation.Upgrade.ShouldBe(Upgrade.DotUpgrade);
         validation.PendingCount.ShouldBe((byte)2);
@@ -347,7 +347,7 @@ public sealed class ResearchValidationTest
         var validations = state.IsValid().ToList();
 
         // Assert
-        var validation = validations.ShouldHaveSingleItem().ShouldBeOfType<UpgradeNotResearchableOnHexagon>();
+        var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<UpgradeNotResearchableOnHexagon>();
         validation.PlayerId.ShouldBe("Player02");
         validation.Hexagon.ShouldBe(_opponentStart);
     }
@@ -367,7 +367,7 @@ public sealed class ResearchValidationTest
         var validations = state.IsValid().ToList();
 
         // Assert
-        var validation = validations.ShouldHaveSingleItem().ShouldBeOfType<ResearchRequiresDot>();
+        var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<ResearchRequiresDot>();
         validation.PlayerId.ShouldBe("Player01");
         validation.Hexagon.ShouldBe(_center);
     }
