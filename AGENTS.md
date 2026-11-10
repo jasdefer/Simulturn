@@ -4,7 +4,7 @@ Use it as the default workflow and style baseline for this repository.
 
 ## Repository Snapshot
 - Solution: `Simulturn.sln`
-- Runtime: .NET 10 (`net10.0`)
+- Runtime: .NET 11 (`net11.0`, C# 15), SDK pinned in `global.json`
 - Core project: `Source/Simulturn.Core/Simulturn.Core.csproj`
 - Test projects: `Test/Simulturn.Core.Test` (engine), `Test/Simulturn.AI.Test` (players, runner, invariants), `Test/Simulturn.Test.Common` (shared fixtures)
 - Test strategy: `docs/test-strategy.md` (read before adding tests)
