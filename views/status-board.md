@@ -4,6 +4,7 @@ Cards grouped into columns by `status`.
 
 ## todo
 - [Kampfausgang vorab berechnen können](../workdown-items/combat-forecast-core.md)
+- [Warteschlangen für Trainings und Konstruktionen ohne verschachtelte Dictionaries](../workdown-items/flat-pending-queues.md)
 - [Spielstände speichern und wiederherstellen](../workdown-items/game-persistence.md)
 - [Bewegungsreichweite pro Einheitentyp](../workdown-items/movement-range.md)
 - [Nachvollziehbarkeit der Zugauflösung](../workdown-items/turn-report.md)

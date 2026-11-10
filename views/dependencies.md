@@ -6,6 +6,7 @@ Directed graph of items connected through `depends_on`, nested by `parent`.
 flowchart TD
     combat-forecast-core["Kampfausgang vorab berechnen können"]
     dotnet-upgrade-and-union-types["Auf die nächste .NET-Version wechseln und neue Sprachfeatures nutzen"]
+    flat-pending-queues["Warteschlangen für Trainings und Konstruktionen ohne verschachtelte Dictionaries"]
     game-persistence["Spielstände speichern und wiederherstellen"]
     map-generator-and-default-settings["Karten erzeugen und Settings nicht sechsfach pflegen"]
     movement-range["Bewegungsreichweite pro Einheitentyp"]
