@@ -36,49 +36,50 @@ internal sealed record KnownHexagon
 }
 
 /// <summary>
-/// Carries what a player knows from turn to turn: every view replaces what it shows and
-/// leaves the rest as it was last seen.
+/// Collects the views of a player over the turns of a game and joins the current view with
+/// the memories of the earlier ones (<see cref="FogOfWar.GetMemories"/>).
 /// </summary>
-/// <remarks>
-/// The same result follows from <see cref="FogOfWar.GetMemories"/> over all views so far.
-/// The players carry it forward instead, because the look-ahead asks for it thousands of
-/// times per game and going back through the views every time is too slow for that.
-/// </remarks>
 internal sealed class Knowledge
 {
-    private ImmutableDictionary<Hexagon, KnownHexagon> _known;
+    private readonly List<PlayerGameState> _views;
 
-    /// <param name="earlier">
-    /// What is known from the turns before the first observed one, for a player that takes
-    /// over a running game.
+    /// <param name="earlierViews">
+    /// The views of the turns before the first observed one, for a player that takes over
+    /// a running game.
     /// </param>
-    public Knowledge(ImmutableDictionary<Hexagon, KnownHexagon>? earlier = null)
+    public Knowledge(IEnumerable<PlayerGameState>? earlierViews = null)
     {
-        _known = earlier ?? ImmutableDictionary<Hexagon, KnownHexagon>.Empty;
+        _views = [.. earlierViews ?? []];
     }
 
     /// <summary>
-    /// Takes in the view of the current turn and returns what the player knows about every hexagon.
+    /// The views observed so far, in ascending turn order.
+    /// </summary>
+    public IReadOnlyList<PlayerGameState> Views => _views;
+
+    /// <summary>
+    /// Adds the view of the current turn and returns what the player knows about every hexagon.
     /// </summary>
     public ImmutableDictionary<Hexagon, KnownHexagon> Observe(PlayerGameState view)
     {
+        _views.Add(view);
+        var memories = FogOfWar.GetMemories(_views);
         var known = ImmutableDictionary.CreateBuilder<Hexagon, KnownHexagon>();
         foreach ((Hexagon hexagon, HexagonObservation observation) in view.Observations)
         {
-            KnownHexagon? earlier = _known.GetValueOrDefault(hexagon);
+            StaticSighting? sighting = memories.GetValueOrDefault(hexagon)?.Static;
             bool isCurrent = observation.Visibility >= FogOfWar.StaticObservationThreshold;
             known[hexagon] = new KnownHexagon()
             {
                 Visibility = observation.Visibility,
-                LastSeenTurn = isCurrent ? view.Turn : earlier?.LastSeenTurn,
-                RemainingMatter = isCurrent ? observation.RemainingMatter : earlier?.RemainingMatter,
+                LastSeenTurn = isCurrent ? view.Turn : sighting?.Turn,
+                RemainingMatter = isCurrent ? observation.RemainingMatter : sighting?.RemainingMatter,
                 OpponentCompounds = isCurrent
                     ? observation.OpponentCompounds
-                    : earlier?.OpponentCompounds ?? ImmutableDictionary<string, Compound>.Empty,
+                    : sighting?.OpponentCompounds ?? ImmutableDictionary<string, Compound>.Empty,
                 OpponentUnitCounts = observation.OpponentUnitCounts
             };
         }
-        _known = known.ToImmutableDictionary();
-        return _known;
+        return known.ToImmutableDictionary();
     }
 }

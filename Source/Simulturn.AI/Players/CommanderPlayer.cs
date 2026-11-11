@@ -39,20 +39,25 @@ public class CommanderPlayer : IArtificialPlayer
     public string Name { get; }
 
     public CommanderPlayer(CommanderPlayerOptions? options = null, string? name = null)
-        : this(options, name, ImmutableDictionary<Hexagon, KnownHexagon>.Empty)
+        : this(options, name, [])
     {
     }
 
-    /// <param name="earlierKnown">
-    /// What is known from the turns before the first one this player is asked for, so that a
-    /// player taking over a running game remembers what was seen before.
+    /// <param name="earlierViews">
+    /// The views of the turns before the first one this player is asked for, so that a player
+    /// taking over a running game remembers what was seen before.
     /// </param>
-    private protected CommanderPlayer(CommanderPlayerOptions? options, string? name, ImmutableDictionary<Hexagon, KnownHexagon> earlierKnown)
+    private protected CommanderPlayer(CommanderPlayerOptions? options, string? name, IReadOnlyList<PlayerGameState> earlierViews)
     {
         _options = options ?? new CommanderPlayerOptions();
         Name = name ?? "Commander";
-        _knowledge = new Knowledge(earlierKnown);
+        _knowledge = new Knowledge(earlierViews);
     }
+
+    /// <summary>
+    /// The views this player has received so far, in ascending turn order.
+    /// </summary>
+    private protected IReadOnlyList<PlayerGameState> Views => _knowledge.Views;
 
     /// <summary>
     /// The view of the current turn completed by what the player remembers from earlier turns.
