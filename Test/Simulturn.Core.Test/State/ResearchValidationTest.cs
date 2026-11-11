@@ -1,4 +1,5 @@
 using Simulturn.Core.Extensions;
+using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
@@ -10,7 +11,7 @@ using System.Collections.Immutable;
 namespace Simulturn.Core.Test.State;
 
 /// <summary>
-/// The research rules of <see cref="GameState.Validate"/> and <see cref="GameState.IsValid"/>
+/// The research rules of <see cref="CommandValidator.Validate"/> and <see cref="StateValidator.Validate"/>
 /// (work item research-cost-and-duration): one pending research per upgrade and per hexagon, the
 /// next level only after the previous one completed, never beyond the table, never on a hexagon
 /// without the upgrade or without a dot, and the last dot stays until the research completes.
@@ -52,7 +53,7 @@ public sealed class ResearchValidationTest
 
     private static List<CommandValidation> Validate(GameState state, Dictionary<string, Dictionary<Hexagon, Command>> commands)
     {
-        return state.Validate("Player01", commands["Player01"]).ToList();
+        return CommandValidator.Validate(state, "Player01", commands["Player01"]).ToList();
     }
 
     [Test]
@@ -174,7 +175,7 @@ public sealed class ResearchValidationTest
     {
         var state = new GameState(_richSettings);
 
-        var validations = state.Validate("Player02", Research("Player02", _opponentStart)["Player02"]).ToList();
+        var validations = CommandValidator.Validate(state, "Player02", Research("Player02", _opponentStart)["Player02"]).ToList();
 
         var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<UpgradeNotResearchableOnHexagon>();
         validation.PlayerId.ShouldBe("Player02");
@@ -297,7 +298,7 @@ public sealed class ResearchValidationTest
         state = state with { PlayerStates = state.PlayerStates.SetItem("Player01", player) };
 
         // Act
-        var validations = state.IsValid().ToList();
+        var validations = StateValidator.Validate(state).ToList();
 
         // Assert
         var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<UpgradeLevelsExceedTable>();
@@ -323,7 +324,7 @@ public sealed class ResearchValidationTest
         state = state with { PlayerStates = state.PlayerStates.SetItem("Player01", player) };
 
         // Act
-        var validations = state.IsValid().ToList();
+        var validations = StateValidator.Validate(state).ToList();
 
         // Assert
         var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<UpgradeInResearchOnMultipleHexagons>();
@@ -344,7 +345,7 @@ public sealed class ResearchValidationTest
         state = state with { PlayerStates = state.PlayerStates.SetItem("Player02", player) };
 
         // Act
-        var validations = state.IsValid().ToList();
+        var validations = StateValidator.Validate(state).ToList();
 
         // Assert
         var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<UpgradeNotResearchableOnHexagon>();
@@ -364,7 +365,7 @@ public sealed class ResearchValidationTest
         state = state with { PlayerStates = state.PlayerStates.SetItem("Player01", player) };
 
         // Act
-        var validations = state.IsValid().ToList();
+        var validations = StateValidator.Validate(state).ToList();
 
         // Assert
         var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<ResearchRequiresDot>();

@@ -1,3 +1,4 @@
+using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
@@ -20,7 +21,7 @@ public static class StateInvariants
         List<string> violations = [];
         GameSettings settings = state.GameSettings;
 
-        foreach (var validation in state.IsValid())
+        foreach (var validation in StateValidator.Validate(state))
         {
             violations.Add($"IsValid: {validation}");
         }
@@ -47,7 +48,7 @@ public static class StateInvariants
                 violations.Add($"{playerId}: available space is {player.AvailableSpace}, but the compounds provide {providedSpace}.");
             }
 
-            var expectedVisibilities = PlayerStateBuilder.GetVisibility(player.Armies,
+            var expectedVisibilities = FogOfWar.GetVisibility(player.Armies,
                 state.Hexagons,
                 settings.PartialVisibilityRange,
                 settings.VisibilityRange);
@@ -73,7 +74,7 @@ public static class StateInvariants
     /// </summary>
     private static void CheckPlayerView(GameState state, string playerId, List<string> violations)
     {
-        PlayerGameState view = state.GetPlayerGameState(playerId);
+        PlayerGameState view = FogOfWar.GetPlayerGameState(state, playerId);
         PlayerState player = state.PlayerStates[playerId];
         var opponents = state.PlayerStates.Where(x => x.Key != playerId).ToList();
         foreach ((Hexagon hexagon, HexagonObservation observation) in view.Observations)
@@ -177,7 +178,7 @@ public static class StateInvariants
     }
 
     /// <summary>
-    /// The matter the commands cost according to the rules, mirroring <see cref="GameState.Validate"/>.
+    /// The matter the commands cost according to the rules, mirroring <see cref="CommandValidator.Validate"/>.
     /// </summary>
     public static int CostOf(GameState state, string playerId, IReadOnlyDictionary<Hexagon, Command> commands)
     {

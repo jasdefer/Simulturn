@@ -1,4 +1,5 @@
 using Simulturn.AI.Players;
+using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.State;
 using Simulturn.Core.Setup;
@@ -52,13 +53,13 @@ public sealed class RandomPlayerTest
     {
         var gameSettings = CreateSettings();
         var gameState = new GameState(gameSettings);
-        var view = gameState.GetPlayerGameState("Player01");
+        var view = FogOfWar.GetPlayerGameState(gameState, "Player01");
 
         int nonEmptyCommandSets = 0;
         for (int seed = 0; seed < 10; seed++)
         {
             var commands = new RandomPlayer(seed).GetCommands(view);
-            gameState.Validate("Player01", commands).ShouldBeEmpty();
+            CommandValidator.Validate(gameState, "Player01", commands).ShouldBeEmpty();
             if (commands.Count > 0)
             {
                 nonEmptyCommandSets++;

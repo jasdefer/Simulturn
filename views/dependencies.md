@@ -13,12 +13,15 @@ flowchart TD
     pending-only-queues["Warteschlangen enthalten nur offene Aufträge"]
     research-cost-and-duration["Forschung kostet nichts und nutzt die falsche Stufe"]
     research-level-validation["Forschung kann über die Upgrade-Tabelle hinaus gestartet werden"]
+    split-game-state["GameState vereint Zustand, Zugauflösung und Validierung in einer Datei"]
     training-cancellation-after-completion["Zerstörte Gebäude brechen bereits fertige Trainings ab"]
     turn-report["Nachvollziehbarkeit der Zugauflösung"]
+    turn-result["NextTurn liefert Zustand und Ereignisse getrennt"]
     subgraph ui ["Neue UI"]
         ui-concept["UI-Konzept erarbeiten"]
     end
     validate-regression-tests["Regressionstests für Validate mit Warteschlangen auf anderen Hexagons"]
     pending-only-queues --> training-cancellation-after-completion
     research-cost-and-duration --> research-level-validation
+    turn-report --> turn-result
 ```

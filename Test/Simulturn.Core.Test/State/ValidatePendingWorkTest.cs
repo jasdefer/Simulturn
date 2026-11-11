@@ -1,3 +1,4 @@
+using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
@@ -42,7 +43,7 @@ public sealed class ValidatePendingWorkTest
 
         // Act: train on a hexagon without any building.
         var commands = Player1(_center, new Command() { Training = new Army() { Dot = 1 } });
-        var validations = Should.NotThrow(() => state.Validate("Player01", commands["Player01"]).ToList());
+        var validations = Should.NotThrow(() => CommandValidator.Validate(state, "Player01", commands["Player01"]).ToList());
 
         // Assert
         var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<MissingBuildingForTraining>();
@@ -62,7 +63,7 @@ public sealed class ValidatePendingWorkTest
 
         // Act: construct on a hexagon without any own army.
         var commands = Player1(_center, new Command() { Construction = new Compound() { Axis = 1 } });
-        var validations = Should.NotThrow(() => state.Validate("Player01", commands["Player01"]).ToList());
+        var validations = Should.NotThrow(() => CommandValidator.Validate(state, "Player01", commands["Player01"]).ToList());
 
         // Assert
         var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<MissingDotsForConstruction>();
@@ -77,7 +78,7 @@ public sealed class ValidatePendingWorkTest
         var state = new GameState(_gameSettings);
 
         var commands = Player1(_center, new Command() { Construction = new Compound() { Dome = 1 } });
-        var validations = Should.NotThrow(() => state.Validate("Player01", commands["Player01"]).ToList());
+        var validations = Should.NotThrow(() => CommandValidator.Validate(state, "Player01", commands["Player01"]).ToList());
 
         var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<MissingDotsForConstruction>();
         validation.Hexagon.ShouldBe(_center);
@@ -102,7 +103,7 @@ public sealed class ValidatePendingWorkTest
             Construction = new Compound() { Dome = 1 },
             Training = new Army() { Dot = 1 }
         });
-        var validations = Should.NotThrow(() => state.Validate("Player01", commands["Player01"]).ToList());
+        var validations = Should.NotThrow(() => CommandValidator.Validate(state, "Player01", commands["Player01"]).ToList());
 
         // Assert
         var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<MissingBuildingForTraining>();

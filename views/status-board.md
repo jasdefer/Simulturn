@@ -8,17 +8,20 @@ Cards grouped into columns by `status`.
 - [Spielstände speichern und wiederherstellen](../workdown-items/game-persistence.md)
 - [Bewegungsreichweite pro Einheitentyp](../workdown-items/movement-range.md)
 - [Nachvollziehbarkeit der Zugauflösung](../workdown-items/turn-report.md)
+- [NextTurn liefert Zustand und Ereignisse getrennt](../workdown-items/turn-result.md)
 - [Neue UI](../workdown-items/ui.md)
 - [UI-Konzept erarbeiten](../workdown-items/ui-concept.md)
 
 ## in_progress
-- [Karten erzeugen und Settings nicht sechsfach pflegen](../workdown-items/map-generator-and-default-settings.md)
+_(no cards)_
 
 ## done
 - [Auf die nächste .NET-Version wechseln und neue Sprachfeatures nutzen](../workdown-items/dotnet-upgrade-and-union-types.md)
+- [Karten erzeugen und Settings nicht sechsfach pflegen](../workdown-items/map-generator-and-default-settings.md)
 - [Warteschlangen enthalten nur offene Aufträge](../workdown-items/pending-only-queues.md)
 - [Forschung kostet nichts und nutzt die falsche Stufe](../workdown-items/research-cost-and-duration.md)
 - [Forschung kann über die Upgrade-Tabelle hinaus gestartet werden](../workdown-items/research-level-validation.md)
+- [GameState vereint Zustand, Zugauflösung und Validierung in einer Datei](../workdown-items/split-game-state.md)
 - [Zerstörte Gebäude brechen bereits fertige Trainings ab](../workdown-items/training-cancellation-after-completion.md)
 - [Regressionstests für Validate mit Warteschlangen auf anderen Hexagons](../workdown-items/validate-regression-tests.md)
 

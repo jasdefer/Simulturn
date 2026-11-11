@@ -1,4 +1,5 @@
 using Simulturn.Core.Extensions;
+using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
@@ -39,7 +40,7 @@ public sealed class GameStateTest
     public void Initialize()
     {
         var gameState = new GameState(_gameSettings);
-        gameState.IsValid().ShouldBeEmpty();
+        StateValidator.Validate(gameState).ShouldBeEmpty();
         gameState.Turn.ShouldBe((ushort)0);
         gameState.Hexagons.Count.ShouldBe(7);
         gameState.Hexagons.Select(hexagon => hexagon.X + hexagon.Y + hexagon.Z)
@@ -476,7 +477,7 @@ public sealed class GameStateTest
                 }
             };
 
-        var validations = gameState.Validate("Player01", commands["Player01"]);
+        var validations = CommandValidator.Validate(gameState, "Player01", commands["Player01"]);
 
         validations.Select(x => x.Value).OfType<InsufficientMatter>().ShouldHaveSingleItem();
     }
@@ -486,7 +487,7 @@ public sealed class GameStateTest
     {
         var gameState = new GameState(_gameSettings) with { Turn = ushort.MaxValue };
 
-        Should.Throw<InvalidOperationException>(() => gameState.NextTurn(_noCommands));
+        Should.Throw<InvalidOperationException>(() => TurnResolution.Resolve(gameState, _noCommands));
     }
 
     [Test]
@@ -504,7 +505,7 @@ public sealed class GameStateTest
         };
 
         // Act
-        var validations = gameState.Validate(commands.Keys.Single(), commands.Single().Value);
+        var validations = CommandValidator.Validate(gameState, commands.Keys.Single(), commands.Single().Value);
         validations.ShouldHaveSingleItem().Value.ShouldBeOfType<InsufficientSpace>().Required.ShouldBe(9 + 9);
     }
 

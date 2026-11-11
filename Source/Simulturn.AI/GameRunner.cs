@@ -1,3 +1,4 @@
+using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
@@ -35,16 +36,16 @@ public static class GameRunner
             Dictionary<string, IReadOnlyDictionary<Hexagon, Command>> commands = [];
             foreach (string playerId in gameState.PlayerIds)
             {
-                PlayerGameState view = gameState.GetPlayerGameState(playerId);
+                PlayerGameState view = FogOfWar.GetPlayerGameState(gameState, playerId);
                 IReadOnlyDictionary<Hexagon, Command> playerCommands = players[playerId].GetCommands(view);
-                var validations = gameState.Validate(playerId, playerCommands).ToList();
+                var validations = CommandValidator.Validate(gameState, playerId, playerCommands).ToList();
                 if (validations.Count > 0)
                 {
                     throw new InvalidCommandsException(playerId, validations);
                 }
                 commands[playerId] = playerCommands;
             }
-            gameState = gameState.NextTurn(commands);
+            gameState = TurnResolution.Resolve(gameState, commands);
             onTurnCompleted?.Invoke(gameState);
         }
 

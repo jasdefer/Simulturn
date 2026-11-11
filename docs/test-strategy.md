@@ -4,7 +4,7 @@ This document defines which kinds of tests exist in Simulturn, what each one pro
 
 ## Principles
 
-The engine (`Simulturn.Core`) is deterministic and pure: `NextTurn` depends only on the state and the commands. Everything builds on that.
+The engine (`Simulturn.Core`) is deterministic and pure: `TurnResolution.Resolve` depends only on the state and the commands. Everything builds on that.
 
 - Every test is deterministic. There are no retries. A red test is a bug or a wrong test, never bad luck.
 - Every test reads on its own: Arrange, Act, Assert, one scenario per test, the name describes the scenario.
@@ -14,7 +14,7 @@ The engine (`Simulturn.Core`) is deterministic and pure: `NextTurn` depends only
 
 | Layer | What it checks | Oracle | Project |
 |---|---|---|---|
-| 1 Unit | One rule, one turn: a single validation type of `Validate`, a single phase of `NextTurn`, the value objects `Army`, `Compound`, `Hexagon`, fog of war | Exact values | `Simulturn.Core.Test` |
+| 1 Unit | One rule, one turn: a single validation type of `CommandValidator.Validate`, a single phase of `TurnResolution.Resolve`, the value objects `Army`, `Compound`, `Hexagon`, fog of war | Exact values | `Simulturn.Core.Test` |
 | 2 Scenario | Several scripted turns whose interplay has rules (a fight while a training is pending, a research completing and then a fight) | Exact values | `Simulturn.Core.Test` |
 | 3 Invariants | Random games over many seeds, maps and player options | Invariants after every turn, no exact values | `Simulturn.AI.Test` |
 | 4 Game flow | `GameRunner`, `Arena`, and the strength of the AI players | Plausible outcome (winner, turn count, win rate) | `Simulturn.AI.Test` |
@@ -26,7 +26,7 @@ Not planned: integration tests across process or system boundaries. There is no 
 Goal: every rule of the engine has at least one test that shows it in isolation.
 
 - Every case of the `CommandValidation` union has a test that produces exactly that validation, and a neighbour that shows when it does not appear.
-- Every phase of `NextTurn` (income, training, construction, research, movement, fight, building destruction, cancellation of constructions and trainings) has a test with exactly one turn.
+- Every phase of `TurnResolution.Resolve` (income, training, construction, research, movement, fight, building destruction, cancellation of constructions and trainings) has a test with exactly one turn.
 - One class per rule area, for example `ValidatePendingWorkTest`, `NextTurnIncomeTest`, `FightTest`. The existing `GameStateTest` is not split in one go. When an area is touched, its tests move into the matching class.
 
 ### Layer 2: Scenario
@@ -39,7 +39,7 @@ Goal: find what nobody scripted. `RandomPlayer` plays against `RandomPlayer` ove
 
 State invariants (`StateInvariants.CheckState`, hold for a single state):
 
-- `IsValid` yields nothing.
+- `StateValidator.Validate` yields nothing.
 - Space: `UsedSpace` equals armies plus pending trainings times `RequiredSpace`. `AvailableSpace` equals compounds times `ProvidedSpace`.
 - Matter, used space and available space are never negative.
 - Fog of war: the player view matches the player's visibility. Hidden hexagons carry no current data, visible hexagons carry the true data.
@@ -53,7 +53,7 @@ Determinism (own tests):
 
 - The same settings and the same commands produce the same state, also when the command dictionaries are enumerated in a different order. `GameStateSnapshot` renders a state as a canonical string for this comparison.
 
-The invariants are test code, not part of `IsValid`. `IsValid` checks what a client must be able to check on a single state. The invariants may know the previous state and the commands, and they may be expensive.
+The invariants are test code, not part of `StateValidator.Validate`. `StateValidator.Validate` checks what a client must be able to check on a single state. The invariants may know the previous state and the commands, and they may be expensive.
 
 Scale: the number of seeds and turns is a constant in the test. The whole test run stays well under a minute. Whoever wants more raises the constant locally.
 
@@ -87,7 +87,7 @@ Test/
 
 - TUnit and Shouldly. No `Retry`.
 - Test names: `Scenario_Expectation`, for example `TrainingWithoutBuilding_YieldsMissingBuildingForTraining`.
-- A test builds its state with `TestSettings` and `Maps` (a small hand-built map for layers 1 and 2) or with `DefaultSettings.Create(MapGeneratorOptions)` (a generated map for layers 3 and 4), changes it only through `NextTurn` (via `PlayTurn`), and validates commands before resolving them, unless the test checks the opposite.
+- A test builds its state with `TestSettings` and `Maps` (a small hand-built map for layers 1 and 2) or with `DefaultSettings.Create(MapGeneratorOptions)` (a generated map for layers 3 and 4), changes it only through `TurnResolution.Resolve` (via `PlayTurn`), and validates commands before resolving them, unless the test checks the opposite.
 - A test asserts validation types exactly (`ShouldBeOfType<...>`), not just "not empty".
 
 ## Commands

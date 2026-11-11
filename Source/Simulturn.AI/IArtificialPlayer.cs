@@ -15,7 +15,7 @@ public interface IArtificialPlayer
     /// <summary>
     /// Returns the commands for the current turn.
     /// Implementations only receive the partially informed view of the player and
-    /// must return commands that pass <see cref="GameState.Validate"/>.
+    /// must return commands that pass <see cref="Simulturn.Core.Engine.CommandValidator.Validate"/>.
     /// </summary>
     IReadOnlyDictionary<Hexagon, Command> GetCommands(PlayerGameState playerGameState);
 }

@@ -1,9 +1,10 @@
 ---
 id: map-generator-and-default-settings
 title: Karten erzeugen und Settings nicht sechsfach pflegen
-status: in_progress
+status: done
 created: 2026-10-14
-updated: 2026-11-10
+updated: 2026-11-11
+completed: 2026-11-10
 ---
 ## Problem
 

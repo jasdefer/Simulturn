@@ -1,4 +1,5 @@
 using Shouldly;
+using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
@@ -10,7 +11,7 @@ public static class GameStateExtensions
     extension(GameState state)
     {
         /// <summary>
-        /// Resolves one turn the way a server would: the commands must pass <see cref="GameState.Validate"/>,
+        /// Resolves one turn the way a server would: the commands must pass <see cref="CommandValidator.Validate"/>,
         /// and the resulting state must satisfy every state invariant.
         /// </summary>
         public GameState PlayTurn<TCommands>(IReadOnlyDictionary<string, TCommands> commands, bool validateCommands = true)
@@ -20,10 +21,10 @@ public static class GameStateExtensions
             {
                 foreach ((string playerId, TCommands playerCommands) in commands)
                 {
-                    state.Validate(playerId, playerCommands).ShouldBeEmpty($"The commands of {playerId} on turn {state.Turn} are invalid.");
+                    CommandValidator.Validate(state, playerId, playerCommands).ShouldBeEmpty($"The commands of {playerId} on turn {state.Turn} are invalid.");
                 }
             }
-            GameState next = state.NextTurn(commands);
+            GameState next = TurnResolution.Resolve(state, commands);
             StateInvariants.CheckState(next).ShouldBeEmpty($"The state after turn {state.Turn} violates an invariant.");
             return next;
         }
