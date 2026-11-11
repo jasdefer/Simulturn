@@ -21,15 +21,16 @@ public static class FogOfWar
 
     /// <summary>
     /// The visibility of every hexagon a player with the given armies can see.
-    /// Hexagons out of range are left out.
+    /// Hexagons out of range are left out. The visibility is never stored: it follows from
+    /// the armies and the settings alone and is computed where it is needed.
     /// </summary>
-    public static ImmutableDictionary<Hexagon, Visibility> GetVisibility(IDictionary<Hexagon, Army> armies,
-        IEnumerable<Hexagon> hexagons,
-        byte partialVisibilityRange,
-        byte visibilityRange)
+    public static ImmutableDictionary<Hexagon, Visibility> GetVisibility(IReadOnlyDictionary<Hexagon, Army> armies,
+        GameSettings gameSettings)
     {
+        byte partialVisibilityRange = gameSettings.PartialVisibilityRange;
+        byte visibilityRange = gameSettings.VisibilityRange;
         ImmutableDictionary<Hexagon, Visibility>.Builder visibilities = ImmutableDictionary.CreateBuilder<Hexagon, Visibility>();
-        foreach (Hexagon hexagon in hexagons)
+        foreach (Hexagon hexagon in gameSettings.HexagonSettings.Keys)
         {
             Visibility visibility = Visibility.Mapped;
             foreach ((Hexagon armyHexagon, Army army) in armies)
@@ -68,12 +69,13 @@ public static class FogOfWar
     /// </summary>
     internal static ImmutableDictionary<string, PlayerState> UpdateMemories(ImmutableDictionary<string, PlayerState> playerStates,
         ImmutableDictionary<Hexagon, int> remainingMatter,
-        ushort turn)
+        ushort turn,
+        GameSettings gameSettings)
     {
         return playerStates.ToImmutableDictionary(x => x.Key, x =>
         {
             var memories = x.Value.Memories.ToBuilder();
-            foreach ((Hexagon hexagon, Visibility visibility) in x.Value.Visibilities)
+            foreach ((Hexagon hexagon, Visibility visibility) in GetVisibility(x.Value.Armies, gameSettings))
             {
                 if (visibility < StaticObservationThreshold)
                 {
@@ -138,10 +140,11 @@ public static class FogOfWar
         {
             throw new ArgumentException($"Unknown player id '{playerId}'.", nameof(playerId));
         }
+        var visibilities = GetVisibility(playerState.Armies, gameState.GameSettings);
         var observations = ImmutableDictionary.CreateBuilder<Hexagon, HexagonObservation>();
         foreach (Hexagon hexagon in gameState.Hexagons)
         {
-            Visibility visibility = playerState.Visibilities.GetValueOrDefault(hexagon, Visibility.Unknown);
+            Visibility visibility = visibilities.GetValueOrDefault(hexagon, Visibility.Unknown);
             HexagonMemory? memory = playerState.Memories.GetValueOrDefault(hexagon);
             var opponentUnitCounts = ImmutableDictionary<string, int>.Empty;
             if (visibility >= UnitObservationThreshold)

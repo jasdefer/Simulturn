@@ -1,7 +1,7 @@
 ---
 id: player-knowledge-in-state
 title: Wissen der Spieler liegt im Regelzustand
-status: todo
+status: in_progress
 created: 2026-11-11
 updated: 2026-11-11
 ---
@@ -31,7 +31,11 @@ Die Erinnerung hält pro Hexagon, was der Spieler dort zuletzt gesehen hat (Rest
 
 `PlayerGameState.Observations` zeigt heute pro Hexagon die Erinnerung mit (`LastSeenTurn`, `RemainingMatter`, `OpponentCompounds`). `CommanderPlayer`, `StateMachinePlayer`, `RandomPlayer` und `BelievedState` lesen diese Werte. Die Fog-of-War-Invarianten (`StateInvariants`) und `PlayerGameStateTest` prüfen sie.
 
-## Ideen
+## Entscheidung zu `Visibilities`
+
+Das Feld `PlayerState.Visibilities` entfällt. Die Sicht wird nie gespeichert: `FogOfWar.GetVisibility(armies, gameSettings)` berechnet sie dort, wo sie gebraucht wird, nämlich in `FogOfWar.GetPlayerGameState` und, solange es `Memories` im Zustand gibt, in `FogOfWar.UpdateMemories`. Damit kann die Sicht nicht von den Armeen abweichen, und wer einen `PlayerState` baut, muss nicht an sie denken. Die Invariante, die gespeicherte und berechnete Sicht verglichen hat, ist mit dem Feld entfallen.
+
+## Ideen zu `Memories`
 
 Keine davon ist entschieden.
 

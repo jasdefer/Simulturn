@@ -49,20 +49,6 @@ public static class StateInvariants
                 violations.Add($"{playerId}: available space is {player.AvailableSpace}, but the compounds provide {providedSpace}.");
             }
 
-            var expectedVisibilities = FogOfWar.GetVisibility(player.Armies,
-                state.Hexagons,
-                settings.PartialVisibilityRange,
-                settings.VisibilityRange);
-            foreach (Hexagon hexagon in state.Hexagons)
-            {
-                Visibility expected = expectedVisibilities.GetValueOrDefault(hexagon, Visibility.Unknown);
-                Visibility actual = player.Visibilities.GetValueOrDefault(hexagon, Visibility.Unknown);
-                if (expected != actual)
-                {
-                    violations.Add($"{playerId}: visibility of {hexagon} is {actual}, but the armies imply {expected}.");
-                }
-            }
-
             CheckPlayerView(state, playerId, violations);
         }
 
@@ -77,13 +63,14 @@ public static class StateInvariants
     {
         PlayerGameState view = FogOfWar.GetPlayerGameState(state, playerId);
         PlayerState player = state.PlayerStates[playerId];
+        var visibilities = FogOfWar.GetVisibility(player.Armies, state.GameSettings);
         var opponents = state.PlayerStates.Where(x => x.Key != playerId).ToList();
         foreach ((Hexagon hexagon, HexagonObservation observation) in view.Observations)
         {
-            Visibility visibility = player.Visibilities.GetValueOrDefault(hexagon, Visibility.Unknown);
+            Visibility visibility = visibilities.GetValueOrDefault(hexagon, Visibility.Unknown);
             if (observation.Visibility != visibility)
             {
-                violations.Add($"{playerId}: the view reports {observation.Visibility} for {hexagon}, the state has {visibility}.");
+                violations.Add($"{playerId}: the view reports {observation.Visibility} for {hexagon}, the armies imply {visibility}.");
             }
 
             if (visibility >= FogOfWar.UnitObservationThreshold)

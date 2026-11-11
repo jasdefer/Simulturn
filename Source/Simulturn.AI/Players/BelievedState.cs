@@ -1,5 +1,4 @@
 using Simulturn.AI.Analysis;
-using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.State;
 using System.Collections.Immutable;
@@ -68,11 +67,7 @@ internal static class BelievedState
                 Compounds = compounds.ToImmutableDictionary(),
                 Trainings = ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Army>>.Empty,
                 Constructions = ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Compound>>.Empty,
-                Researches = ImmutableDictionary<Hexagon, Research>.Empty,
-                Visibilities = FogOfWar.GetVisibility(armies,
-                    gameSettings.HexagonSettings.Keys,
-                    gameSettings.PartialVisibilityRange,
-                    gameSettings.VisibilityRange)
+                Researches = ImmutableDictionary<Hexagon, Research>.Empty
             };
         }
 

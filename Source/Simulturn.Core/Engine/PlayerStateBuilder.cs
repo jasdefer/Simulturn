@@ -27,7 +27,7 @@ internal sealed class PlayerStateBuilder
     /// </summary>
     public PlayerReportBuilder Report { get; } = new();
 
-    public PlayerState ToPlayerState(GameSettings gameSettings)
+    public PlayerState ToPlayerState()
     {
         return new PlayerState()
         {
@@ -44,10 +44,6 @@ internal sealed class PlayerStateBuilder
                 kvp => kvp.Value.ToImmutableDictionary()),
             Researches = Researches.ToImmutableDictionary(),
             UpgradeLevels = UpgradeLevels.ToImmutableDictionary(),
-            Visibilities = FogOfWar.GetVisibility(Armies,
-                gameSettings.HexagonSettings.Keys,
-                gameSettings.PartialVisibilityRange,
-                gameSettings.VisibilityRange),
             Memories = Memories
         };
     }

@@ -24,7 +24,6 @@ public static class GameStateSnapshot
             text.Append(CultureInfo.InvariantCulture, $"Player {playerId} matter={player.Matter} used={player.UsedSpace} available={player.AvailableSpace}\n");
             AppendPerHexagon(text, "  Army", player.Armies);
             AppendPerHexagon(text, "  Compound", player.Compounds);
-            AppendPerHexagon(text, "  Visibility", player.Visibilities);
             AppendPerTurn(text, "  Training", player.Trainings);
             AppendPerTurn(text, "  Construction", player.Constructions);
             AppendPerHexagon(text, "  Research", player.Researches);

@@ -16,7 +16,6 @@ public sealed record PlayerState
     /// upgrade is researched on at most one hexagon at a time (work item research-cost-and-duration).
     /// </summary>
     public required ImmutableDictionary<Hexagon, Research> Researches { get; init; }
-    public required ImmutableDictionary<Hexagon, Visibility> Visibilities { get; init; }
     /// <summary>
     /// A level of 0 means the upgrade is not researched and is equivalent to not having the element in the dictionary.
     /// </summary>
