@@ -12,7 +12,7 @@ Cards grouped into columns by `status`.
 - [UI-Konzept erarbeiten](../workdown-items/ui-concept.md)
 
 ## in_progress
-- [Nachvollziehbarkeit der Zugauflösung](../workdown-items/turn-report.md)
+_(no cards)_
 
 ## done
 - [Auf die nächste .NET-Version wechseln und neue Sprachfeatures nutzen](../workdown-items/dotnet-upgrade-and-union-types.md)
@@ -22,6 +22,7 @@ Cards grouped into columns by `status`.
 - [Forschung kann über die Upgrade-Tabelle hinaus gestartet werden](../workdown-items/research-level-validation.md)
 - [GameState vereint Zustand, Zugauflösung und Validierung in einer Datei](../workdown-items/split-game-state.md)
 - [Zerstörte Gebäude brechen bereits fertige Trainings ab](../workdown-items/training-cancellation-after-completion.md)
+- [Nachvollziehbarkeit der Zugauflösung](../workdown-items/turn-report.md)
 - [NextTurn liefert Zustand und Ereignisse getrennt](../workdown-items/turn-result.md)
 - [Regressionstests für Validate mit Warteschlangen auf anderen Hexagons](../workdown-items/validate-regression-tests.md)
 
