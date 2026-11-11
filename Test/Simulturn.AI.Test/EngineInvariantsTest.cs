@@ -57,7 +57,7 @@ public sealed class EngineInvariantsTest
     /// </summary>
     private static GameState PlayGame(GameSettings gameSettings,
         IReadOnlyDictionary<string, IArtificialPlayer> players,
-        Action<GameState, Dictionary<string, IReadOnlyDictionary<Hexagon, Command>>, GameState> onTurnResolved)
+        Action<GameState, Dictionary<string, IReadOnlyDictionary<Hexagon, Command>>, TurnResult> onTurnResolved)
     {
         TurnResult turnResult = new(new GameState(gameSettings), TurnReport.Empty);
         while (!turnResult.State.IsGameOver && turnResult.State.Turn < MaxTurns)
@@ -70,7 +70,7 @@ public sealed class EngineInvariantsTest
                 CommandValidator.Validate(state, playerId, commands[playerId]).ShouldBeEmpty($"{playerId} issued invalid commands on turn {state.Turn}.");
             }
             turnResult = TurnResolution.Resolve(state, commands);
-            onTurnResolved(state, commands, turnResult.State);
+            onTurnResolved(state, commands, turnResult);
         }
         return turnResult.State;
     }
@@ -83,7 +83,7 @@ public sealed class EngineInvariantsTest
             for (int seed = 0; seed < Seeds; seed++)
             {
                 GameState final = PlayGame(gameSettings, RandomPlayers(seed), (_, _, next) =>
-                    StateInvariants.CheckState(next).ShouldBeEmpty($"Map {map}, seed {seed}, turn {next.Turn}."));
+                    StateInvariants.CheckState(next.State).ShouldBeEmpty($"Map {map}, seed {seed}, turn {next.State.Turn}."));
 
                 final.Turn.ShouldBeGreaterThan((ushort)0);
             }
@@ -91,7 +91,7 @@ public sealed class EngineInvariantsTest
     }
 
     [Test]
-    public void RandomGamesWithoutResearch_ConserveMatter()
+    public void RandomGamesWithoutResearch_ConserveMatterAndMatchTheReport()
     {
         foreach ((string map, GameSettings gameSettings) in MapPresets())
         {
@@ -99,13 +99,13 @@ public sealed class EngineInvariantsTest
             {
                 var players = RandomPlayers(seed, options => options with { ResearchProbability = 0 });
                 PlayGame(gameSettings, players, (before, commands, after) =>
-                    StateInvariants.CheckTransition(before, commands, after).ShouldBeEmpty($"Map {map}, seed {seed}, turn {after.Turn}."));
+                    StateInvariants.CheckTransition(before, commands, after).ShouldBeEmpty($"Map {map}, seed {seed}, turn {after.State.Turn}."));
             }
         }
     }
 
     [Test]
-    public void RandomGamesWithResearch_ConserveMatter()
+    public void RandomGamesWithResearch_ConserveMatterAndMatchTheReport()
     {
         foreach ((string map, GameSettings gameSettings) in MapPresets())
         {
@@ -113,7 +113,7 @@ public sealed class EngineInvariantsTest
             {
                 var players = RandomPlayers(seed, options => options with { ResearchProbability = 0.5 });
                 PlayGame(gameSettings, players, (before, commands, after) =>
-                    StateInvariants.CheckTransition(before, commands, after).ShouldBeEmpty($"Map {map}, seed {seed}, turn {after.Turn}."));
+                    StateInvariants.CheckTransition(before, commands, after).ShouldBeEmpty($"Map {map}, seed {seed}, turn {after.State.Turn}."));
             }
         }
     }
@@ -125,8 +125,8 @@ public sealed class EngineInvariantsTest
         {
             List<string> firstRun = [];
             List<string> secondRun = [];
-            PlayGame(gameSettings, RandomPlayers(seed: 3), (_, _, next) => firstRun.Add(GameStateSnapshot.Of(next)));
-            PlayGame(gameSettings, RandomPlayers(seed: 3), (_, _, next) => secondRun.Add(GameStateSnapshot.Of(next)));
+            PlayGame(gameSettings, RandomPlayers(seed: 3), (_, _, next) => firstRun.Add(GameStateSnapshot.Of(next.State)));
+            PlayGame(gameSettings, RandomPlayers(seed: 3), (_, _, next) => secondRun.Add(GameStateSnapshot.Of(next.State)));
 
             secondRun.ShouldBe(firstRun, $"Map {map}.");
         }
@@ -143,10 +143,10 @@ public sealed class EngineInvariantsTest
         {
             List<string> plain = [];
             List<string> reversed = [];
-            PlayGame(gameSettings, RandomPlayers(seed: 5), (_, _, next) => plain.Add(GameStateSnapshot.Of(next)));
+            PlayGame(gameSettings, RandomPlayers(seed: 5), (_, _, next) => plain.Add(GameStateSnapshot.Of(next.State)));
             var reversedPlayers = RandomPlayers(seed: 5)
                 .ToDictionary(x => x.Key, x => (IArtificialPlayer)new ReversedCommandsPlayer(x.Value));
-            PlayGame(gameSettings, reversedPlayers, (_, _, next) => reversed.Add(GameStateSnapshot.Of(next)));
+            PlayGame(gameSettings, reversedPlayers, (_, _, next) => reversed.Add(GameStateSnapshot.Of(next.State)));
 
             reversed.ShouldBe(plain, $"Map {map}.");
         }

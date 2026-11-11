@@ -44,10 +44,11 @@ State invariants (`StateInvariants.CheckState`, hold for a single state):
 - Matter, used space and available space are never negative.
 - Fog of war: the player view matches the player's visibility. Hidden hexagons carry no current data, visible hexagons carry the true data.
 
-Transition invariants (`StateInvariants.CheckTransition`, need the previous state and the commands):
+Transition invariants (`StateInvariants.CheckTransition`, need the previous state, the commands and the `TurnResult`):
 
 - The turn counter advances by one. Players and hexagons do not change.
 - Matter conservation: the matter all players gained equals the matter harvested from the map minus the cost of all training, construction and research commands.
+- The report explains the transition: previous state plus commands plus `TurnReport` gives the armies, compounds, matter, space, pending orders and upgrade levels of the next state, per player and hexagon. The comparison only checks the report; the engine never derives the report from it.
 
 Determinism (own tests):
 

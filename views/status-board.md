@@ -8,7 +8,6 @@ Cards grouped into columns by `status`.
 - [Spielstände speichern und wiederherstellen](../workdown-items/game-persistence.md)
 - [Bewegungsreichweite pro Einheitentyp](../workdown-items/movement-range.md)
 - [Wissen der Spieler liegt im Regelzustand](../workdown-items/player-knowledge-in-state.md)
-- [Nachvollziehbarkeit der Zugauflösung](../workdown-items/turn-report.md)
 - [Neue UI](../workdown-items/ui.md)
 - [UI-Konzept erarbeiten](../workdown-items/ui-concept.md)
 
@@ -23,6 +22,7 @@ _(no cards)_
 - [Forschung kann über die Upgrade-Tabelle hinaus gestartet werden](../workdown-items/research-level-validation.md)
 - [GameState vereint Zustand, Zugauflösung und Validierung in einer Datei](../workdown-items/split-game-state.md)
 - [Zerstörte Gebäude brechen bereits fertige Trainings ab](../workdown-items/training-cancellation-after-completion.md)
+- [Nachvollziehbarkeit der Zugauflösung](../workdown-items/turn-report.md)
 - [NextTurn liefert Zustand und Ereignisse getrennt](../workdown-items/turn-result.md)
 - [Regressionstests für Validate mit Warteschlangen auf anderen Hexagons](../workdown-items/validate-regression-tests.md)
 

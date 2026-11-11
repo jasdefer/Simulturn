@@ -1,9 +1,10 @@
 ---
 id: turn-report
 title: Nachvollziehbarkeit der Zugauflösung
-status: todo
+status: done
 created: 2026-10-14
-updated: 2026-11-10
+updated: 2026-11-11
+completed: 2026-11-11
 depends_on: [turn-result]
 ---
 ## Problem
