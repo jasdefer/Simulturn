@@ -403,7 +403,6 @@ public sealed class TurnResolution
         ushort nextTurn = (ushort)(1 + _state.Turn);
         var remainingMatter = _remainingMatter.ToImmutableDictionary();
         var playerStates = _players.ToImmutableDictionary(x => x.Key, x => x.Value.ToPlayerState());
-        playerStates = FogOfWar.UpdateMemories(playerStates, remainingMatter, nextTurn, _settings);
         return GameState.FromParts(_settings, nextTurn, playerStates, remainingMatter);
     }
 

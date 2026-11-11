@@ -31,7 +31,7 @@ Goal: every rule of the engine has at least one test that shows it in isolation.
 
 ### Layer 2: Scenario
 
-Goal: rules that only show over several turns. The turns are scripted explicitly, the state after every turn is checked exactly. Existing examples: `Fight_Army_vs_Army_InTwoTurns`, `Scouting_MemoryPersistsAndGetsStaleAfterLosingVision`.
+Goal: rules that only show over several turns. The turns are scripted explicitly, the state after every turn is checked exactly. Existing examples: `Fight_Army_vs_Army_InTwoTurns`, `Memory_GetsStaleWhileOutOfSightAndIsReplacedByTheView`.
 
 ### Layer 3: Invariants
 
@@ -42,7 +42,7 @@ State invariants (`StateInvariants.CheckState`, hold for a single state):
 - `StateValidator.Validate` yields nothing.
 - Space: `UsedSpace` equals armies plus pending trainings times `RequiredSpace`. `AvailableSpace` equals compounds times `ProvidedSpace`.
 - Matter, used space and available space are never negative.
-- Fog of war: the player view matches the player's visibility. Hidden hexagons carry no current data, visible hexagons carry the true data.
+- Fog of war: the player view matches the visibility that follows from the player's armies. Hidden hexagons carry no data, visible hexagons carry the true data. What a player saw in earlier turns is not part of the view; `FogOfWar.GetMemories` has its own unit tests (`MemoryTest`).
 
 Transition invariants (`StateInvariants.CheckTransition`, need the previous state, the commands and the `TurnResult`):
 

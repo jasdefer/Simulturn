@@ -33,13 +33,26 @@ Die Erinnerung hält pro Hexagon, was der Spieler dort zuletzt gesehen hat (Rest
 
 ## Entscheidung zu `Visibilities`
 
-Das Feld `PlayerState.Visibilities` entfällt. Die Sicht wird nie gespeichert: `FogOfWar.GetVisibility(armies, gameSettings)` berechnet sie dort, wo sie gebraucht wird, nämlich in `FogOfWar.GetPlayerGameState` und, solange es `Memories` im Zustand gibt, in `FogOfWar.UpdateMemories`. Damit kann die Sicht nicht von den Armeen abweichen, und wer einen `PlayerState` baut, muss nicht an sie denken. Die Invariante, die gespeicherte und berechnete Sicht verglichen hat, ist mit dem Feld entfallen.
+Das Feld `PlayerState.Visibilities` entfällt. Die Sicht wird nie gespeichert: `FogOfWar.GetVisibility(armies, gameSettings)` berechnet sie dort, wo sie gebraucht wird, nämlich in `FogOfWar.GetPlayerGameState`. Damit kann die Sicht nicht von den Armeen abweichen, und wer einen `PlayerState` baut, muss nicht an sie denken. Die Invariante, die gespeicherte und berechnete Sicht verglichen hat, ist mit dem Feld entfallen.
 
-## Ideen zu `Memories`
+## Entscheidung zu `Memories`
 
-Keine davon ist entschieden.
+Der Zustand enthält nichts über Wissen. `PlayerState.Memories` und der Durchlauf `FogOfWar.UpdateMemories` nach jeder Auflösung entfallen.
 
-- Der Zustand enthält nichts über Wissen. Die Sicht eines Spielers zeigt nur, was er im aktuellen Zug sieht; das berechnet `FogOfWar` aus dem Zustand, gespeichert wird es nicht.
-- Die Erinnerung berechnet ein gemeinsamer Helfer: Aus den Sichten (oder Zuständen) eines Spielers über mehrere Züge liefert er für jedes Hexagon, das gerade nicht voll sichtbar ist, den letzten bekannten Stand. UI, KI-Spieler und Replay nutzen denselben Helfer, statt das Zurückgehen jeweils selbst zu bauen.
-- Als Variante davon eine Faltung, die pro Zug das bisherige Wissen und die aktuelle Sicht zum neuen Wissen verbindet. Wer Erinnerung braucht, hält das Ergebnis; wer keine braucht, ruft sie nicht auf.
-- Ein Client, der neu verbindet, bräuchte die früheren Sichten oder das angesammelte Wissen. Wer die Orders aller Züge hält ([[game-persistence]]), kann beides neu berechnen.
+- **Die Sicht zeigt nur den aktuellen Zug.** `HexagonObservation` trägt Restmaterie und gegnerische Gebäude für Hexagons ab teilweiser Sicht, gegnerische Einheiten ab voller Sicht, alles direkt aus dem Zustand gelesen. `LastSeenTurn` gibt es dort nicht mehr. Für Hexagons außer Sicht ist die Beobachtung leer.
+- **Die Erinnerung berechnet ein Helfer aus den Sichten.** `FogOfWar.GetMemories(views)` nimmt die Sichten eines Spielers in aufsteigender Zugfolge, die letzte ist die aktuelle. Er geht Zug für Zug zurück und liefert pro Hexagon, was dort zuletzt gesehen wurde, und bricht ab, sobald jedes Hexagon geklärt ist.
+- **Sichtbares wird nicht erinnert.** Der Helfer liefert nur, was die aktuelle Sicht nicht zeigt. Ein nie gesehenes Hexagon hat keinen Eintrag; dafür gilt die Startmaterie aus den Settings.
+- **Zwei Sichtungen pro Hexagon.** `HexagonMemory.Static` hält Zug, Restmaterie und gegnerische Gebäude, `HexagonMemory.Units` hält Zug und Anzahl der gegnerischen Einheiten. Die Schwellen sind verschieden, deshalb können beide aus verschiedenen Zügen stammen: Ein Hexagon in teilweiser Sicht zeigt die Gebäude aktuell, die Einheiten nur aus der Erinnerung. Ein ohne Einheiten gesehenes Hexagon ist eine Sichtung mit leerer Anzahl.
+- **Wer Erinnerung braucht, bewahrt seine Sichten auf.** Die Engine tut es nicht. Eine fehlende Sicht ist ein Zug ohne Wissen. Ein Client, der neu verbindet, braucht die früheren Sichten; wer die Orders aller Züge hält ([[game-persistence]]), kann sie neu berechnen.
+
+### Kosten des Helfers
+
+Der Helfer ist eine reine Funktion der Sichten; es gibt kein zweites Objekt, das fortgeschrieben werden muss und falsch werden kann. Sein Preis: Für ein Hexagon, das lange nicht oder nie gesehen wurde, läuft er entsprechend weit zurück, im schlechtesten Fall bis zum ersten Zug. Für einen Aufruf pro Zug (UI, Replay) ist das belanglos. Für sehr viele Aufrufe pro Zug ist es zu langsam: Mit dem Helfer in den Rollouts des `SimulatorPlayer` brauchten 75 Partien 17 Minuten statt 20 Sekunden.
+
+Wer die Erinnerung so oft braucht, schreibt sie deshalb selbst fort: Jede neue Sicht ersetzt, was sie zeigt, der Rest bleibt, wie er zuletzt gesehen wurde. Das liefert dasselbe Ergebnis wie der Helfer über alle bisherigen Sichten.
+
+### KI-Spieler
+
+Die KI-Spieler werden neu entworfen und sind hier nur so weit angepasst, dass sie weiterlaufen. `Knowledge` in `Simulturn.AI` schreibt pro Spieler fort, was er weiß (`KnownHexagon`: die Sicht, sonst die letzte Sichtung von Restmaterie und Gebäuden), aus dem oben genannten Grund ohne den Helfer. Erinnerte Einheiten nutzt noch kein Spieler. Der `SimulatorPlayer` gibt seinem ausgerollten Commander das eigene Wissen mit, weil es nicht mehr im geglaubten Zustand steckt.
+
+Das Verhalten der Spieler ist bis auf eine Stelle unverändert, geprüft an 75 festen Partien (fünf Spielertypen gegeneinander auf drei Karten) vor und nach der Änderung. Die Abweichung betrifft zwei Partien des `SimulatorPlayer` und ist die Korrektur eines Fehlers: Im ersten Zug eines Rollouts sah das Gegnermodell bisher weder Restmaterie noch Gebäude, auch nicht auf Hexagons in Sicht. Der geglaubte Zustand wurde ohne Erinnerung gebaut, und die Sicht las beides nur aus der Erinnerung. Jetzt liest die Sicht aus dem Zustand, das Gegnermodell sieht vom ersten Zug an, was in Sicht ist. Stellt man das alte Verhalten künstlich wieder her, sind alle 75 Partien identisch.

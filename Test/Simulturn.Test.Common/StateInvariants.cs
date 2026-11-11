@@ -56,7 +56,7 @@ public static class StateInvariants
     }
 
     /// <summary>
-    /// The player view must show exactly what the visibility allows: nothing current about hidden
+    /// The player view must show exactly what the visibility allows: nothing about hidden
     /// hexagons, the truth about visible ones.
     /// </summary>
     private static void CheckPlayerView(GameState state, string playerId, List<string> violations)
@@ -90,10 +90,6 @@ public static class StateInvariants
 
             if (visibility >= FogOfWar.StaticObservationThreshold)
             {
-                if (observation.LastSeenTurn != state.Turn)
-                {
-                    violations.Add($"{playerId}: {hexagon} is {visibility} but was last seen on turn {observation.LastSeenTurn?.ToString() ?? "never"} instead of {state.Turn}.");
-                }
                 if (observation.RemainingMatter != state.RemainingMatter[hexagon])
                 {
                     violations.Add($"{playerId}: the view reports {observation.RemainingMatter} remaining matter on {hexagon}, the state has {state.RemainingMatter[hexagon]}.");
@@ -106,9 +102,9 @@ public static class StateInvariants
                     violations.Add($"{playerId}: the view reports wrong opponent compounds on {hexagon}.");
                 }
             }
-            else if (observation.LastSeenTurn >= state.Turn)
+            else if (observation.RemainingMatter is not null || observation.OpponentCompounds.Count > 0)
             {
-                violations.Add($"{playerId}: {hexagon} is {visibility} but the view claims it was seen on turn {observation.LastSeenTurn}.");
+                violations.Add($"{playerId}: the view reveals remaining matter or opponent compounds on {hexagon} with visibility {visibility}.");
             }
         }
     }

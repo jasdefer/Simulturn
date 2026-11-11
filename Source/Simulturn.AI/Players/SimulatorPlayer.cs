@@ -5,6 +5,7 @@ using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.Report;
 using Simulturn.Core.Model.State;
+using System.Collections.Immutable;
 
 namespace Simulturn.AI.Players;
 
@@ -58,7 +59,7 @@ public sealed class SimulatorPlayer : CommanderPlayer
         // proven in the arena; a candidate only overrides them when it is clearly better
         // under BOTH models. This prevents the perfect-defense model from vetoing attacks
         // that win against weaker real opponents.
-        GameState believed = BelievedState.Build(view, EstimatedEnemyArmy(probe), _analysis!);
+        GameState believed = BelievedState.Build(view, Known, EstimatedEnemyArmy(probe), _analysis!);
         Func<IArtificialPlayer>[] enemyModels =
         [
             () => new CommanderPlayer(_simulatorOptions),
@@ -96,7 +97,7 @@ public sealed class SimulatorPlayer : CommanderPlayer
         foreach (string id in believed.PlayerIds.OrderBy(x => x))
         {
             policies[id] = id == playerId
-                ? new ForcedModeCommander(candidate, _simulatorOptions)
+                ? new ForcedModeCommander(candidate, _simulatorOptions, Known)
                 : enemyModel();
         }
         TurnResult turnResult = new(believed, TurnReport.Empty);
@@ -119,8 +120,8 @@ public sealed class SimulatorPlayer : CommanderPlayer
     {
         private readonly MilitaryMode _forcedMode;
 
-        public ForcedModeCommander(MilitaryMode forcedMode, CommanderPlayerOptions options)
-            : base(options, $"Forced {forcedMode}")
+        public ForcedModeCommander(MilitaryMode forcedMode, CommanderPlayerOptions options, ImmutableDictionary<Hexagon, KnownHexagon> earlierKnown)
+            : base(options, $"Forced {forcedMode}", earlierKnown)
         {
             _forcedMode = forcedMode;
         }

@@ -20,6 +20,7 @@ public sealed class RandomPlayer : IArtificialPlayer
 
     private readonly Random _random;
     private readonly RandomPlayerOptions _options;
+    private readonly Knowledge _knowledge = new();
 
     public string Name { get; }
 
@@ -32,6 +33,7 @@ public sealed class RandomPlayer : IArtificialPlayer
 
     public IReadOnlyDictionary<Hexagon, Command> GetCommands(PlayerGameState playerGameState)
     {
+        var known = _knowledge.Observe(playerGameState);
         PlayerState playerState = playerGameState.PlayerState;
         GameSettings gameSettings = playerGameState.GameSettings;
         int matter = playerState.Matter;
@@ -57,7 +59,7 @@ public sealed class RandomPlayer : IArtificialPlayer
 
         Dictionary<Hexagon, Compound> constructions = PickConstructions(playerGameState, armyHexagons, constructionDots, ref matter);
         Dictionary<Hexagon, Army> trainings = PickTrainings(playerGameState, ref matter, ref freeSpace);
-        Dictionary<Hexagon, MovementCommand> movements = PickMovements(playerGameState, armyHexagons, constructionDots, researchHexagons);
+        Dictionary<Hexagon, MovementCommand> movements = PickMovements(playerGameState, known, armyHexagons, constructionDots, researchHexagons);
 
         Dictionary<Hexagon, Command> commands = [];
         IEnumerable<Hexagon> commandHexagons = constructions.Keys
@@ -213,12 +215,13 @@ public sealed class RandomPlayer : IArtificialPlayer
     }
 
     private Dictionary<Hexagon, MovementCommand> PickMovements(PlayerGameState playerGameState,
+        ImmutableDictionary<Hexagon, KnownHexagon> known,
         List<Hexagon> armyHexagons,
         Dictionary<Hexagon, int> constructionDots,
         HashSet<Hexagon> researchHexagons)
     {
         PlayerState playerState = playerGameState.PlayerState;
-        List<Hexagon> enemyHexagons = playerGameState.Observations
+        List<Hexagon> enemyHexagons = known
             .Where(x => x.Value.OpponentCompounds.Any(y => !y.Value.IsEmpty))
             .Select(x => x.Key)
             .OrderBy(x => x.X).ThenBy(x => x.Y)
@@ -260,7 +263,7 @@ public sealed class RandomPlayer : IArtificialPlayer
             {
                 continue;
             }
-            Hexagon destination = PickWeightedDestination(playerGameState, hexagon, neighbors, enemyHexagons, ownCompoundHexagons);
+            Hexagon destination = PickWeightedDestination(known, hexagon, neighbors, enemyHexagons, ownCompoundHexagons);
             movements[hexagon] = new MovementCommand()
             {
                 Army = moving,
@@ -270,7 +273,7 @@ public sealed class RandomPlayer : IArtificialPlayer
         return movements;
     }
 
-    private Hexagon PickWeightedDestination(PlayerGameState playerGameState,
+    private Hexagon PickWeightedDestination(ImmutableDictionary<Hexagon, KnownHexagon> known,
         Hexagon origin,
         List<Hexagon> candidates,
         List<Hexagon> enemyHexagons,
@@ -291,7 +294,7 @@ public sealed class RandomPlayer : IArtificialPlayer
             {
                 weight += _options.DefendWeight;
             }
-            HexagonObservation observation = playerGameState.Observations[candidate];
+            KnownHexagon observation = known[candidate];
             if (observation.LastSeenTurn is null ||
                 (observation.RemainingMatter > 0 && !ownCompoundHexagons.Contains(candidate)))
             {

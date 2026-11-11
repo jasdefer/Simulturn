@@ -39,7 +39,6 @@ public sealed record GameState
                         : ImmutableDictionary<Upgrade, byte>.Empty
                 };
             });
-        PlayerStates = FogOfWar.UpdateMemories(PlayerStates, RemainingMatter, Turn, GameSettings);
         PlayerIds = PlayerStates.Keys.ToImmutableHashSet();
     }
 

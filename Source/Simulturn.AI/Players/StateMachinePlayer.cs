@@ -22,6 +22,7 @@ public sealed class StateMachinePlayer : IArtificialPlayer
     private SettingsAnalysis? _analysis;
     private Hexagon? _expansionTarget;
     private int _estimatedEnemyUnits = -1;
+    private readonly Knowledge _knowledge = new();
 
     public EconomyMode Economy { get; private set; } = EconomyMode.Eco;
     public MilitaryMode Military { get; private set; } = MilitaryMode.Scout;
@@ -36,7 +37,7 @@ public sealed class StateMachinePlayer : IArtificialPlayer
     public IReadOnlyDictionary<Hexagon, Command> GetCommands(PlayerGameState playerGameState)
     {
         _analysis ??= GameSettingsAnalyzer.Analyze(playerGameState.GameSettings);
-        var turn = new TurnPlan(playerGameState, _analysis, _options);
+        var turn = new TurnPlan(playerGameState, _knowledge.Observe(playerGameState), _analysis, _options);
         UpdateEnemyEstimate(playerGameState);
         Economy = DecideEconomyMode(turn);
         Military = DecideMilitaryMode(turn);
@@ -308,7 +309,7 @@ public sealed class StateMachinePlayer : IArtificialPlayer
     private bool IsExpansionCandidate(TurnPlan turn, Hexagon hexagon)
     {
         GameSettings gameSettings = turn.View.GameSettings;
-        HexagonObservation observation = turn.View.Observations[hexagon];
+        KnownHexagon observation = turn.Known[hexagon];
         int expectedMatter = observation.RemainingMatter ?? gameSettings.HexagonSettings[hexagon].Matter;
         return gameSettings.HexagonSettings[hexagon].IsBuildable &&
             gameSettings.HexagonSettings[hexagon].MaxNumberOfUnitsGeneratingMatter[_analysis!.Worker] > 0 &&
@@ -319,7 +320,7 @@ public sealed class StateMachinePlayer : IArtificialPlayer
 
     private Hexagon? NearestKnownEnemyCompound(TurnPlan turn)
     {
-        return turn.View.Observations
+        return turn.Known
             .Where(x => x.Value.OpponentCompounds.Any(y => !y.Value.IsEmpty))
             .Select(x => x.Key)
             .OrderBy(x => x.DistanceTo(turn.MainBase))
@@ -341,7 +342,7 @@ public sealed class StateMachinePlayer : IArtificialPlayer
 
     private int IntelAge(TurnPlan turn)
     {
-        ushort? lastSeen = turn.View.Observations.Values
+        ushort? lastSeen = turn.Known.Values
             .Where(x => x.OpponentCompounds.Any(y => !y.Value.IsEmpty))
             .Max(x => x.LastSeenTurn);
         return lastSeen is null ? int.MaxValue : turn.View.Turn - lastSeen.Value;

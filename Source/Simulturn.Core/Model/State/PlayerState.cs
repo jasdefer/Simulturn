@@ -22,12 +22,6 @@ public sealed record PlayerState
     public ImmutableDictionary<Upgrade, byte> UpgradeLevels { get; init; } = ImmutableDictionary<Upgrade, byte>.Empty;
 
     /// <summary>
-    /// What the player remembers about each hexagon from the last turn it was at least partially visible.
-    /// Hexagons that were never seen have no entry.
-    /// </summary>
-    public ImmutableDictionary<Hexagon, HexagonMemory> Memories { get; init; } = ImmutableDictionary<Hexagon, HexagonMemory>.Empty;
-
-    /// <summary>
     /// The upgrades with a pending research. The next level of such an upgrade can only be
     /// started once the pending research has completed.
     /// </summary>

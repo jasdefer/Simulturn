@@ -7,13 +7,16 @@ namespace Simulturn.AI.Players;
 
 /// <summary>
 /// Constructs a full game state from a partially informed player view by filling the
-/// unknowns with estimates: enemy buildings from the fog of war memories, enemy armies
+/// unknowns with estimates: enemy buildings from what the player remembers, enemy armies
 /// from the estimated strength, remaining matter from the last observations.
 /// The result is a guess to simulate on, not the truth.
 /// </summary>
 internal static class BelievedState
 {
-    public static GameState Build(PlayerGameState view, Army estimatedEnemyArmy, SettingsAnalysis analysis)
+    public static GameState Build(PlayerGameState view,
+        ImmutableDictionary<Hexagon, KnownHexagon> known,
+        Army estimatedEnemyArmy,
+        SettingsAnalysis analysis)
     {
         GameSettings gameSettings = view.GameSettings;
         var playerStates = ImmutableDictionary.CreateBuilder<string, PlayerState>();
@@ -22,7 +25,7 @@ internal static class BelievedState
         foreach (string opponentId in view.PlayerIds.Where(x => x != view.PlayerId).OrderBy(x => x))
         {
             var compounds = ImmutableDictionary.CreateBuilder<Hexagon, Compound>();
-            foreach ((Hexagon hexagon, HexagonObservation observation) in view.Observations)
+            foreach ((Hexagon hexagon, KnownHexagon observation) in known)
             {
                 Compound compound = observation.OpponentCompounds.GetValueOrDefault(opponentId);
                 if (!compound.IsEmpty)
@@ -71,7 +74,7 @@ internal static class BelievedState
             };
         }
 
-        var remainingMatter = view.Observations.ToImmutableDictionary(
+        var remainingMatter = known.ToImmutableDictionary(
             x => x.Key,
             x => x.Value.RemainingMatter ?? gameSettings.HexagonSettings[x.Key].Matter);
         return GameState.FromParts(gameSettings, view.Turn, playerStates.ToImmutableDictionary(), remainingMatter);
