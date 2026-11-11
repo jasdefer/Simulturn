@@ -11,6 +11,7 @@ flowchart TD
     map-generator-and-default-settings["Karten erzeugen und Settings nicht sechsfach pflegen"]
     movement-range["Bewegungsreichweite pro Einheitentyp"]
     pending-only-queues["Warteschlangen enthalten nur offene Aufträge"]
+    player-knowledge-in-state["Wissen der Spieler liegt im Regelzustand"]
     research-cost-and-duration["Forschung kostet nichts und nutzt die falsche Stufe"]
     research-level-validation["Forschung kann über die Upgrade-Tabelle hinaus gestartet werden"]
     split-game-state["GameState vereint Zustand, Zugauflösung und Validierung in einer Datei"]
