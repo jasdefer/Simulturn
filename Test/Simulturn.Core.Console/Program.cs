@@ -109,7 +109,7 @@ while (!gameState.IsGameOver)
     {
         continue;
     }
-    gameState = TurnResolution.Resolve(gameState, commands);
+    gameState = TurnResolution.Resolve(gameState, commands).State;
     stateString = Printer.PrintState(gameState, Printer.GetFullInfo);
     File.WriteAllText($"Turn{gameState.Turn}.svg", stateString);
     File.WriteAllText($"CurrentTurn.svg", stateString);

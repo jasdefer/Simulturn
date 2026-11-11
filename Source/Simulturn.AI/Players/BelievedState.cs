@@ -72,8 +72,7 @@ internal static class BelievedState
                 Visibilities = FogOfWar.GetVisibility(armies,
                     gameSettings.HexagonSettings.Keys,
                     gameSettings.PartialVisibilityRange,
-                    gameSettings.VisibilityRange),
-                Losses = ImmutableDictionary<Hexagon, Army>.Empty
+                    gameSettings.VisibilityRange)
             };
         }
 

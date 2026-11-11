@@ -121,7 +121,7 @@ public class CommanderPlayer : IArtificialPlayer
 
     private protected virtual void UpdateEnemyEstimate(PlayerGameState view)
     {
-        var revealed = view.PlayerState.RevealedArmies.Values
+        var revealed = view.Report.RevealedArmies.Values
             .SelectMany(x => x.Values)
             .ToList();
         if (revealed.Count > 0)

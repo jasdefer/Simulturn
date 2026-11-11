@@ -77,6 +77,8 @@ At generation time, `dotnet build Simulturn.sln` and
 - Core game model types live in `Source/Simulturn.Core/Model/`
 - `Source/Simulturn.Core/Model/` holds data only: `GameState` and `PlayerState` have no rule logic
 - Everything that applies rules lives in `Source/Simulturn.Core/Engine/` (namespace `Simulturn.Core.Engine`): `TurnResolution.Resolve` (one turn, one named method per phase), `Combat.Fight` (the fight rule, armies and exponents only), `CommandValidator.Validate`, `StateValidator.Validate`, `FogOfWar` (player view, visibility)
+- `TurnResolution.Resolve` returns a `TurnResult(State, Report)`. The state is the input of the next turn; the `TurnReport` (`Source/Simulturn.Core/Model/Report/`) holds what happened, each fact once and without fog of war, and never goes back into the engine. `PlayerState` holds no per-turn data
+- A player only gets the cut made by `FogOfWar`: `GetPlayerGameState(turnResult, playerId)` cuts state and report, the `PlayerTurnReport` sits in `PlayerGameState.Report`. `GetPlayerGameState(state, playerId)` is for a state without a resolved turn (start of the game) and yields an empty report
 - `Engine` depends on `Model`; the only edge back is the `GameState` constructor building the start state
 - Standard rules and maps live in `Source/Simulturn.Core/Setup/`: `DefaultSettings` (the only copy of the rules), `Maps` (fixed maps), `MapGenerator` (seeded, symmetric maps)
 - Mutable transition helpers use builders in `PlayerStateBuilder` (internal working state of `TurnResolution`)

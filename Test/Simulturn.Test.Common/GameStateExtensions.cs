@@ -2,6 +2,7 @@ using Shouldly;
 using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
+using Simulturn.Core.Model.Report;
 using Simulturn.Core.Model.State;
 
 namespace Simulturn.Test.Common;
@@ -17,6 +18,15 @@ public static class GameStateExtensions
         public GameState PlayTurn<TCommands>(IReadOnlyDictionary<string, TCommands> commands, bool validateCommands = true)
             where TCommands : IReadOnlyDictionary<Hexagon, Command>
         {
+            return state.ResolveTurn(commands, validateCommands).State;
+        }
+
+        /// <summary>
+        /// Like <see cref="PlayTurn"/>, for tests that also check the report of the turn.
+        /// </summary>
+        public TurnResult ResolveTurn<TCommands>(IReadOnlyDictionary<string, TCommands> commands, bool validateCommands = true)
+            where TCommands : IReadOnlyDictionary<Hexagon, Command>
+        {
             if (validateCommands)
             {
                 foreach ((string playerId, TCommands playerCommands) in commands)
@@ -24,9 +34,9 @@ public static class GameStateExtensions
                     CommandValidator.Validate(state, playerId, playerCommands).ShouldBeEmpty($"The commands of {playerId} on turn {state.Turn} are invalid.");
                 }
             }
-            GameState next = TurnResolution.Resolve(state, commands);
-            StateInvariants.CheckState(next).ShouldBeEmpty($"The state after turn {state.Turn} violates an invariant.");
-            return next;
+            TurnResult result = TurnResolution.Resolve(state, commands);
+            StateInvariants.CheckState(result.State).ShouldBeEmpty($"The state after turn {state.Turn} violates an invariant.");
+            return result;
         }
 
         /// <summary>

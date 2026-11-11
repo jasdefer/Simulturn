@@ -1,3 +1,5 @@
+using Simulturn.Core.Model.Report;
+
 namespace Simulturn.Core.Model.State;
 
 /// <summary>
@@ -24,6 +26,12 @@ public sealed record PlayerGameState
     /// The knowledge of the player about every hexagon of the map.
     /// </summary>
     public required ImmutableDictionary<Hexagon, HexagonObservation> Observations { get; init; }
+
+    /// <summary>
+    /// What the player is allowed to know about the resolution of the previous turn, the one
+    /// that led to this state. Empty at the start of the game.
+    /// </summary>
+    public required PlayerTurnReport Report { get; init; }
 
     public required bool IsGameOver { get; init; }
 }

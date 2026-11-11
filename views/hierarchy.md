@@ -14,7 +14,7 @@ Hierarchical outline following `parent` upward to roots.
 - [GameState vereint Zustand, Zugauflösung und Validierung in einer Datei](../workdown-items/split-game-state.md) — status: done · created: 2026-11-10 · updated: 2026-11-11 · completed: 2026-11-11
 - [Zerstörte Gebäude brechen bereits fertige Trainings ab](../workdown-items/training-cancellation-after-completion.md) — status: done · created: 2026-11-08 · updated: 2026-11-09 · completed: 2026-11-09
 - [Nachvollziehbarkeit der Zugauflösung](../workdown-items/turn-report.md) — status: todo · created: 2026-10-14 · updated: 2026-11-10
-- [NextTurn liefert Zustand und Ereignisse getrennt](../workdown-items/turn-result.md) — status: todo · created: 2026-11-10
+- [NextTurn liefert Zustand und Ereignisse getrennt](../workdown-items/turn-result.md) — status: done · created: 2026-11-10 · updated: 2026-11-11 · completed: 2026-11-11
 - [Neue UI](../workdown-items/ui.md) — status: todo · created: 2026-10-14
   - [UI-Konzept erarbeiten](../workdown-items/ui-concept.md) — status: todo · created: 2026-10-14
 - [Regressionstests für Validate mit Warteschlangen auf anderen Hexagons](../workdown-items/validate-regression-tests.md) — status: done · created: 2026-10-14 · updated: 2026-11-08 · completed: 2026-11-08

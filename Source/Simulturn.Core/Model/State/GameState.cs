@@ -34,7 +34,6 @@ public sealed record GameState
                     Constructions = Constructions.Empty,
                     Trainings = Trainings.Empty,
                     Matter = GameSettings.StartMatter,
-                    Losses = ImmutableDictionary<Hexagon, Army>.Empty,
                     Researches = ImmutableDictionary<Hexagon, Research>.Empty,
                     Visibilities = FogOfWar.GetVisibility(armies, Hexagons, gameSettings.PartialVisibilityRange, gameSettings.VisibilityRange),
                     UpgradeLevels = GameSettings.StartUpgrades.ContainsKey(x.Key)

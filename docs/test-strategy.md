@@ -75,7 +75,7 @@ Test/
     TestSettings.cs         the standard rules for tests, delegates to DefaultSettings in Simulturn.Core
     StateInvariants.cs      the invariants of layer 3, also usable in scenario tests
     GameStateSnapshot.cs    canonical string of a state for determinism checks
-    GameStateExtensions.cs  PlayTurn: validate the commands, resolve the turn, check the state invariants
+    GameStateExtensions.cs  PlayTurn: validate the commands, resolve the turn, check the state invariants; ResolveTurn does the same and also returns the report
   Simulturn.Core.Test/      layers 1 and 2
   Simulturn.AI.Test/        layers 3 and 4, plus ScriptedPlayer and IdlePlayer based helpers
   Simulturn.Core.Console/   not a test, manual play

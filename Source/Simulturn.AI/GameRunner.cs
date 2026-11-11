@@ -1,6 +1,7 @@
 using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
+using Simulturn.Core.Model.Report;
 using Simulturn.Core.Model.State;
 
 namespace Simulturn.AI;
@@ -18,11 +19,13 @@ public static class GameRunner
     /// The game ends in a draw after this many turns. Required because a game between
     /// passive players never destroys all buildings and would run forever.
     /// </param>
-    /// <param name="onTurnCompleted">Optional callback after every resolved turn, e.g. for logging or replays.</param>
+    /// <param name="onTurnCompleted">
+    /// Optional callback after every resolved turn with the all-knowing state and report, e.g. for logging or replays.
+    /// </param>
     public static GameResult Run(GameSettings gameSettings,
         IReadOnlyDictionary<string, IArtificialPlayer> players,
         ushort maxTurns = DefaultMaxTurns,
-        Action<GameState>? onTurnCompleted = null)
+        Action<TurnResult>? onTurnCompleted = null)
     {
         GameState gameState = new(gameSettings);
         if (!gameState.PlayerIds.SetEquals(players.Keys))
@@ -31,12 +34,13 @@ public static class GameRunner
                 $"Expected: {string.Join(", ", gameState.PlayerIds)}. Provided: {string.Join(", ", players.Keys)}.", nameof(players));
         }
 
+        TurnResult turnResult = new(gameState, TurnReport.Empty);
         while (!gameState.IsGameOver && gameState.Turn < maxTurns)
         {
             Dictionary<string, IReadOnlyDictionary<Hexagon, Command>> commands = [];
             foreach (string playerId in gameState.PlayerIds)
             {
-                PlayerGameState view = FogOfWar.GetPlayerGameState(gameState, playerId);
+                PlayerGameState view = FogOfWar.GetPlayerGameState(turnResult, playerId);
                 IReadOnlyDictionary<Hexagon, Command> playerCommands = players[playerId].GetCommands(view);
                 var validations = CommandValidator.Validate(gameState, playerId, playerCommands).ToList();
                 if (validations.Count > 0)
@@ -45,8 +49,9 @@ public static class GameRunner
                 }
                 commands[playerId] = playerCommands;
             }
-            gameState = TurnResolution.Resolve(gameState, commands);
-            onTurnCompleted?.Invoke(gameState);
+            turnResult = TurnResolution.Resolve(gameState, commands);
+            gameState = turnResult.State;
+            onTurnCompleted?.Invoke(turnResult);
         }
 
         return ToResult(gameState);

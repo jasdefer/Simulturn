@@ -214,7 +214,8 @@ public sealed class GameStateTest
         ]);
 
         // Act
-        var turn1 = gameState.PlayTurn(commands);
+        var result1 = gameState.ResolveTurn(commands);
+        var turn1 = result1.State;
 
         // Assert
         turn1.PlayerStates["Player01"]
@@ -224,14 +225,14 @@ public sealed class GameStateTest
             .Armies.ShouldNotContainKey(new Hexagon(0, 0));
 
         // Fighting reveals the pre-fight composition of the participating armies to each other.
-        turn1.PlayerStates["Player01"]
+        FogOfWar.GetPlayerTurnReport(result1.Report, "Player01")
             .RevealedArmies[new Hexagon(0, 0)]["Player02"].ShouldBe(new Army() { Dot = 3 });
-        turn1.PlayerStates["Player02"]
+        FogOfWar.GetPlayerTurnReport(result1.Report, "Player02")
             .RevealedArmies[new Hexagon(0, 0)]["Player01"].ShouldBe(new Army() { Dot = 5 });
 
         // The revelation only lasts for the turn of the fight.
-        var turn2 = turn1.PlayTurn(_noCommands);
-        turn2.PlayerStates["Player01"].RevealedArmies.ShouldBeEmpty();
+        var result2 = turn1.ResolveTurn(_noCommands);
+        FogOfWar.GetPlayerTurnReport(result2.Report, "Player01").RevealedArmies.ShouldBeEmpty();
     }
 
     [Test]
@@ -290,7 +291,8 @@ public sealed class GameStateTest
         ]);
 
         // Act
-        var turn1 = gameState.PlayTurn(commands, validateCommands: false);
+        var result1 = gameState.ResolveTurn(commands, validateCommands: false);
+        var turn1 = result1.State;
 
         // Assert
         turn1.PlayerStates["Player02"]
@@ -298,10 +300,10 @@ public sealed class GameStateTest
             .ShouldBe(new Army() { Square = 1 });
         turn1.PlayerStates["Player01"]
             .Armies.ShouldNotContainKey(new Hexagon(0, 0));
-        turn1.PlayerStates["Player01"]
+        FogOfWar.GetPlayerTurnReport(result1.Report, "Player01")
             .Losses[new Hexagon(0, 0)]
             .ShouldBe(new Army() { Circle = 5, Dot = 5, Square = 5, Triangle = 5 });
-        turn1.PlayerStates["Player02"]
+        FogOfWar.GetPlayerTurnReport(result1.Report, "Player02")
             .Losses[new Hexagon(0, 0)]
             .ShouldBe(new Army() { Dot = 5, Square = 14 });
     }
@@ -402,34 +404,34 @@ public sealed class GameStateTest
         ]);
 
         // Act
-        var turn1 = gameState.PlayTurn(commands, validateCommands: false);
+        var result1 = gameState.ResolveTurn(commands, validateCommands: false);
 
         commands = DictionaryExtensions.MovementsToDictionary([
             ("Player02", new Hexagon(1,0), new Hexagon(0,0), new Army() { Square = 5 })
         ]);
 
         // Act
-        var turn2 = turn1.PlayTurn(commands, validateCommands: false);
+        var result2 = result1.State.ResolveTurn(commands, validateCommands: false);
 
         commands = DictionaryExtensions.MovementsToDictionary([
             ("Player02", new Hexagon(1,0), new Hexagon(0,0), new Army() { Square = 5 })
         ]);
 
         // Act
-        var turn3 = turn2.PlayTurn(commands, validateCommands: false);
+        var result3 = result2.State.ResolveTurn(commands, validateCommands: false);
 
         // Assert
-        turn1.PlayerStates["Player02"]
+        FogOfWar.GetPlayerTurnReport(result1.Report, "Player02")
             .Losses.Keys.ShouldContain(new Hexagon(0, 0));
-        turn1.PlayerStates["Player01"]
+        FogOfWar.GetPlayerTurnReport(result1.Report, "Player01")
             .Losses.Keys.ShouldContain(new Hexagon(0, 0));
-        turn2.PlayerStates["Player02"]
+        FogOfWar.GetPlayerTurnReport(result2.Report, "Player02")
             .Losses.Keys.ShouldContain(new Hexagon(0, 0));
-        turn2.PlayerStates["Player01"]
+        FogOfWar.GetPlayerTurnReport(result2.Report, "Player01")
             .Losses.Keys.ShouldContain(new Hexagon(0, 0));
-        turn3.PlayerStates["Player02"]
+        FogOfWar.GetPlayerTurnReport(result3.Report, "Player02")
             .Losses.Keys.ShouldContain(new Hexagon(0, 0));
-        turn3.PlayerStates["Player01"]
+        FogOfWar.GetPlayerTurnReport(result3.Report, "Player01")
             .Losses.Keys.ShouldContain(new Hexagon(0, 0));
     }
 
