@@ -1,9 +1,10 @@
 ---
 id: player-knowledge-in-state
 title: Wissen der Spieler liegt im Regelzustand
-status: in_progress
+status: done
 created: 2026-11-11
 updated: 2026-11-11
+completed: 2026-11-11
 ---
 ## Problem
 

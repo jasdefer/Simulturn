@@ -11,12 +11,13 @@ Cards grouped into columns by `status`.
 - [UI-Konzept erarbeiten](../workdown-items/ui-concept.md)
 
 ## in_progress
-- [Wissen der Spieler liegt im Regelzustand](../workdown-items/player-knowledge-in-state.md)
+_(no cards)_
 
 ## done
 - [Auf die nächste .NET-Version wechseln und neue Sprachfeatures nutzen](../workdown-items/dotnet-upgrade-and-union-types.md)
 - [Karten erzeugen und Settings nicht sechsfach pflegen](../workdown-items/map-generator-and-default-settings.md)
 - [Warteschlangen enthalten nur offene Aufträge](../workdown-items/pending-only-queues.md)
+- [Wissen der Spieler liegt im Regelzustand](../workdown-items/player-knowledge-in-state.md)
 - [Forschung kostet nichts und nutzt die falsche Stufe](../workdown-items/research-cost-and-duration.md)
 - [Forschung kann über die Upgrade-Tabelle hinaus gestartet werden](../workdown-items/research-level-validation.md)
 - [GameState vereint Zustand, Zugauflösung und Validierung in einer Datei](../workdown-items/split-game-state.md)
