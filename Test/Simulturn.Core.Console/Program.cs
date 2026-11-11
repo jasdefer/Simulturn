@@ -1,5 +1,6 @@
 ﻿using Simulturn.Core.Console;
 using Simulturn.Core.Helper;
+using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
@@ -96,7 +97,7 @@ while (!gameState.IsGameOver)
             }
         }
 
-        var errors = gameState.Validate(player, playerCommands);
+        var errors = CommandValidator.Validate(gameState, player, playerCommands);
         if (errors.Any())
         {
             errorInCommands = true;
@@ -108,7 +109,7 @@ while (!gameState.IsGameOver)
     {
         continue;
     }
-    gameState = gameState.NextTurn(commands);
+    gameState = TurnResolution.Resolve(gameState, commands);
     stateString = Printer.PrintState(gameState, Printer.GetFullInfo);
     File.WriteAllText($"Turn{gameState.Turn}.svg", stateString);
     File.WriteAllText($"CurrentTurn.svg", stateString);

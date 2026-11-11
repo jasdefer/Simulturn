@@ -1,7 +1,7 @@
 ﻿namespace Simulturn.Core.Model.State.Validation;
 
 /// <summary>
-/// A reason why <see cref="GameState.Validate"/> refuses the commands of a player. The cases are
+/// A reason why <see cref="CommandValidator.Validate"/> refuses the commands of a player. The cases are
 /// the closed set of command rules, so a <c>switch</c> over a validation is exhaustive.
 /// </summary>
 public union CommandValidation(

@@ -1,5 +1,6 @@
 using Simulturn.AI.Evaluation;
 using Simulturn.AI.Players;
+using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.State;
 using Simulturn.Core.Setup;
@@ -15,9 +16,9 @@ public sealed class CommanderPlayerTest
         var gameState = new GameState(gameSettings);
         var player = new CommanderPlayer();
 
-        var commands = player.GetCommands(gameState.GetPlayerGameState("Player01"));
+        var commands = player.GetCommands(FogOfWar.GetPlayerGameState(gameState, "Player01"));
 
-        gameState.Validate("Player01", commands).ShouldBeEmpty();
+        CommandValidator.Validate(gameState, "Player01", commands).ShouldBeEmpty();
         commands.ShouldNotBeEmpty();
     }
 

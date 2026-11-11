@@ -1,8 +1,10 @@
 ---
 id: split-game-state
 title: GameState vereint Zustand, Zugauflösung und Validierung in einer Datei
-status: todo
+status: done
 created: 2026-11-10
+updated: 2026-11-11
+completed: 2026-11-11
 ---
 ## Problem
 
@@ -30,13 +32,34 @@ Unverbindlich, der Implementierer entscheidet:
 - Die Kampfrechnung als reine Funktion zweier Armeen und ihrer Exponenten, getrennt von der Frage, wer auf dem Hexagon steht. Das ist der Teil, den [[combat-forecast-core]] veröffentlichen will.
 - Keine Verhaltensänderung. Reihenfolge der Phasen, Rundungen, Stornierungsreihenfolge bleiben; die bestehende Suite ist das Netz.
 
+## Entscheidung
+
+Entschieden am 2026-11-11, abweichend von der ersten Idee: Die öffentliche API darf sich ändern. `GameState` hält nur Daten, alles, was Regeln anwendet, liegt in `Source/Simulturn.Core/Engine/` (Namespace `Simulturn.Core.Engine`). `Model/` bleibt der Ort für Daten, die Unions in `Model/State/Validation/` sind Ergebnisdaten und bleiben dort.
+
+| Vorher | Nachher |
+|---|---|
+| `state.NextTurn(commands)` | `TurnResolution.Resolve(state, commands)` |
+| `state.Validate(playerId, commands)` | `CommandValidator.Validate(state, playerId, commands)` |
+| `state.IsValid()` | `StateValidator.Validate(state)` |
+| `state.GetPlayerGameState(playerId)` | `FogOfWar.GetPlayerGameState(state, playerId)` |
+| `GameState.Fight` (privat) | `Combat.Fight(army1, exponent1, army2, exponent2)` |
+| `PlayerStateBuilder.GetVisibility` | `FogOfWar.GetVisibility` |
+
+- `TurnResolution` und `CommandValidator` haben einen statischen Einstieg und bauen intern eine Instanz pro Aufruf, die den Kontext als Felder hält. `StateValidator`, `Combat` und `FogOfWar` sind statisch.
+- Die Phasen Einkommen bis Bewegung laufen weiter pro Spieler am Stück (`ResolveOrders`), danach Kämpfe, Gebäudezerstörung und Forschungsabbruch über alle Spieler.
+- `PlayerStateBuilder` ist Arbeitszustand der Auflösung und jetzt `internal`.
+- Kein Extension-Block, der `state.NextTurn(...)` als Syntax erhält, und keine Fassade: Beides würde die Trennung verschleiern.
+
+Offen geblieben: Der Konstruktor `GameState(GameSettings)` baut den Startzustand und ruft dafür `FogOfWar` auf. Das ist die einzige Abhängigkeit von `Model` auf `Engine`. Eine Factory in der Engine würde sie auflösen, trifft aber 64 Aufrufstellen und ist ein eigener Schritt.
+
 ## Reihenfolge
 
 Vor [[turn-result]] und [[flat-pending-queues]]: Die Aufteilung ist verhaltensneutral und macht die beiden Umbauten zu kleineren Diffs auf kleineren Methoden. Andersherum verschiebt man Code, der gerade erst geändert wurde.
 
 ## Akzeptanzkriterien
 
-- Die öffentliche API von `GameState` ist unverändert.
+- `GameState` enthält keine Regel-Logik mehr: nur Properties, `IsGameOver`, den Konstruktor aus den Settings und `FromParts`.
+- Auflösung, Kampfrechnung, beide Validierungen und die Spielersicht liegen in `Engine/`.
 - Jede Phase der Auflösung ist eine Methode mit Namen; in der Auflösung stehen keine Kommentarüberschriften mehr.
 - Die Kampfrechnung ist eine eigene Funktion, die nur Armeen und Exponenten kennt.
 - `GameStateTest`, `PendingQueueTest`, `ResearchResolutionTest`, `ResearchValidationTest`, `ValidatePendingWorkTest`, `EngineInvariantsTest` und die Arena laufen ohne Änderung an den Erwartungen.

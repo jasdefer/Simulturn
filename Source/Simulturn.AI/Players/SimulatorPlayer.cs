@@ -1,5 +1,6 @@
 using Simulturn.AI.Analysis;
 using Simulturn.Core.Extensions;
+using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
@@ -103,9 +104,9 @@ public sealed class SimulatorPlayer : CommanderPlayer
             Dictionary<string, IReadOnlyDictionary<Hexagon, Command>> commands = [];
             foreach ((string id, IArtificialPlayer policy) in policies)
             {
-                commands[id] = policy.GetCommands(state.GetPlayerGameState(id));
+                commands[id] = policy.GetCommands(FogOfWar.GetPlayerGameState(state, id));
             }
-            state = state.NextTurn(commands);
+            state = TurnResolution.Resolve(state, commands);
         }
         return StateEvaluator.Evaluate(state, playerId);
     }

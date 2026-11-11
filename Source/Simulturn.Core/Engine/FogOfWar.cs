@@ -1,9 +1,12 @@
-namespace Simulturn.Core.Model.State;
+using Simulturn.Core.Model;
+using Simulturn.Core.Model.State;
+
+namespace Simulturn.Core.Engine;
 
 /// <summary>
 /// Computes what each player is allowed to know about the game.
 /// </summary>
-internal static class FogOfWar
+public static class FogOfWar
 {
     /// <summary>
     /// The minimum visibility required to observe static information (remaining matter, buildings) on a hexagon.
@@ -16,10 +19,53 @@ internal static class FogOfWar
     public const Visibility UnitObservationThreshold = Visibility.Visible;
 
     /// <summary>
+    /// The visibility of every hexagon a player with the given armies can see.
+    /// Hexagons out of range are left out.
+    /// </summary>
+    public static ImmutableDictionary<Hexagon, Visibility> GetVisibility(IDictionary<Hexagon, Army> armies,
+        IEnumerable<Hexagon> hexagons,
+        byte partialVisibilityRange,
+        byte visibilityRange)
+    {
+        ImmutableDictionary<Hexagon, Visibility>.Builder visibilities = ImmutableDictionary.CreateBuilder<Hexagon, Visibility>();
+        foreach (Hexagon hexagon in hexagons)
+        {
+            Visibility visibility = Visibility.Mapped;
+            foreach ((Hexagon armyHexagon, Army army) in armies)
+            {
+                if (army.IsEmpty)
+                {
+                    continue;
+                }
+                var distance = hexagon.DistanceTo(armyHexagon);
+                if (distance == 0)
+                {
+                    visibility = Visibility.Occupied;
+                    break;
+                }
+                if (distance <= visibilityRange)
+                {
+                    visibility = Visibility.Visible;
+                    continue;
+                }
+                if (visibility < Visibility.Visible && distance <= partialVisibilityRange)
+                {
+                    visibility = Visibility.PartiallyVisible;
+                }
+            }
+            if (visibility > Visibility.Unknown)
+            {
+                visibilities[hexagon] = visibility;
+            }
+        }
+        return visibilities.ToImmutableDictionary();
+    }
+
+    /// <summary>
     /// Updates the <see cref="PlayerState.Memories"/> of all players with a snapshot of every hexagon
     /// that is at least partially visible to them on the given turn.
     /// </summary>
-    public static ImmutableDictionary<string, PlayerState> UpdateMemories(ImmutableDictionary<string, PlayerState> playerStates,
+    internal static ImmutableDictionary<string, PlayerState> UpdateMemories(ImmutableDictionary<string, PlayerState> playerStates,
         ImmutableDictionary<Hexagon, int> remainingMatter,
         ushort turn)
     {

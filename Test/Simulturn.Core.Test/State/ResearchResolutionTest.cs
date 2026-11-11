@@ -8,7 +8,7 @@ using Simulturn.Test.Common;
 namespace Simulturn.Core.Test.State;
 
 /// <summary>
-/// The research phase of <see cref="GameState.NextTurn"/> (work item research-cost-and-duration):
+/// The research phase of <see cref="TurnResolution.Resolve"/> (work item research-cost-and-duration):
 /// a research costs the matter of its level when it starts, completes after the duration of that
 /// level, and is canceled without refund once its hexagon has no dot left at the end of a turn.
 /// </summary>

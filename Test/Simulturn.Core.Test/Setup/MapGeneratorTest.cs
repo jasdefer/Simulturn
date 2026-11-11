@@ -1,3 +1,4 @@
+using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.State;
 using Simulturn.Core.Setup;
@@ -140,7 +141,7 @@ public sealed class MapGeneratorTest
 
                 GameState gameState = new(DefaultSettings.Create(options));
 
-                gameState.IsValid().ShouldBeEmpty($"Map {name}, {playerCount} players.");
+                StateValidator.Validate(gameState).ShouldBeEmpty($"Map {name}, {playerCount} players.");
                 gameState.PlayerIds.ShouldBe(options.PlayerIds, ignoreOrder: true);
             }
         }

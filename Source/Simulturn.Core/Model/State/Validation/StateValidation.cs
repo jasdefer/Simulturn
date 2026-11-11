@@ -1,7 +1,7 @@
 ﻿namespace Simulturn.Core.Model.State.Validation;
 
 /// <summary>
-/// A violated invariant found by <see cref="GameState.IsValid"/>. The cases are the closed set of
+/// A violated invariant found by <see cref="StateValidator.Validate"/>. The cases are the closed set of
 /// state rules, so a <c>switch</c> over a validation is exhaustive. Some cases are shared with
 /// <see cref="CommandValidation"/>: a state can be invalid for the same reason a command is refused.
 /// </summary>
@@ -38,7 +38,7 @@ public sealed record NegativeConstructionCount(string PlayerId, Hexagon Hexagon,
 
 /// <summary>
 /// An entry whose completion turn lies in the past. The queues only hold pending work:
-/// <see cref="GameState.NextTurn"/> removes every entry in the turn it is applied.
+/// <see cref="TurnResolution.Resolve"/> removes every entry in the turn it is applied.
 /// </summary>
 public sealed record ExpiredTraining(string PlayerId, ushort CompletionTurn);
 public sealed record ExpiredConstruction(string PlayerId, ushort CompletionTurn);

@@ -1,4 +1,5 @@
 using Simulturn.AI.Players;
+using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
@@ -63,10 +64,10 @@ public sealed class EngineInvariantsTest
             Dictionary<string, IReadOnlyDictionary<Hexagon, Command>> commands = [];
             foreach (string playerId in state.PlayerIds)
             {
-                commands[playerId] = players[playerId].GetCommands(state.GetPlayerGameState(playerId));
-                state.Validate(playerId, commands[playerId]).ShouldBeEmpty($"{playerId} issued invalid commands on turn {state.Turn}.");
+                commands[playerId] = players[playerId].GetCommands(FogOfWar.GetPlayerGameState(state, playerId));
+                CommandValidator.Validate(state, playerId, commands[playerId]).ShouldBeEmpty($"{playerId} issued invalid commands on turn {state.Turn}.");
             }
-            GameState next = state.NextTurn(commands);
+            GameState next = TurnResolution.Resolve(state, commands);
             onTurnResolved(state, commands, next);
             state = next;
         }

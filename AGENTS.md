@@ -75,9 +75,11 @@ At generation time, `dotnet build Simulturn.sln` and
 
 ## Project Structure Expectations
 - Core game model types live in `Source/Simulturn.Core/Model/`
-- Game state transition logic lives in `Source/Simulturn.Core/Model/State/GameState.cs`
+- `Source/Simulturn.Core/Model/` holds data only: `GameState` and `PlayerState` have no rule logic
+- Everything that applies rules lives in `Source/Simulturn.Core/Engine/` (namespace `Simulturn.Core.Engine`): `TurnResolution.Resolve` (one turn, one named method per phase), `Combat.Fight` (the fight rule, armies and exponents only), `CommandValidator.Validate`, `StateValidator.Validate`, `FogOfWar` (player view, visibility)
+- `Engine` depends on `Model`; the only edge back is the `GameState` constructor building the start state
 - Standard rules and maps live in `Source/Simulturn.Core/Setup/`: `DefaultSettings` (the only copy of the rules), `Maps` (fixed maps), `MapGenerator` (seeded, symmetric maps)
-- Mutable transition helpers use builders in `PlayerStateBuilder`
+- Mutable transition helpers use builders in `PlayerStateBuilder` (internal working state of `TurnResolution`)
 - Cross-cutting helpers are in `Source/Simulturn.Core/Extensions/`
 - Global aliases/usings are in `Source/Simulturn.Core/GlobalUsings.cs`
 
@@ -123,7 +125,7 @@ Follow local conventions in touched files first.
 
 ### Control flow and validation
 - Use guard clauses and early `continue`/`return` to keep nesting shallow
-- Keep command validation (`Validate`) separate from state validity checks (`IsValid`)
+- Keep command validation (`CommandValidator.Validate`) separate from state validity checks (`StateValidator.Validate`)
 - Return domain validation objects for business-rule failures (cases of the `CommandValidation` union)
 - Throw exceptions only for invariant violations or impossible states
 
