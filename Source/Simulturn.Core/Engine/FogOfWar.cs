@@ -1,4 +1,5 @@
 using Simulturn.Core.Model;
+using Simulturn.Core.Model.Report;
 using Simulturn.Core.Model.State;
 
 namespace Simulturn.Core.Engine;
@@ -95,9 +96,51 @@ public static class FogOfWar
     }
 
     /// <summary>
-    /// Builds the partially informed view of the game for a single player.
+    /// Builds the partially informed view of the game for a single player from a state without
+    /// a preceding turn, such as the start of the game. The report of the view is empty.
     /// </summary>
     public static PlayerGameState GetPlayerGameState(GameState gameState, string playerId)
+    {
+        return GetPlayerGameState(gameState, TurnReport.Empty, playerId);
+    }
+
+    /// <summary>
+    /// Builds the partially informed view of the game for a single player: the state and the
+    /// report of the resolved turn, both cut down to what the player is allowed to know.
+    /// </summary>
+    public static PlayerGameState GetPlayerGameState(TurnResult turnResult, string playerId)
+    {
+        return GetPlayerGameState(turnResult.State, turnResult.Report, playerId);
+    }
+
+    /// <summary>
+    /// The part of the report a single player is allowed to know: the fights the player took
+    /// part in, with the own losses and the armies of the opponents as they entered the fight.
+    /// </summary>
+    public static PlayerTurnReport GetPlayerTurnReport(TurnReport report, string playerId)
+    {
+        var losses = ImmutableDictionary.CreateBuilder<Hexagon, Army>();
+        var revealedArmies = ImmutableDictionary.CreateBuilder<Hexagon, ImmutableDictionary<string, Army>>();
+        foreach ((Hexagon hexagon, FightReport fight) in report.Fights)
+        {
+            if (!fight.Armies.ContainsKey(playerId))
+            {
+                continue;
+            }
+            revealedArmies[hexagon] = fight.Armies.Remove(playerId);
+            if (fight.Losses.TryGetValue(playerId, out Army loss))
+            {
+                losses[hexagon] = loss;
+            }
+        }
+        return new PlayerTurnReport()
+        {
+            Losses = losses.ToImmutable(),
+            RevealedArmies = revealedArmies.ToImmutable()
+        };
+    }
+
+    private static PlayerGameState GetPlayerGameState(GameState gameState, TurnReport report, string playerId)
     {
         if (!gameState.PlayerStates.TryGetValue(playerId, out var playerState))
         {
@@ -134,6 +177,7 @@ public static class FogOfWar
             PlayerIds = gameState.PlayerIds,
             PlayerState = playerState,
             Observations = observations.ToImmutableDictionary(),
+            Report = GetPlayerTurnReport(report, playerId),
             IsGameOver = gameState.IsGameOver
         };
     }

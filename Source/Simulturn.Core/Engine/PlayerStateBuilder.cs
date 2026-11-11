@@ -16,17 +16,11 @@ internal sealed class PlayerStateBuilder
     public required ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Compound>.Builder>.Builder Constructions { get; init; }
     public required ImmutableDictionary<Hexagon, Research>.Builder Researches { get; init; }
     public required ImmutableDictionary<Upgrade, byte>.Builder UpgradeLevels { get; init; }
-    public required ImmutableDictionary<Hexagon, Army>.Builder Losses { get; init; }
 
     /// <summary>
     /// Carried over unchanged; memories are updated by <see cref="FogOfWar.UpdateMemories"/> once all player states of a turn are resolved.
     /// </summary>
     public required ImmutableDictionary<Hexagon, HexagonMemory> Memories { get; init; }
-
-    /// <summary>
-    /// Reset every turn like the losses; filled during the fight resolution.
-    /// </summary>
-    public Dictionary<Hexagon, Dictionary<string, Army>> RevealedArmies { get; } = [];
 
     public PlayerState ToPlayerState(GameSettings gameSettings)
     {
@@ -49,11 +43,7 @@ internal sealed class PlayerStateBuilder
                 gameSettings.HexagonSettings.Keys,
                 gameSettings.PartialVisibilityRange,
                 gameSettings.VisibilityRange),
-            Losses = Losses.ToImmutableDictionary(),
-            Memories = Memories,
-            RevealedArmies = RevealedArmies.ToImmutableDictionary(
-                kvp => kvp.Key,
-                kvp => kvp.Value.ToImmutableDictionary())
+            Memories = Memories
         };
     }
 
@@ -74,7 +64,6 @@ internal sealed class PlayerStateBuilder
                 kvp => kvp.Value.ToBuilder()).ToBuilder(),
             Researches = playerState.Researches.ToBuilder(),
             UpgradeLevels = playerState.UpgradeLevels.ToBuilder(),
-            Losses = ImmutableDictionary<Hexagon, Army>.Empty.ToBuilder(),
             Memories = playerState.Memories
         };
     }

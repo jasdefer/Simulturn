@@ -18,11 +18,6 @@ public sealed record PlayerState
     public required ImmutableDictionary<Hexagon, Research> Researches { get; init; }
     public required ImmutableDictionary<Hexagon, Visibility> Visibilities { get; init; }
     /// <summary>
-    /// The losses of the player in the current turn.
-    /// </summary>
-    public required ImmutableDictionary<Hexagon, Army> Losses { get; init; }
-
-    /// <summary>
     /// A level of 0 means the upgrade is not researched and is equivalent to not having the element in the dictionary.
     /// </summary>
     public ImmutableDictionary<Upgrade, byte> UpgradeLevels { get; init; } = ImmutableDictionary<Upgrade, byte>.Empty;
@@ -32,13 +27,6 @@ public sealed record PlayerState
     /// Hexagons that were never seen have no entry.
     /// </summary>
     public ImmutableDictionary<Hexagon, HexagonMemory> Memories { get; init; } = ImmutableDictionary<Hexagon, HexagonMemory>.Empty;
-
-    /// <summary>
-    /// The armies of other players this player fought against in the current turn, keyed by
-    /// hexagon and opponent id. Fighting reveals the full composition of the participating
-    /// armies (as they entered the fight, before losses).
-    /// </summary>
-    public ImmutableDictionary<Hexagon, ImmutableDictionary<string, Army>> RevealedArmies { get; init; } = ImmutableDictionary<Hexagon, ImmutableDictionary<string, Army>>.Empty;
 
     /// <summary>
     /// The upgrades with a pending research. The next level of such an upgrade can only be

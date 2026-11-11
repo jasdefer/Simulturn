@@ -3,6 +3,7 @@ using Simulturn.Core.Extensions;
 using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
+using Simulturn.Core.Model.Report;
 using Simulturn.Core.Model.State;
 
 namespace Simulturn.AI.Players;
@@ -98,17 +99,17 @@ public sealed class SimulatorPlayer : CommanderPlayer
                 ? new ForcedModeCommander(candidate, _simulatorOptions)
                 : enemyModel();
         }
-        GameState state = believed;
-        for (int i = 0; i < _simulatorOptions.SimulationHorizon && !state.IsGameOver; i++)
+        TurnResult turnResult = new(believed, TurnReport.Empty);
+        for (int i = 0; i < _simulatorOptions.SimulationHorizon && !turnResult.State.IsGameOver; i++)
         {
             Dictionary<string, IReadOnlyDictionary<Hexagon, Command>> commands = [];
             foreach ((string id, IArtificialPlayer policy) in policies)
             {
-                commands[id] = policy.GetCommands(FogOfWar.GetPlayerGameState(state, id));
+                commands[id] = policy.GetCommands(FogOfWar.GetPlayerGameState(turnResult, id));
             }
-            state = TurnResolution.Resolve(state, commands);
+            turnResult = TurnResolution.Resolve(turnResult.State, commands);
         }
-        return StateEvaluator.Evaluate(state, playerId);
+        return StateEvaluator.Evaluate(turnResult.State, playerId);
     }
 
     /// <summary>

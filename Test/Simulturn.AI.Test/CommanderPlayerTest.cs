@@ -79,8 +79,8 @@ public sealed class CommanderPlayerTest
         };
 
         bool researched = false;
-        GameRunner.Run(gameSettings, players, maxTurns: 150, onTurnCompleted: state =>
-            researched |= state.PlayerStates["Player01"].UpgradeLevels.Any(x => x.Value > 0));
+        GameRunner.Run(gameSettings, players, maxTurns: 150, onTurnCompleted: turn =>
+            researched |= turn.State.PlayerStates["Player01"].UpgradeLevels.Any(x => x.Value > 0));
 
         researched.ShouldBeTrue("the Commander never researched an upgrade despite banked matter");
     }

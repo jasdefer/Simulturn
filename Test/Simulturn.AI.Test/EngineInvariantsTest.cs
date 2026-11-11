@@ -2,6 +2,7 @@ using Simulturn.AI.Players;
 using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
+using Simulturn.Core.Model.Report;
 using Simulturn.Core.Model.State;
 using Simulturn.Core.Setup;
 using Simulturn.Test.Common;
@@ -58,20 +59,20 @@ public sealed class EngineInvariantsTest
         IReadOnlyDictionary<string, IArtificialPlayer> players,
         Action<GameState, Dictionary<string, IReadOnlyDictionary<Hexagon, Command>>, GameState> onTurnResolved)
     {
-        GameState state = new(gameSettings);
-        while (!state.IsGameOver && state.Turn < MaxTurns)
+        TurnResult turnResult = new(new GameState(gameSettings), TurnReport.Empty);
+        while (!turnResult.State.IsGameOver && turnResult.State.Turn < MaxTurns)
         {
+            GameState state = turnResult.State;
             Dictionary<string, IReadOnlyDictionary<Hexagon, Command>> commands = [];
             foreach (string playerId in state.PlayerIds)
             {
-                commands[playerId] = players[playerId].GetCommands(FogOfWar.GetPlayerGameState(state, playerId));
+                commands[playerId] = players[playerId].GetCommands(FogOfWar.GetPlayerGameState(turnResult, playerId));
                 CommandValidator.Validate(state, playerId, commands[playerId]).ShouldBeEmpty($"{playerId} issued invalid commands on turn {state.Turn}.");
             }
-            GameState next = TurnResolution.Resolve(state, commands);
-            onTurnResolved(state, commands, next);
-            state = next;
+            turnResult = TurnResolution.Resolve(state, commands);
+            onTurnResolved(state, commands, turnResult.State);
         }
-        return state;
+        return turnResult.State;
     }
 
     [Test]

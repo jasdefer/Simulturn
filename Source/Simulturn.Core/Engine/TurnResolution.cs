@@ -1,6 +1,7 @@
 using Simulturn.Core.Extensions;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
+using Simulturn.Core.Model.Report;
 using Simulturn.Core.Model.State;
 using NewConstructions = System.Collections.Immutable.ImmutableDictionary<ushort, System.Collections.Immutable.ImmutableDictionary<Simulturn.Core.Model.Hexagon, Simulturn.Core.Model.Compound>.Builder>.Builder;
 using NewTrainings = System.Collections.Immutable.ImmutableDictionary<ushort, System.Collections.Immutable.ImmutableDictionary<Simulturn.Core.Model.Hexagon, Simulturn.Core.Model.Army>.Builder>.Builder;
@@ -8,8 +9,8 @@ using NewTrainings = System.Collections.Immutable.ImmutableDictionary<ushort, Sy
 namespace Simulturn.Core.Engine;
 
 /// <summary>
-/// Resolves one turn: a game state plus the commands of all players gives the next game state.
-/// An instance holds the working state of exactly one resolution.
+/// Resolves one turn: a game state plus the commands of all players gives the next game state
+/// and the report of what happened. An instance holds the working state of exactly one resolution.
 /// </summary>
 public sealed class TurnResolution
 {
@@ -18,6 +19,7 @@ public sealed class TurnResolution
     private readonly Dictionary<string, PlayerStateBuilder> _players;
     private readonly ImmutableDictionary<Hexagon, int>.Builder _remainingMatter;
     private readonly HashSet<Hexagon> _potentialFightHexagons = [];
+    private readonly ImmutableDictionary<Hexagon, FightReport>.Builder _fights = ImmutableDictionary.CreateBuilder<Hexagon, FightReport>();
 
     private TurnResolution(GameState state)
     {
@@ -32,7 +34,7 @@ public sealed class TurnResolution
     /// the resolution applies them without checking and an invalid command, for example a research
     /// beyond the last level of <see cref="GameSettings.Upgrades"/>, corrupts the state or throws.
     /// </summary>
-    public static GameState Resolve<TCommands>(GameState state, IReadOnlyDictionary<string, TCommands> commands)
+    public static TurnResult Resolve<TCommands>(GameState state, IReadOnlyDictionary<string, TCommands> commands)
         where TCommands : IReadOnlyDictionary<Hexagon, Command>
     {
         TurnResolution resolution = new(state);
@@ -43,7 +45,7 @@ public sealed class TurnResolution
         resolution.ResolveFights();
         resolution.DestroyBuildings();
         resolution.CancelResearchesWithoutDot();
-        return resolution.BuildNextState();
+        return new TurnResult(resolution.BuildNextState(), resolution.BuildReport());
     }
 
     private void ResolveOrders(PlayerStateBuilder player, IReadOnlyDictionary<Hexagon, Command> commands)
@@ -160,8 +162,13 @@ public sealed class TurnResolution
             {
                 continue;
             }
-            RevealArmies(hexagon, armies);
-            foreach ((string playerId, Army loss) in CalculateLosses(armies))
+            Dictionary<string, Army> losses = CalculateLosses(armies);
+            _fights.Add(hexagon, new FightReport()
+            {
+                Armies = armies.ToImmutableDictionary(x => x.PlayerId, x => x.Army),
+                Losses = losses.ToImmutableDictionary()
+            });
+            foreach ((string playerId, Army loss) in losses)
             {
                 ApplyLosses(_players[playerId], hexagon, loss);
             }
@@ -179,28 +186,6 @@ public sealed class TurnResolution
             }
         }
         return armies;
-    }
-
-    /// <summary>
-    /// Fighting reveals the participating armies to each other.
-    /// </summary>
-    private void RevealArmies(Hexagon hexagon, List<(string PlayerId, Army Army)> armies)
-    {
-        foreach ((string playerId, _) in armies)
-        {
-            if (!_players[playerId].RevealedArmies.TryGetValue(hexagon, out var revealed))
-            {
-                revealed = [];
-                _players[playerId].RevealedArmies[hexagon] = revealed;
-            }
-            foreach ((string otherPlayerId, Army otherArmy) in armies)
-            {
-                if (otherPlayerId != playerId)
-                {
-                    revealed[otherPlayerId] = otherArmy;
-                }
-            }
-        }
     }
 
     /// <summary>
@@ -235,7 +220,6 @@ public sealed class TurnResolution
 
     private void ApplyLosses(PlayerStateBuilder player, Hexagon hexagon, Army loss)
     {
-        player.Losses.Add(hexagon, loss);
         player.Armies.Merge(hexagon, -loss);
         player.UsedSpace -= loss * _settings.RequiredSpace;
         if (loss.Dot > 0)
@@ -402,6 +386,14 @@ public sealed class TurnResolution
         var playerStates = _players.ToImmutableDictionary(x => x.Key, x => x.Value.ToPlayerState(_settings));
         playerStates = FogOfWar.UpdateMemories(playerStates, remainingMatter, nextTurn);
         return GameState.FromParts(_settings, nextTurn, playerStates, remainingMatter);
+    }
+
+    private TurnReport BuildReport()
+    {
+        return new TurnReport()
+        {
+            Fights = _fights.ToImmutable()
+        };
     }
 
     private NewTrainings GetNewTrainings(IReadOnlyDictionary<Hexagon, Command> commands)

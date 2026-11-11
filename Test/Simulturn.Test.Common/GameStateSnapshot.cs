@@ -24,7 +24,6 @@ public static class GameStateSnapshot
             text.Append(CultureInfo.InvariantCulture, $"Player {playerId} matter={player.Matter} used={player.UsedSpace} available={player.AvailableSpace}\n");
             AppendPerHexagon(text, "  Army", player.Armies);
             AppendPerHexagon(text, "  Compound", player.Compounds);
-            AppendPerHexagon(text, "  Loss", player.Losses);
             AppendPerHexagon(text, "  Visibility", player.Visibilities);
             AppendPerTurn(text, "  Training", player.Trainings);
             AppendPerTurn(text, "  Construction", player.Constructions);
@@ -41,13 +40,6 @@ public static class GameStateSnapshot
                     text.Append(CultureInfo.InvariantCulture, $" {opponent}={compound}");
                 }
                 text.Append('\n');
-            }
-            foreach ((Hexagon hexagon, var revealed) in Sorted(player.RevealedArmies))
-            {
-                foreach ((string opponent, Army army) in revealed.OrderBy(x => x.Key, StringComparer.Ordinal))
-                {
-                    text.Append(CultureInfo.InvariantCulture, $"  Revealed {hexagon} {opponent} {army}\n");
-                }
             }
         }
         return text.ToString();

@@ -1,8 +1,10 @@
 ---
 id: turn-result
 title: NextTurn liefert Zustand und Ereignisse getrennt
-status: todo
+status: done
 created: 2026-11-10
+updated: 2026-11-11
+completed: 2026-11-11
 ---
 ## Problem
 
@@ -24,6 +26,17 @@ Der Report wird von `NextTurn` selbst geschrieben, an der Stelle, an der das Ere
 Der Report ist deterministisch wie die Engine und wird nie gespeichert; wer die Orders aller Züge hält ([[game-persistence]]), rechnet ihn beim Falten mit. Ein Diff kann später als Prüfung dienen (alles, was der Diff sieht, muss der Report erklären), nicht als Quelle.
 
 Dieses Item ändert nur die Struktur und verschiebt die beiden Ereignisse, die es schon gibt. Alle weiteren Ereignisse füllt [[turn-report]].
+
+## Umsetzung
+
+Entschieden am 2026-11-11:
+
+- `TurnResolution.Resolve` liefert `TurnResult(GameState State, TurnReport Report)`, ein Record und kein Tuple.
+- Der `TurnReport` ist allwissend und hält jede Tatsache einmal: `Fights` pro Hexagon mit den Armeen, wie sie in den Kampf gingen, und den Verlusten je Spieler (`FightReport`). Ein Hexagon hat höchstens einen Kampf pro Zug. Die Typen liegen in `Model/Report/`.
+- Den Ausschnitt eines Spielers schneidet `FogOfWar`, wie beim Zustand: `GetPlayerTurnReport(report, playerId)` liefert den `PlayerTurnReport` mit `Losses` und `RevealedArmies` in den bisherigen Formen. Die Engine entscheidet beim Schreiben nicht, wer ein Ereignis sehen darf.
+- `FogOfWar.GetPlayerGameState(turnResult, playerId)` schneidet Zustand und Report; `PlayerGameState.Report` trägt den Ausschnitt. `GetPlayerGameState(state, playerId)` bleibt für einen Zustand ohne aufgelösten Zug und liefert einen leeren Report.
+- Server, lokales Spiel und Replay halten das `TurnResult`; ein Client bekommt nur das `PlayerGameState`.
+- `GameRunner.Run` gibt dem `onTurnCompleted`-Callback das `TurnResult`. Die Rollouts im `SimulatorPlayer` reichen den Report an die simulierten Spieler weiter.
 
 ## Akzeptanzkriterien
 

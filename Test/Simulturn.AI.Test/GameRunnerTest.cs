@@ -1,6 +1,8 @@
 using Simulturn.AI.Players;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
+using Simulturn.Core.Model.Report;
+using Simulturn.Core.Model.State;
 using Simulturn.Core.Setup;
 using Simulturn.Test.Common;
 
@@ -98,6 +100,40 @@ public sealed class GameRunnerTest
         result.EndReason.ShouldBe(GameEndReason.MutualDestruction);
         result.WinnerId.ShouldBeNull();
         result.Turns.ShouldBe((ushort)1);
+    }
+
+    [Test]
+    public void Fight_ReachesThePlayersThroughTheReportOfTheirNextView()
+    {
+        Hexagon center = new(0, 0);
+        var gameSettings = CreateSettings(new Army() { Dot = 5 }, new Army() { Dot = 3 });
+        Dictionary<ushort, PlayerGameState> player1Views = [];
+        var players = new Dictionary<string, IArtificialPlayer>()
+        {
+            {
+                "Player01", new ScriptedPlayer(view =>
+                {
+                    player1Views[view.Turn] = view;
+                    return view.Turn == 0
+                        ? MoveAll(_player1Start, center, new Army() { Dot = 5 })
+                        : new Dictionary<Hexagon, Command>();
+                })
+            },
+            {
+                "Player02", new ScriptedPlayer(view => view.Turn == 0
+                    ? MoveAll(_player2Start, center, new Army() { Dot = 3 })
+                    : new Dictionary<Hexagon, Command>())
+            }
+        };
+        List<TurnResult> turns = [];
+
+        GameRunner.Run(gameSettings, players, maxTurns: 3, onTurnCompleted: turns.Add);
+
+        player1Views[0].Report.RevealedArmies.ShouldBeEmpty();
+        player1Views[1].Report.RevealedArmies[center]["Player02"].ShouldBe(new Army() { Dot = 3 });
+        player1Views[1].Report.Losses[center].ShouldBe(new Army() { Dot = 3 });
+        player1Views[2].Report.RevealedArmies.ShouldBeEmpty();
+        turns.Select(x => x.Report.Fights.Count).ShouldBe([1, 0, 0]);
     }
 
     [Test]
