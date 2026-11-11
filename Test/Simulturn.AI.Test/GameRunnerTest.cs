@@ -129,10 +129,10 @@ public sealed class GameRunnerTest
 
         GameRunner.Run(gameSettings, players, maxTurns: 3, onTurnCompleted: turns.Add);
 
-        player1Views[0].Report.RevealedArmies.ShouldBeEmpty();
-        player1Views[1].Report.RevealedArmies[center]["Player02"].ShouldBe(new Army() { Dot = 3 });
-        player1Views[1].Report.Losses[center].ShouldBe(new Army() { Dot = 3 });
-        player1Views[2].Report.RevealedArmies.ShouldBeEmpty();
+        player1Views[0].Report.Fights.ShouldBeEmpty();
+        player1Views[1].Report.Fights[center].Armies["Player02"].ShouldBe(new Army() { Dot = 3 });
+        player1Views[1].Report.Fights[center].Losses["Player01"].ShouldBe(new Army() { Dot = 3 });
+        player1Views[2].Report.Fights.ShouldBeEmpty();
         turns.Select(x => x.Report.Fights.Count).ShouldBe([1, 0, 0]);
     }
 

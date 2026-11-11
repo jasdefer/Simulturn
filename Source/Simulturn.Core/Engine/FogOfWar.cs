@@ -114,29 +114,21 @@ public static class FogOfWar
     }
 
     /// <summary>
-    /// The part of the report a single player is allowed to know: the fights the player took
-    /// part in, with the own losses and the armies of the opponents as they entered the fight.
+    /// The part of the report a single player is allowed to know: the own activity, the fights
+    /// the player took part in and the destroyed buildings the player lost or destroyed.
+    /// A fight is handed over complete, with the armies and the losses of every participant.
     /// </summary>
     public static PlayerTurnReport GetPlayerTurnReport(TurnReport report, string playerId)
     {
-        var losses = ImmutableDictionary.CreateBuilder<Hexagon, Army>();
-        var revealedArmies = ImmutableDictionary.CreateBuilder<Hexagon, ImmutableDictionary<string, Army>>();
-        foreach ((Hexagon hexagon, FightReport fight) in report.Fights)
-        {
-            if (!fight.Armies.ContainsKey(playerId))
-            {
-                continue;
-            }
-            revealedArmies[hexagon] = fight.Armies.Remove(playerId);
-            if (fight.Losses.TryGetValue(playerId, out Army loss))
-            {
-                losses[hexagon] = loss;
-            }
-        }
         return new PlayerTurnReport()
         {
-            Losses = losses.ToImmutable(),
-            RevealedArmies = revealedArmies.ToImmutable()
+            Activity = report.Activities.GetValueOrDefault(playerId, PlayerActivityReport.Empty),
+            Fights = report.Fights.IsEmpty
+                ? report.Fights
+                : report.Fights.Where(x => x.Value.Armies.ContainsKey(playerId)).ToImmutableDictionary(),
+            Destructions = report.Destructions.IsEmpty
+                ? report.Destructions
+                : [.. report.Destructions.Where(x => x.AttackerId == playerId || x.OwnerId == playerId)]
         };
     }
 

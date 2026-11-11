@@ -11,7 +11,7 @@ public sealed record FightReport
     public required ImmutableDictionary<string, Army> Armies { get; init; }
 
     /// <summary>
-    /// The losses of the fight.
+    /// The losses of the fight. Every player of <see cref="Armies"/> has an entry, an empty one without losses.
     /// </summary>
     public required ImmutableDictionary<string, Army> Losses { get; init; }
 }

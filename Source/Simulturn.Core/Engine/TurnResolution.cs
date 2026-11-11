@@ -20,6 +20,7 @@ public sealed class TurnResolution
     private readonly ImmutableDictionary<Hexagon, int>.Builder _remainingMatter;
     private readonly HashSet<Hexagon> _potentialFightHexagons = [];
     private readonly ImmutableDictionary<Hexagon, FightReport>.Builder _fights = ImmutableDictionary.CreateBuilder<Hexagon, FightReport>();
+    private readonly ImmutableArray<DestructionReport>.Builder _destructions = ImmutableArray.CreateBuilder<DestructionReport>();
 
     private TurnResolution(GameState state)
     {
@@ -81,8 +82,13 @@ public sealed class TurnResolution
             idleArmy = Army.Min(idleArmy, _settings.HexagonSettings[hexagon].MaxNumberOfUnitsGeneratingMatter);
             int hexagonIncome = _settings.Income * idleArmy;
             hexagonIncome = Math.Min(hexagonIncome, _remainingMatter[hexagon]);
+            if (hexagonIncome <= 0)
+            {
+                continue;
+            }
             _remainingMatter[hexagon] -= hexagonIncome;
             player.Matter += hexagonIncome;
+            player.Report.Incomes.Add(hexagon, new IncomeReport(idleArmy, hexagonIncome));
         }
     }
 
@@ -93,6 +99,7 @@ public sealed class TurnResolution
         if (player.Trainings.TryGetValue(_state.Turn, out var trainings))
         {
             player.Armies.Merge(trainings);
+            player.Report.CompletedTrainings = trainings.ToImmutable();
             _potentialFightHexagons.UnionWith(trainings.Keys); // The army might be trained on a hexagon with an enemy army
             player.Trainings.Remove(_state.Turn);
         }
@@ -105,6 +112,7 @@ public sealed class TurnResolution
         if (player.Constructions.TryGetValue(_state.Turn, out var construction))
         {
             player.Compounds.Merge(construction);
+            player.Report.CompletedConstructions = construction.ToImmutable();
             player.AvailableSpace += construction.Values.Sum(compound => compound * _settings.ProvidedSpace);
             player.Constructions.Remove(_state.Turn);
         }
@@ -131,8 +139,10 @@ public sealed class TurnResolution
         }
         foreach ((Hexagon hexagon, Research research) in player.Researches.Where(x => x.Value.CompletionTurn == _state.Turn).ToList())
         {
-            player.UpgradeLevels[research.Upgrade] = (byte)(player.UpgradeLevels.GetValueOrDefault(research.Upgrade) + 1);
+            byte level = (byte)(player.UpgradeLevels.GetValueOrDefault(research.Upgrade) + 1);
+            player.UpgradeLevels[research.Upgrade] = level;
             player.Researches.Remove(hexagon);
+            player.Report.CompletedResearches.Add(hexagon, new ResearchReport(research.Upgrade, level));
         }
     }
 
@@ -148,6 +158,7 @@ public sealed class TurnResolution
                 }
                 player.Armies.Merge(hexagon, -movement.Army);
                 player.Armies.Merge(movement.Destination, movement.Army);
+                player.Report.Movements.Add(new MovementReport(hexagon, movement.Destination, movement.Army));
                 _potentialFightHexagons.Add(movement.Destination);
             }
         }
@@ -166,7 +177,7 @@ public sealed class TurnResolution
             _fights.Add(hexagon, new FightReport()
             {
                 Armies = armies.ToImmutableDictionary(x => x.PlayerId, x => x.Army),
-                Losses = losses.ToImmutableDictionary()
+                Losses = armies.ToImmutableDictionary(x => x.PlayerId, x => losses.GetValueOrDefault(x.PlayerId))
             });
             foreach ((string playerId, Army loss) in losses)
             {
@@ -250,6 +261,10 @@ public sealed class TurnResolution
                 Compound cancel = Compound.FromBuilding(building, Math.Min(newConstruction[building], dotLosses));
                 dotLosses -= cancel[building];
                 newConstruction -= cancel;
+                if (!cancel.IsEmpty)
+                {
+                    player.Report.CanceledConstructions.Merge(hexagon, cancel);
+                }
                 if (dotLosses <= 0)
                 {
                     break;
@@ -295,6 +310,7 @@ public sealed class TurnResolution
                     }
                     defender.Compounds.Merge(hexagon, -destroyedCompound);
                     defender.AvailableSpace -= destroyedCompound * _settings.ProvidedSpace;
+                    _destructions.Add(new DestructionReport(hexagon, attackerId, defenderId, destroyedCompound));
                     CancelTrainings(defender, hexagon, destroyedCompound);
                 }
             }
@@ -351,7 +367,9 @@ public sealed class TurnResolution
                     short canceledCount = (short)Math.Min(training[unit], destroyedCount);
                     player.UsedSpace -= canceledCount * _settings.RequiredSpace[unit];
                     destroyedCount -= canceledCount;
-                    player.Trainings[turn].Merge(hexagon, -Army.FromUnit(unit, canceledCount));
+                    Army canceled = Army.FromUnit(unit, canceledCount);
+                    player.Trainings[turn].Merge(hexagon, -canceled);
+                    player.Report.CanceledTrainings.Merge(hexagon, canceled);
                 }
             }
         }
@@ -365,11 +383,12 @@ public sealed class TurnResolution
     {
         foreach (PlayerStateBuilder player in _players.Values)
         {
-            foreach (Hexagon hexagon in player.Researches.Keys.ToList())
+            foreach ((Hexagon hexagon, Research research) in player.Researches.ToList())
             {
                 if (player.Armies.GetValueOrDefault(hexagon).Dot <= 0)
                 {
                     player.Researches.Remove(hexagon);
+                    player.Report.CanceledResearches.Add(hexagon, research.Upgrade);
                 }
             }
         }
@@ -392,7 +411,11 @@ public sealed class TurnResolution
     {
         return new TurnReport()
         {
-            Fights = _fights.ToImmutable()
+            Activities = _players.ToImmutableDictionary(
+                x => x.Key,
+                x => x.Value.Report.ToReport(_state.PlayerStates[x.Key].Matter, x.Value.Matter)),
+            Fights = _fights.ToImmutable(),
+            Destructions = _destructions.ToImmutable()
         };
     }
 

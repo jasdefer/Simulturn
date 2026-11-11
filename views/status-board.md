@@ -8,12 +8,11 @@ Cards grouped into columns by `status`.
 - [Spielstände speichern und wiederherstellen](../workdown-items/game-persistence.md)
 - [Bewegungsreichweite pro Einheitentyp](../workdown-items/movement-range.md)
 - [Wissen der Spieler liegt im Regelzustand](../workdown-items/player-knowledge-in-state.md)
-- [Nachvollziehbarkeit der Zugauflösung](../workdown-items/turn-report.md)
 - [Neue UI](../workdown-items/ui.md)
 - [UI-Konzept erarbeiten](../workdown-items/ui-concept.md)
 
 ## in_progress
-_(no cards)_
+- [Nachvollziehbarkeit der Zugauflösung](../workdown-items/turn-report.md)
 
 ## done
 - [Auf die nächste .NET-Version wechseln und neue Sprachfeatures nutzen](../workdown-items/dotnet-upgrade-and-union-types.md)

@@ -22,6 +22,11 @@ internal sealed class PlayerStateBuilder
     /// </summary>
     public required ImmutableDictionary<Hexagon, HexagonMemory> Memories { get; init; }
 
+    /// <summary>
+    /// What happens to the player in this turn. Not part of the state: it goes into the report.
+    /// </summary>
+    public PlayerReportBuilder Report { get; } = new();
+
     public PlayerState ToPlayerState(GameSettings gameSettings)
     {
         return new PlayerState()

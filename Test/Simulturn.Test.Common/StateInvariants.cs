@@ -1,6 +1,7 @@
 using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
+using Simulturn.Core.Model.Report;
 using Simulturn.Core.Model.State;
 using Simulturn.Core.Model.Upgrades;
 
@@ -129,13 +130,16 @@ public static class StateInvariants
     /// Invariants over one resolved turn: the turn advances, the map and the players stay, and
     /// matter is conserved. The matter the players gained equals the matter harvested from the map
     /// minus the cost of every training, construction and research command.
+    /// The report must explain every change between the two states: armies, compounds, matter,
+    /// space, pending orders and upgrade levels. The comparison is a check, never the source of the report.
     /// </summary>
     public static IReadOnlyList<string> CheckTransition<TCommands>(GameState before,
         IReadOnlyDictionary<string, TCommands> commands,
-        GameState after)
+        TurnResult result)
         where TCommands : IReadOnlyDictionary<Hexagon, Command>
     {
         List<string> violations = [];
+        GameState after = result.State;
         if (after.Turn != before.Turn + 1)
         {
             violations.Add($"The turn advanced from {before.Turn} to {after.Turn}.");
@@ -174,7 +178,175 @@ public static class StateInvariants
             violations.Add($"Matter is not conserved: the players gained {totalGain}, but {harvested} were harvested and {totalCost} were spent.");
         }
 
+        if (violations.Count == 0)
+        {
+            CheckReport(before, commands, result, violations);
+        }
         return violations;
+    }
+
+    private static void CheckReport<TCommands>(GameState before,
+        IReadOnlyDictionary<string, TCommands> commands,
+        TurnResult result,
+        List<string> violations)
+        where TCommands : IReadOnlyDictionary<Hexagon, Command>
+    {
+        GameState after = result.State;
+        TurnReport report = result.Report;
+        GameSettings settings = before.GameSettings;
+
+        foreach (Hexagon hexagon in before.Hexagons)
+        {
+            int reported = report.Activities.Values.Sum(x => x.Incomes.TryGetValue(hexagon, out var income) ? income.Matter : 0);
+            int harvested = before.RemainingMatter[hexagon] - after.RemainingMatter[hexagon];
+            if (reported != harvested)
+            {
+                violations.Add($"Report: {hexagon} lost {harvested} matter, the reported incomes add up to {reported}.");
+            }
+        }
+
+        foreach (string playerId in before.PlayerIds)
+        {
+            if (!report.Activities.TryGetValue(playerId, out PlayerActivityReport? activity))
+            {
+                violations.Add($"Report: {playerId} has no activity.");
+                continue;
+            }
+            PlayerState playerBefore = before.PlayerStates[playerId];
+            PlayerState playerAfter = after.PlayerStates[playerId];
+            commands.TryGetValue(playerId, out TCommands? playerCommands);
+
+            if (activity.MatterBefore != playerBefore.Matter || activity.MatterAfter != playerAfter.Matter)
+            {
+                violations.Add($"Report: {playerId} went from {playerBefore.Matter} to {playerAfter.Matter} matter, reported are {activity.MatterBefore} and {activity.MatterAfter}.");
+            }
+            int income = activity.Incomes.Values.Sum(x => x.Matter);
+            int cost = playerCommands is null ? 0 : CostOf(before, playerId, playerCommands);
+            if (playerAfter.Matter - playerBefore.Matter != income - cost)
+            {
+                violations.Add($"Report: the matter of {playerId} changed by {playerAfter.Matter - playerBefore.Matter}, the reported income is {income} and the commands cost {cost}.");
+            }
+
+            Dictionary<Hexagon, Army> moved = [];
+            foreach (MovementReport movement in activity.Movements)
+            {
+                moved[movement.Origin] = moved.GetValueOrDefault(movement.Origin) - movement.Army;
+                moved[movement.Destination] = moved.GetValueOrDefault(movement.Destination) + movement.Army;
+            }
+
+            Army ordered = Army.Empty;
+            Army lost = Army.Empty;
+            Army canceledTrainings = Army.Empty;
+            Compound built = Compound.Empty;
+            Compound destroyed = Compound.Empty;
+            foreach (Hexagon hexagon in before.Hexagons)
+            {
+                Command? command = playerCommands?.GetValueOrDefault(hexagon);
+                Army hexagonLost = report.Fights.TryGetValue(hexagon, out FightReport? fight)
+                    ? fight.Losses.GetValueOrDefault(playerId)
+                    : Army.Empty;
+                Compound hexagonDestroyed = Compound.Empty;
+                foreach (DestructionReport destruction in report.Destructions)
+                {
+                    if (destruction.Hexagon == hexagon && destruction.OwnerId == playerId)
+                    {
+                        hexagonDestroyed += destruction.Buildings;
+                    }
+                }
+                Army hexagonTrained = activity.CompletedTrainings.GetValueOrDefault(hexagon);
+                Army hexagonCanceledTrainings = activity.CanceledTrainings.GetValueOrDefault(hexagon);
+                Compound hexagonBuilt = activity.CompletedConstructions.GetValueOrDefault(hexagon);
+                Army hexagonOrdered = command?.Training ?? Army.Empty;
+                ordered += hexagonOrdered;
+                lost += hexagonLost;
+                canceledTrainings += hexagonCanceledTrainings;
+                built += hexagonBuilt;
+                destroyed += hexagonDestroyed;
+
+                Army expectedArmy = playerBefore.Armies.GetValueOrDefault(hexagon) + hexagonTrained + moved.GetValueOrDefault(hexagon) - hexagonLost;
+                if (playerAfter.Armies.GetValueOrDefault(hexagon) != expectedArmy)
+                {
+                    violations.Add($"Report: the army of {playerId} on {hexagon} is {playerAfter.Armies.GetValueOrDefault(hexagon)}, the report explains {expectedArmy}.");
+                }
+
+                Compound expectedCompound = playerBefore.Compounds.GetValueOrDefault(hexagon) + hexagonBuilt - hexagonDestroyed;
+                if (playerAfter.Compounds.GetValueOrDefault(hexagon) != expectedCompound)
+                {
+                    violations.Add($"Report: the compound of {playerId} on {hexagon} is {playerAfter.Compounds.GetValueOrDefault(hexagon)}, the report explains {expectedCompound}.");
+                }
+
+                Army expectedTrainings = Pending(playerBefore.Trainings, hexagon) + hexagonOrdered - hexagonTrained - hexagonCanceledTrainings;
+                if (Pending(playerAfter.Trainings, hexagon) != expectedTrainings)
+                {
+                    violations.Add($"Report: the pending trainings of {playerId} on {hexagon} are {Pending(playerAfter.Trainings, hexagon)}, the report explains {expectedTrainings}.");
+                }
+
+                Compound expectedConstructions = Pending(playerBefore.Constructions, hexagon)
+                    + (command?.Construction ?? Compound.Empty)
+                    - hexagonBuilt
+                    - activity.CanceledConstructions.GetValueOrDefault(hexagon);
+                if (Pending(playerAfter.Constructions, hexagon) != expectedConstructions)
+                {
+                    violations.Add($"Report: the pending constructions of {playerId} on {hexagon} are {Pending(playerAfter.Constructions, hexagon)}, the report explains {expectedConstructions}.");
+                }
+
+                bool expectedResearch = (playerBefore.Researches.ContainsKey(hexagon) || command?.Research is not null)
+                    && !activity.CompletedResearches.ContainsKey(hexagon)
+                    && !activity.CanceledResearches.ContainsKey(hexagon);
+                if (playerAfter.Researches.ContainsKey(hexagon) != expectedResearch)
+                {
+                    violations.Add($"Report: {playerId} has {(expectedResearch ? "no" : "a")} pending research on {hexagon}, the report explains the opposite.");
+                }
+            }
+
+            int expectedUsedSpace = playerBefore.UsedSpace + (ordered - lost - canceledTrainings) * settings.RequiredSpace;
+            if (playerAfter.UsedSpace != expectedUsedSpace)
+            {
+                violations.Add($"Report: the used space of {playerId} is {playerAfter.UsedSpace}, the report explains {expectedUsedSpace}.");
+            }
+            int expectedAvailableSpace = playerBefore.AvailableSpace + (built - destroyed) * settings.ProvidedSpace;
+            if (playerAfter.AvailableSpace != expectedAvailableSpace)
+            {
+                violations.Add($"Report: the available space of {playerId} is {playerAfter.AvailableSpace}, the report explains {expectedAvailableSpace}.");
+            }
+
+            foreach (Upgrade upgrade in playerBefore.UpgradeLevels.Keys.Union(playerAfter.UpgradeLevels.Keys))
+            {
+                int completed = activity.CompletedResearches.Values.Count(x => x.Upgrade == upgrade);
+                int expectedLevel = playerBefore.UpgradeLevels.GetValueOrDefault(upgrade) + completed;
+                if (playerAfter.UpgradeLevels.GetValueOrDefault(upgrade) != expectedLevel)
+                {
+                    violations.Add($"Report: {playerId} has level {playerAfter.UpgradeLevels.GetValueOrDefault(upgrade)} of {upgrade}, the report explains {expectedLevel}.");
+                }
+            }
+            foreach (ResearchReport research in activity.CompletedResearches.Values)
+            {
+                if (playerAfter.UpgradeLevels.GetValueOrDefault(research.Upgrade) < research.Level)
+                {
+                    violations.Add($"Report: {playerId} completed level {research.Level} of {research.Upgrade}, the state has level {playerAfter.UpgradeLevels.GetValueOrDefault(research.Upgrade)}.");
+                }
+            }
+        }
+    }
+
+    private static Army Pending(ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Army>> queue, Hexagon hexagon)
+    {
+        Army pending = Army.Empty;
+        foreach (var orders in queue.Values)
+        {
+            pending += orders.GetValueOrDefault(hexagon);
+        }
+        return pending;
+    }
+
+    private static Compound Pending(ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Compound>> queue, Hexagon hexagon)
+    {
+        Compound pending = Compound.Empty;
+        foreach (var orders in queue.Values)
+        {
+            pending += orders.GetValueOrDefault(hexagon);
+        }
+        return pending;
     }
 
     /// <summary>
