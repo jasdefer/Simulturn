@@ -4,6 +4,7 @@ using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
+using Simulturn.Core.Model.State.Validation;
 using Simulturn.Core.Setup;
 using Simulturn.Test.Common;
 using System.Collections.Immutable;
@@ -161,5 +162,29 @@ public sealed class PlayerGameStateTest
         var gameState = new GameState(_gameSettings);
 
         Should.Throw<ArgumentException>(() => FogOfWar.GetPlayerGameState(gameState, "UnknownPlayer"));
+    }
+
+    [Test]
+    public void ValidateWithView_AcceptsValidCommands()
+    {
+        var gameState = new GameState(_gameSettings);
+        var view = FogOfWar.GetPlayerGameState(gameState, "Player01");
+        var commands = Move("Player01", _player1Start, new Hexagon(-2, 0), new Army() { Dot = 2 });
+
+        CommandValidator.Validate(view, commands["Player01"]).ShouldBeEmpty();
+    }
+
+    [Test]
+    public void ValidateWithView_ReportsTheSameViolationsAsWithTheGameState()
+    {
+        var gameState = new GameState(_gameSettings);
+        var view = FogOfWar.GetPlayerGameState(gameState, "Player01");
+        var commands = Move("Player01", _player1Start, new Hexagon(-2, 0), new Army() { Dot = 10 });
+
+        var withView = CommandValidator.Validate(view, commands["Player01"]).Select(x => x.Value).ToList();
+        var withState = CommandValidator.Validate(gameState, "Player01", commands["Player01"]).Select(x => x.Value).ToList();
+
+        withView.ShouldHaveSingleItem().ShouldBe(new MissingArmyForMovement("Player01", _player1Start, Unit.Dot, 10, 5));
+        withView.ShouldBe(withState);
     }
 }

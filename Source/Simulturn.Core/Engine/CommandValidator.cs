@@ -19,11 +19,11 @@ public sealed class CommandValidator
     private readonly Dictionary<Upgrade, byte> _requestedUpgradeCounts;
     private readonly Dictionary<Hexagon, int> _arrivingDots;
 
-    private CommandValidator(GameState state, string playerId, IReadOnlyDictionary<Hexagon, Command> commands)
+    private CommandValidator(GameSettings settings, string playerId, PlayerState playerState, IReadOnlyDictionary<Hexagon, Command> commands)
     {
-        _settings = state.GameSettings;
+        _settings = settings;
         _playerId = playerId;
-        _playerState = state.PlayerStates[playerId];
+        _playerState = playerState;
         _commands = commands;
         _upgradesInResearch = _playerState.UpgradesInResearch();
         _requestedUpgradeCounts = GetRequestedUpgradeCounts(commands);
@@ -42,11 +42,21 @@ public sealed class CommandValidator
             yield break;
         }
 
-        CommandValidator validator = new(state, playerId, commands);
+        CommandValidator validator = new(state.GameSettings, playerId, state.PlayerStates[playerId], commands);
         foreach (CommandValidation validation in validator.ValidateCommands())
         {
             yield return validation;
         }
+    }
+
+    /// <summary>
+    /// The same check for a player who only holds the own view: the rules read nothing but the
+    /// settings and the own state, so the result equals the one for the full game state.
+    /// </summary>
+    public static IEnumerable<CommandValidation> Validate(PlayerGameState view, IReadOnlyDictionary<Hexagon, Command> commands)
+    {
+        CommandValidator validator = new(view.GameSettings, view.PlayerId, view.PlayerState, commands);
+        return validator.ValidateCommands();
     }
 
     private IEnumerable<CommandValidation> ValidateCommands()
