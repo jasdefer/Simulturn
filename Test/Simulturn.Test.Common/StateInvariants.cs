@@ -1,4 +1,5 @@
 using Simulturn.Core.Engine;
+using Simulturn.Core.Extensions;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.Report;
@@ -35,9 +36,7 @@ public static class StateInvariants
             }
 
             int armySpace = player.Armies.Values.Sum(army => army * settings.RequiredSpace);
-            int trainingSpace = player.Trainings
-                .SelectMany(x => x.Value.Values)
-                .Sum(army => army * settings.RequiredSpace);
+            int trainingSpace = player.Trainings.Values.Sum(army => army * settings.RequiredSpace);
             if (player.UsedSpace != armySpace + trainingSpace)
             {
                 violations.Add($"{playerId}: used space is {player.UsedSpace}, but armies ({armySpace}) and pending trainings ({trainingSpace}) require {armySpace + trainingSpace}.");
@@ -258,19 +257,19 @@ public static class StateInvariants
                     violations.Add($"Report: the compound of {playerId} on {hexagon} is {playerAfter.Compounds.GetValueOrDefault(hexagon)}, the report explains {expectedCompound}.");
                 }
 
-                Army expectedTrainings = Pending(playerBefore.Trainings, hexagon) + hexagonOrdered - hexagonTrained - hexagonCanceledTrainings;
-                if (Pending(playerAfter.Trainings, hexagon) != expectedTrainings)
+                Army expectedTrainings = playerBefore.Trainings.On(hexagon) + hexagonOrdered - hexagonTrained - hexagonCanceledTrainings;
+                if (playerAfter.Trainings.On(hexagon) != expectedTrainings)
                 {
-                    violations.Add($"Report: the pending trainings of {playerId} on {hexagon} are {Pending(playerAfter.Trainings, hexagon)}, the report explains {expectedTrainings}.");
+                    violations.Add($"Report: the pending trainings of {playerId} on {hexagon} are {playerAfter.Trainings.On(hexagon)}, the report explains {expectedTrainings}.");
                 }
 
-                Compound expectedConstructions = Pending(playerBefore.Constructions, hexagon)
+                Compound expectedConstructions = playerBefore.Constructions.On(hexagon)
                     + (command?.Construction ?? Compound.Empty)
                     - hexagonBuilt
                     - activity.CanceledConstructions.GetValueOrDefault(hexagon);
-                if (Pending(playerAfter.Constructions, hexagon) != expectedConstructions)
+                if (playerAfter.Constructions.On(hexagon) != expectedConstructions)
                 {
-                    violations.Add($"Report: the pending constructions of {playerId} on {hexagon} are {Pending(playerAfter.Constructions, hexagon)}, the report explains {expectedConstructions}.");
+                    violations.Add($"Report: the pending constructions of {playerId} on {hexagon} are {playerAfter.Constructions.On(hexagon)}, the report explains {expectedConstructions}.");
                 }
 
                 bool expectedResearch = (playerBefore.Researches.ContainsKey(hexagon) || command?.Research is not null)
@@ -310,26 +309,6 @@ public static class StateInvariants
                 }
             }
         }
-    }
-
-    private static Army Pending(ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Army>> queue, Hexagon hexagon)
-    {
-        Army pending = Army.Empty;
-        foreach (var orders in queue.Values)
-        {
-            pending += orders.GetValueOrDefault(hexagon);
-        }
-        return pending;
-    }
-
-    private static Compound Pending(ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Compound>> queue, Hexagon hexagon)
-    {
-        Compound pending = Compound.Empty;
-        foreach (var orders in queue.Values)
-        {
-            pending += orders.GetValueOrDefault(hexagon);
-        }
-        return pending;
     }
 
     /// <summary>

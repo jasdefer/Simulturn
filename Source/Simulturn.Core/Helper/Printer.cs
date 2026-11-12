@@ -33,20 +33,14 @@ internal static class Printer
             {
                 info.Add($"{playerId}: {compound.ToCompactString()}");
             }
-            foreach ((ushort turn, var trainings) in playerState.Trainings)
+            foreach ((TurnHexagon key, Army training) in playerState.Trainings.Where(x => x.Key.Hexagon == hexagon).OrderBy(x => x.Key.Turn))
             {
-                if (trainings.TryGetValue(hexagon, out var training) && !training.IsEmpty)
-                {
-                    info.Add($"↻ {turn} 🎓: {training.ToCompactString()}");
-                }
+                info.Add($"↻ {key.Turn} 🎓: {training.ToCompactString()}");
             }
 
-            foreach ((ushort turn, var constructions) in playerState.Constructions)
+            foreach ((TurnHexagon key, Compound construction) in playerState.Constructions.Where(x => x.Key.Hexagon == hexagon).OrderBy(x => x.Key.Turn))
             {
-                if (constructions.TryGetValue(hexagon, out var construction) && !construction.IsEmpty)
-                {
-                    info.Add($"↻ {turn} ⚒: {construction.ToCompactString()}");
-                }
+                info.Add($"↻ {key.Turn} ⚒: {construction.ToCompactString()}");
             }
         }
         return info;

@@ -54,7 +54,7 @@ public sealed class PendingQueueTest
         var turn2 = turn1.PlayEmptyTurn();
 
         // Assert
-        turn1.PlayerStates["Player01"].Trainings.ShouldHaveSingleItem().Key.ShouldBe((ushort)1);
+        turn1.PlayerStates["Player01"].Trainings.ShouldHaveSingleItem().Key.Turn.ShouldBe((ushort)1);
         turn1.PlayerStates["Player01"].Armies[_start].ShouldBe(new Army() { Dot = 5 });
         turn2.PlayerStates["Player01"].Trainings.ShouldBeEmpty();
         turn2.PlayerStates["Player01"].Armies[_start].ShouldBe(new Army() { Dot = 5, Circle = 1 });
@@ -71,7 +71,7 @@ public sealed class PendingQueueTest
         var turn2 = turn1.PlayEmptyTurn();
 
         // Assert
-        turn1.PlayerStates["Player01"].Constructions.ShouldHaveSingleItem().Key.ShouldBe((ushort)1);
+        turn1.PlayerStates["Player01"].Constructions.ShouldHaveSingleItem().Key.Turn.ShouldBe((ushort)1);
         turn1.PlayerStates["Player01"].Compounds[_start].ShouldBe(new Compound() { Plane = 1, Dome = 1 });
         turn2.PlayerStates["Player01"].Constructions.ShouldBeEmpty();
         turn2.PlayerStates["Player01"].Compounds[_start].ShouldBe(new Compound() { Plane = 1, Dome = 1, Axis = 1 });
@@ -101,8 +101,8 @@ public sealed class PendingQueueTest
     {
         var state = WithPlayer1(player => player with
         {
-            Trainings = ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Army>>.Empty
-                .Add(0, ImmutableDictionary<Hexagon, Army>.Empty.Add(_start, new Army() { Dot = 1 }))
+            Trainings = ImmutableDictionary<TurnHexagon, Army>.Empty
+                .Add(new TurnHexagon(0, _start), new Army() { Dot = 1 })
         });
 
         var validation = StateValidator.Validate(state).ShouldHaveSingleItem().Value.ShouldBeOfType<ExpiredTraining>();
@@ -116,8 +116,8 @@ public sealed class PendingQueueTest
     {
         var state = WithPlayer1(player => player with
         {
-            Constructions = ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Compound>>.Empty
-                .Add(0, ImmutableDictionary<Hexagon, Compound>.Empty.Add(_start, new Compound() { Axis = 1 }))
+            Constructions = ImmutableDictionary<TurnHexagon, Compound>.Empty
+                .Add(new TurnHexagon(0, _start), new Compound() { Axis = 1 })
         });
 
         var validation = StateValidator.Validate(state).ShouldHaveSingleItem().Value.ShouldBeOfType<ExpiredConstruction>();
@@ -145,11 +145,52 @@ public sealed class PendingQueueTest
     {
         var state = WithPlayer1(player => player with
         {
-            Trainings = ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Army>>.Empty
-                .Add(1, ImmutableDictionary<Hexagon, Army>.Empty.Add(_start, new Army() { Dot = 1 }))
+            Trainings = ImmutableDictionary<TurnHexagon, Army>.Empty
+                .Add(new TurnHexagon(1, _start), new Army() { Dot = 1 })
         });
 
         StateValidator.Validate(state).ShouldBeEmpty();
+    }
+
+    /// <summary>
+    /// One dome trains one circle at a time, whatever the completion turns of the trainings.
+    /// </summary>
+    [Test]
+    public void IsValid_TrainingsOfSeveralTurnsOnOneHexagon_NeedOneBuildingEach()
+    {
+        var state = WithPlayer1(player => player with
+        {
+            Trainings = ImmutableDictionary<TurnHexagon, Army>.Empty
+                .Add(new TurnHexagon(1, _start), new Army() { Circle = 1 })
+                .Add(new TurnHexagon(2, _start), new Army() { Circle = 1 })
+        });
+
+        var validation = StateValidator.Validate(state).ShouldHaveSingleItem().Value.ShouldBeOfType<MissingBuildingForTraining>();
+
+        validation.Hexagon.ShouldBe(_start);
+        validation.Unit.ShouldBe(Unit.Circle);
+        validation.TrainedCount.ShouldBe((short)2);
+        validation.BuildingCount.ShouldBe((short)1);
+    }
+
+    /// <summary>
+    /// Five dots build five buildings at a time, whatever the completion turns of the constructions.
+    /// </summary>
+    [Test]
+    public void IsValid_ConstructionsOfSeveralTurnsOnOneHexagon_NeedOneDotEach()
+    {
+        var state = WithPlayer1(player => player with
+        {
+            Constructions = ImmutableDictionary<TurnHexagon, Compound>.Empty
+                .Add(new TurnHexagon(1, _start), new Compound() { Axis = 3 })
+                .Add(new TurnHexagon(2, _start), new Compound() { Axis = 3 })
+        });
+
+        var validation = StateValidator.Validate(state).ShouldHaveSingleItem().Value.ShouldBeOfType<MissingDotsForConstruction>();
+
+        validation.Hexagon.ShouldBe(_start);
+        validation.Constructions.ShouldBe(new Compound() { Axis = 6 });
+        validation.AvailableDots.ShouldBe((short)5);
     }
 
     /// <summary>

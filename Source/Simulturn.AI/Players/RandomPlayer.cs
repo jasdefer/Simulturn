@@ -183,9 +183,7 @@ public sealed class RandomPlayer : IArtificialPlayer
             }
 
             // Buildings already training units on or after this turn are occupied.
-            Army pendingTrainings = playerState.Trainings
-                .Select(x => x.Value.GetValueOrDefault(hexagon))
-                .Sum();
+            Army pendingTrainings = playerState.Trainings.On(hexagon);
 
             int budget = matter;
             int space = freeSpace;
@@ -317,12 +315,9 @@ public sealed class RandomPlayer : IArtificialPlayer
     private static Dictionary<Hexagon, int> GetPendingConstructionDots(PlayerState playerState)
     {
         Dictionary<Hexagon, int> constructionDots = [];
-        foreach ((ushort completionTurn, var constructionsPerHexagon) in playerState.Constructions)
+        foreach ((TurnHexagon key, Compound compound) in playerState.Constructions)
         {
-            foreach ((Hexagon hexagon, Compound compound) in constructionsPerHexagon)
-            {
-                constructionDots[hexagon] = constructionDots.GetValueOrDefault(hexagon) + compound.Sum();
-            }
+            constructionDots[key.Hexagon] = constructionDots.GetValueOrDefault(key.Hexagon) + compound.Sum();
         }
         return constructionDots;
     }

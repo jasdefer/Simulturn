@@ -12,8 +12,8 @@ internal sealed class PlayerStateBuilder
     public int AvailableSpace { get; set; }
     public required ImmutableDictionary<Hexagon, Army>.Builder Armies { get; init; }
     public required ImmutableDictionary<Hexagon, Compound>.Builder Compounds { get; init; }
-    public required ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Army>.Builder>.Builder Trainings { get; init; }
-    public required ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Compound>.Builder>.Builder Constructions { get; init; }
+    public required ImmutableDictionary<TurnHexagon, Army>.Builder Trainings { get; init; }
+    public required ImmutableDictionary<TurnHexagon, Compound>.Builder Constructions { get; init; }
     public required ImmutableDictionary<Hexagon, Research>.Builder Researches { get; init; }
     public required ImmutableDictionary<Upgrade, byte>.Builder UpgradeLevels { get; init; }
 
@@ -31,12 +31,8 @@ internal sealed class PlayerStateBuilder
             AvailableSpace = AvailableSpace,
             Armies = Armies.ToImmutableDictionary(),
             Compounds = Compounds.ToImmutableDictionary(),
-            Trainings = Trainings.ToImmutableDictionary(
-                kvp => kvp.Key,
-                kvp => kvp.Value.ToImmutableDictionary()),
-            Constructions = Constructions.ToImmutableDictionary(
-                kvp => kvp.Key,
-                kvp => kvp.Value.ToImmutableDictionary()),
+            Trainings = Trainings.ToImmutableDictionary(),
+            Constructions = Constructions.ToImmutableDictionary(),
             Researches = Researches.ToImmutableDictionary(),
             UpgradeLevels = UpgradeLevels.ToImmutableDictionary()
         };
@@ -51,12 +47,8 @@ internal sealed class PlayerStateBuilder
             AvailableSpace = playerState.AvailableSpace,
             Armies = playerState.Armies.ToBuilder(),
             Compounds = playerState.Compounds.ToBuilder(),
-            Trainings = playerState.Trainings.ToImmutableDictionary(
-                kvp => kvp.Key,
-                kvp => kvp.Value.ToBuilder()).ToBuilder(),
-            Constructions = playerState.Constructions.ToImmutableDictionary(
-                kvp => kvp.Key,
-                kvp => kvp.Value.ToBuilder()).ToBuilder(),
+            Trainings = playerState.Trainings.ToBuilder(),
+            Constructions = playerState.Constructions.ToBuilder(),
             Researches = playerState.Researches.ToBuilder(),
             UpgradeLevels = playerState.UpgradeLevels.ToBuilder()
         };

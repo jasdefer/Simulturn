@@ -43,11 +43,12 @@ public static class GameStateSnapshot
         }
     }
 
-    private static void AppendPerTurn<TValue>(StringBuilder text, string label, IReadOnlyDictionary<ushort, ImmutableDictionary<Hexagon, TValue>> queue)
+    private static void AppendPerTurn<TValue>(StringBuilder text, string label, IReadOnlyDictionary<TurnHexagon, TValue> queue)
     {
-        foreach ((ushort turn, var perHexagon) in queue.OrderBy(x => x.Key))
+        var sorted = queue.OrderBy(x => x.Key.Turn).ThenBy(x => x.Key.Hexagon.X).ThenBy(x => x.Key.Hexagon.Y);
+        foreach ((TurnHexagon key, TValue value) in sorted)
         {
-            AppendPerHexagon(text, $"{label} turn={turn}", perHexagon);
+            text.Append(CultureInfo.InvariantCulture, $"{label} turn={key.Turn} {key.Hexagon} {value}\n");
         }
     }
 

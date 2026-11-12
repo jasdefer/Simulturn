@@ -16,6 +16,22 @@ public static class CollectionExtensions
         public Compound Sum() => compounds.Aggregate(new Compound(), (acc, compound) => acc + compound);
     }
 
+    extension(IReadOnlyDictionary<TurnHexagon, Army> trainings)
+    {
+        /// <summary>
+        /// The pending trainings on the hexagon, all completion turns added up.
+        /// </summary>
+        public Army On(Hexagon hexagon) => trainings.Where(x => x.Key.Hexagon == hexagon).Select(x => x.Value).Sum();
+    }
+
+    extension(IReadOnlyDictionary<TurnHexagon, Compound> constructions)
+    {
+        /// <summary>
+        /// The pending constructions on the hexagon, all completion turns added up.
+        /// </summary>
+        public Compound On(Hexagon hexagon) => constructions.Where(x => x.Key.Hexagon == hexagon).Select(x => x.Value).Sum();
+    }
+
     extension(IEnumerable<IUpgradeLevel> upgrades)
     {
         public FrozenDictionary<Upgrade, ImmutableArray<IUpgradeLevel>> ToDictionary() =>

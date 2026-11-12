@@ -3,8 +3,6 @@ using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.Report;
 using Simulturn.Core.Model.State;
-using NewConstructions = System.Collections.Immutable.ImmutableDictionary<ushort, System.Collections.Immutable.ImmutableDictionary<Simulturn.Core.Model.Hexagon, Simulturn.Core.Model.Compound>.Builder>.Builder;
-using NewTrainings = System.Collections.Immutable.ImmutableDictionary<ushort, System.Collections.Immutable.ImmutableDictionary<Simulturn.Core.Model.Hexagon, Simulturn.Core.Model.Army>.Builder>.Builder;
 
 namespace Simulturn.Core.Engine;
 
@@ -51,11 +49,9 @@ public sealed class TurnResolution
 
     private void ResolveOrders(PlayerStateBuilder player, IReadOnlyDictionary<Hexagon, Command> commands)
     {
-        NewConstructions newConstructions = GetNewConstructions(commands);
-        NewTrainings newTrainings = GetNewTrainings(commands);
-        CollectIncome(player, newConstructions);
-        ResolveTrainings(player, newTrainings);
-        ResolveConstructions(player, newConstructions);
+        CollectIncome(player, commands);
+        ResolveTrainings(player, commands);
+        ResolveConstructions(player, commands);
         ResolveResearches(player, commands);
         MoveArmies(player, commands);
     }
@@ -63,7 +59,7 @@ public sealed class TurnResolution
     /// <summary>
     /// Dots that start a construction this turn do not harvest.
     /// </summary>
-    private void CollectIncome(PlayerStateBuilder player, NewConstructions newConstructions)
+    private void CollectIncome(PlayerStateBuilder player, IReadOnlyDictionary<Hexagon, Command> commands)
     {
         foreach ((Hexagon hexagon, Army army) in player.Armies)
         {
@@ -71,13 +67,13 @@ public sealed class TurnResolution
             {
                 continue;
             }
-            Compound constructions = newConstructions
-                .Select(x => x.Value.GetValueOrDefault(hexagon))
-                .Sum();
+            int startedConstructions = commands.TryGetValue(hexagon, out Command? command)
+                ? EnumValues.Buildings.Sum(building => Math.Max(0, (int)command.Construction[building]))
+                : 0;
 
             var idleArmy = army with
             {
-                Dot = (short)Math.Max(0, army.Dot - constructions.Sum())
+                Dot = (short)Math.Max(0, army.Dot - startedConstructions)
             };
             idleArmy = Army.Min(idleArmy, _settings.HexagonSettings[hexagon].MaxNumberOfUnitsGeneratingMatter);
             int hexagonIncome = _settings.Income * idleArmy;
@@ -92,31 +88,63 @@ public sealed class TurnResolution
         }
     }
 
-    private void ResolveTrainings(PlayerStateBuilder player, NewTrainings newTrainings)
+    /// <summary>
+    /// Pays and queues the new trainings, then completes the ones due this turn.
+    /// </summary>
+    private void ResolveTrainings(PlayerStateBuilder player, IReadOnlyDictionary<Hexagon, Command> commands)
     {
-        player.UsedSpace += newTrainings.Values.SelectMany(x => x.Values).Sum(army => army * _settings.RequiredSpace);
-        player.Trainings.Merge(newTrainings);
-        if (player.Trainings.TryGetValue(_state.Turn, out var trainings))
+        foreach ((Hexagon hexagon, Command command) in commands)
         {
-            player.Armies.Merge(trainings);
-            player.Report.CompletedTrainings = trainings.ToImmutable();
-            _potentialFightHexagons.UnionWith(trainings.Keys); // The army might be trained on a hexagon with an enemy army
-            player.Trainings.Remove(_state.Turn);
+            foreach (Unit unit in EnumValues.Units)
+            {
+                if (command.Training[unit] <= 0)
+                {
+                    continue;
+                }
+                Army training = Army.FromUnit(unit, command.Training[unit]);
+                // Subtract 1 to account for the current turn, the turn increments after all game state logic is completed
+                ushort completionTurn = (ushort)(_state.Turn + _settings.TrainingDuration[unit] - 1);
+                player.Trainings.Merge(new TurnHexagon(completionTurn, hexagon), training);
+                player.UsedSpace += training * _settings.RequiredSpace;
+                player.Matter -= training * _settings.ArmyCost;
+            }
         }
-        player.Matter -= newTrainings.Sum(x => x.Value.Values.Sum(training => training * _settings.ArmyCost));
+        foreach ((TurnHexagon key, Army training) in player.Trainings.Where(x => x.Key.Turn == _state.Turn).ToList())
+        {
+            player.Trainings.Remove(key);
+            player.Armies.Merge(key.Hexagon, training);
+            player.Report.CompletedTrainings.Add(key.Hexagon, training);
+            _potentialFightHexagons.Add(key.Hexagon); // The army might be trained on a hexagon with an enemy army
+        }
     }
 
-    private void ResolveConstructions(PlayerStateBuilder player, NewConstructions newConstructions)
+    /// <summary>
+    /// Pays and queues the new constructions, then completes the ones due this turn.
+    /// </summary>
+    private void ResolveConstructions(PlayerStateBuilder player, IReadOnlyDictionary<Hexagon, Command> commands)
     {
-        player.Constructions.Merge(newConstructions);
-        if (player.Constructions.TryGetValue(_state.Turn, out var construction))
+        foreach ((Hexagon hexagon, Command command) in commands)
         {
-            player.Compounds.Merge(construction);
-            player.Report.CompletedConstructions = construction.ToImmutable();
-            player.AvailableSpace += construction.Values.Sum(compound => compound * _settings.ProvidedSpace);
-            player.Constructions.Remove(_state.Turn);
+            foreach (Building building in EnumValues.Buildings)
+            {
+                if (command.Construction[building] <= 0)
+                {
+                    continue;
+                }
+                Compound construction = Compound.FromBuilding(building, command.Construction[building]);
+                // Subtract 1 to account for the current turn, the turn increments after all game state logic is completed
+                ushort completionTurn = (ushort)(_state.Turn + _settings.ConstructionDuration[building] - 1);
+                player.Constructions.Merge(new TurnHexagon(completionTurn, hexagon), construction);
+                player.Matter -= construction * _settings.CompoundCost;
+            }
         }
-        player.Matter -= newConstructions.Sum(x => x.Value.Values.Sum(compound => compound * _settings.CompoundCost));
+        foreach ((TurnHexagon key, Compound construction) in player.Constructions.Where(x => x.Key.Turn == _state.Turn).ToList())
+        {
+            player.Constructions.Remove(key);
+            player.Compounds.Merge(key.Hexagon, construction);
+            player.Report.CompletedConstructions.Add(key.Hexagon, construction);
+            player.AvailableSpace += construction * _settings.ProvidedSpace;
+        }
     }
 
     /// <summary>
@@ -244,43 +272,26 @@ public sealed class TurnResolution
     /// </summary>
     private static void CancelConstructions(PlayerStateBuilder player, Hexagon hexagon, short dotLosses)
     {
-        var canceledConstructionCandidates = player.Constructions.OrderByDescending(x => x.Key);
-        foreach ((ushort turn, var constructionForTurn) in canceledConstructionCandidates)
+        var candidates = player.Constructions
+            .Where(x => x.Key.Hexagon == hexagon)
+            .OrderByDescending(x => x.Key.Turn)
+            .ToList();
+        foreach ((TurnHexagon key, Compound construction) in candidates)
         {
-            if (!constructionForTurn.TryGetValue(hexagon, out var construction) || construction.IsEmpty)
+            foreach (Building building in EnumValues.Buildings)
             {
-                continue;
-            }
-            Compound newConstruction = construction;
-            foreach (var building in EnumValues.Buildings)
-            {
-                if (newConstruction[building] <= 0)
+                if (dotLosses <= 0)
+                {
+                    return;
+                }
+                if (construction[building] <= 0)
                 {
                     continue;
                 }
-                Compound cancel = Compound.FromBuilding(building, Math.Min(newConstruction[building], dotLosses));
-                dotLosses -= cancel[building];
-                newConstruction -= cancel;
-                if (!cancel.IsEmpty)
-                {
-                    player.Report.CanceledConstructions.Merge(hexagon, cancel);
-                }
-                if (dotLosses <= 0)
-                {
-                    break;
-                }
-            }
-            if (newConstruction.IsEmpty)
-            {
-                player.Constructions[turn].Remove(hexagon);
-                if (player.Constructions[turn].Count == 0)
-                {
-                    player.Constructions.Remove(turn);
-                }
-            }
-            else
-            {
-                player.Constructions[turn][hexagon] = newConstruction;
+                Compound canceled = Compound.FromBuilding(building, Math.Min(construction[building], dotLosses));
+                dotLosses -= canceled[building];
+                player.Constructions.Merge(key, -canceled);
+                player.Report.CanceledConstructions.Merge(hexagon, canceled);
             }
         }
     }
@@ -339,23 +350,20 @@ public sealed class TurnResolution
     }
 
     /// <summary>
-    /// Every destroyed building cancels one training that needs it and refunds the space.
+    /// Every destroyed building cancels one training that needs it and refunds the space,
+    /// the earliest completion turn first.
     /// </summary>
     private void CancelTrainings(PlayerStateBuilder player, Hexagon hexagon, Compound destroyedCompound)
     {
-        foreach (var building in EnumValues.Buildings)
+        var candidates = player.Trainings
+            .Where(x => x.Key.Hexagon == hexagon)
+            .OrderBy(x => x.Key.Turn)
+            .ToList();
+        foreach (Building building in EnumValues.Buildings)
         {
             short destroyedCount = destroyedCompound[building];
-            if (destroyedCount <= 0)
+            foreach ((TurnHexagon key, Army training) in candidates)
             {
-                continue;
-            }
-            foreach ((ushort turn, var candidate) in player.Trainings)
-            {
-                if (destroyedCount <= 0 || !candidate.TryGetValue(hexagon, out Army training) || training.IsEmpty)
-                {
-                    continue;
-                }
                 foreach (Unit unit in EnumValues.Units)
                 {
                     if (destroyedCount <= 0 ||
@@ -365,10 +373,10 @@ public sealed class TurnResolution
                         continue;
                     }
                     short canceledCount = (short)Math.Min(training[unit], destroyedCount);
-                    player.UsedSpace -= canceledCount * _settings.RequiredSpace[unit];
                     destroyedCount -= canceledCount;
                     Army canceled = Army.FromUnit(unit, canceledCount);
-                    player.Trainings[turn].Merge(hexagon, -canceled);
+                    player.UsedSpace -= canceled * _settings.RequiredSpace;
+                    player.Trainings.Merge(key, -canceled);
                     player.Report.CanceledTrainings.Merge(hexagon, canceled);
                 }
             }
@@ -416,58 +424,5 @@ public sealed class TurnResolution
             Fights = _fights.ToImmutable(),
             Destructions = _destructions.ToImmutable()
         };
-    }
-
-    private NewTrainings GetNewTrainings(IReadOnlyDictionary<Hexagon, Command> commands)
-    {
-        NewTrainings newTrainings = ImmutableDictionary.CreateBuilder<ushort, ImmutableDictionary<Hexagon, Army>.Builder>();
-        foreach ((var hexagon, var command) in commands.Where(x => !x.Value.Training.IsEmpty))
-        {
-            Army training = command.Training;
-            foreach (var unit in EnumValues.Units)
-            {
-                if (training[unit] <= 0)
-                {
-                    continue;
-                }
-                // Subtract 1 to account for the current turn, the turn increments after all game state logic is completed
-                ushort completionTurn = (ushort)(_state.Turn + _settings.TrainingDuration[unit] - 1);
-                if (!newTrainings.TryGetValue(completionTurn, out var turnDict))
-                {
-                    turnDict = ImmutableDictionary.CreateBuilder<Hexagon, Army>();
-                    newTrainings.Add(completionTurn, turnDict);
-                }
-
-                var trainedUnit = Army.FromUnit(unit, training[unit]);
-                turnDict.Merge(hexagon, trainedUnit);
-            }
-        }
-        return newTrainings;
-    }
-
-    private NewConstructions GetNewConstructions(IReadOnlyDictionary<Hexagon, Command> commands)
-    {
-        NewConstructions newConstructions = ImmutableDictionary.CreateBuilder<ushort, ImmutableDictionary<Hexagon, Compound>.Builder>();
-        foreach ((var hexagon, var command) in commands.Where(x => !x.Value.Construction.IsEmpty))
-        {
-            Compound construction = command.Construction;
-            foreach (var building in EnumValues.Buildings)
-            {
-                if (construction[building] <= 0)
-                {
-                    continue;
-                }
-                // Subtract 1 to account for the current turn, the turn increments after all game state logic is completed
-                ushort completionTurn = (ushort)(_state.Turn + _settings.ConstructionDuration[building] - 1);
-                if (!newConstructions.TryGetValue(completionTurn, out var turnDict))
-                {
-                    turnDict = ImmutableDictionary.CreateBuilder<Hexagon, Compound>();
-                    newConstructions.Add(completionTurn, turnDict);
-                }
-                var constructedBuilding = Compound.FromBuilding(building, construction[building]);
-                turnDict.Merge(hexagon, constructedBuilding);
-            }
-        }
-        return newConstructions;
     }
 }

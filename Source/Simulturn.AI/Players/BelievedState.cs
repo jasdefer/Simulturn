@@ -68,8 +68,8 @@ internal static class BelievedState
                 AvailableSpace = 0,
                 Armies = armies.ToImmutableDictionary(),
                 Compounds = compounds.ToImmutableDictionary(),
-                Trainings = ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Army>>.Empty,
-                Constructions = ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Compound>>.Empty,
+                Trainings = ImmutableDictionary<TurnHexagon, Army>.Empty,
+                Constructions = ImmutableDictionary<TurnHexagon, Compound>.Empty,
                 Researches = ImmutableDictionary<Hexagon, Research>.Empty
             };
         }

@@ -9,8 +9,14 @@ public sealed record PlayerState
     public int AvailableSpace { get; init; }
     public required ImmutableDictionary<Hexagon, Army> Armies { get; init; }
     public required ImmutableDictionary<Hexagon, Compound> Compounds { get; init; }
-    public required Trainings Trainings { get; init; }
-    public required Constructions Constructions { get; init; }
+    /// <summary>
+    /// The pending trainings, keyed by completion turn and hexagon. Holds no empty entries.
+    /// </summary>
+    public required ImmutableDictionary<TurnHexagon, Army> Trainings { get; init; }
+    /// <summary>
+    /// The pending constructions, keyed by completion turn and hexagon. Holds no empty entries.
+    /// </summary>
+    public required ImmutableDictionary<TurnHexagon, Compound> Constructions { get; init; }
     /// <summary>
     /// The pending researches, keyed by hexagon. A hexagon hosts at most one research, and an
     /// upgrade is researched on at most one hexagon at a time (work item research-cost-and-duration).

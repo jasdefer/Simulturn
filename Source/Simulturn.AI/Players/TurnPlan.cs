@@ -55,12 +55,9 @@ internal sealed class TurnPlan
         Matter = playerState.Matter;
         FreeSpace = playerState.AvailableSpace - playerState.UsedSpace;
 
-        foreach ((ushort completionTurn, var constructionsPerHexagon) in playerState.Constructions)
+        foreach ((TurnHexagon key, Compound compound) in playerState.Constructions)
         {
-            foreach ((Hexagon hexagon, Compound compound) in constructionsPerHexagon)
-            {
-                _anchoredDots[hexagon] = _anchoredDots.GetValueOrDefault(hexagon) + compound.Sum();
-            }
+            _anchoredDots[key.Hexagon] = _anchoredDots.GetValueOrDefault(key.Hexagon) + compound.Sum();
         }
         foreach (Hexagon hexagon in playerState.Researches.Keys)
         {
@@ -68,17 +65,11 @@ internal sealed class TurnPlan
             // dot away and cancels the research if it dies.
             _anchoredDots[hexagon] = Math.Max(_anchoredDots.GetValueOrDefault(hexagon), 1);
         }
-        foreach ((ushort completionTurn, var trainingsPerHexagon) in playerState.Trainings)
+        foreach (Unit unit in Enum.GetValues<Unit>())
         {
-            foreach (Unit unit in Enum.GetValues<Unit>())
-            {
-                _pendingUnitTrainings[unit] = _pendingUnitTrainings.GetValueOrDefault(unit) +
-                    trainingsPerHexagon.Values.Sum(x => (int)x[unit]);
-            }
+            _pendingUnitTrainings[unit] = playerState.Trainings.Values.Sum(x => (int)x[unit]);
         }
-        PendingSpace = playerState.Constructions
-            .SelectMany(x => x.Value.Values)
-            .Sum(x => x * gameSettings.ProvidedSpace);
+        PendingSpace = playerState.Constructions.Values.Sum(x => x * gameSettings.ProvidedSpace);
 
         OwnCompoundHexagons = playerState.Compounds
             .Where(x => !x.Value.IsEmpty)
@@ -162,8 +153,7 @@ internal sealed class TurnPlan
     {
         return View.PlayerState.Compounds.GetValueOrDefault(hexagon)[building] +
             _constructions.GetValueOrDefault(hexagon)[building] +
-            View.PlayerState.Constructions
-                .Sum(x => x.Value.GetValueOrDefault(hexagon)[building]);
+            View.PlayerState.Constructions.On(hexagon)[building];
     }
 
     public void Reserve(int matter)
@@ -190,9 +180,7 @@ internal sealed class TurnPlan
     {
         GameSettings gameSettings = View.GameSettings;
         Building building = GameSettings.TrainingBuilding(unit);
-        Army pendingOnHexagon = View.PlayerState.Trainings
-            .Select(x => x.Value.GetValueOrDefault(hexagon))
-            .Sum();
+        Army pendingOnHexagon = View.PlayerState.Trainings.On(hexagon);
         int capacity = View.PlayerState.Compounds.GetValueOrDefault(hexagon)[building]
             - pendingOnHexagon[unit]
             - _trainings.GetValueOrDefault(hexagon)[unit];
