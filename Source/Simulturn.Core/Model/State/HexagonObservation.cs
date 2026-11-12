@@ -2,7 +2,7 @@ namespace Simulturn.Core.Model.State;
 
 /// <summary>
 /// What a player sees on a single hexagon in the current turn. Nothing from earlier turns:
-/// what was seen before comes from <see cref="Engine.FogOfWar.GetMemories"/>.
+/// what was seen before is carried in the memories (<see cref="Engine.FogOfWar.UpdateMemories"/>).
 /// Static information (terrain, initial matter) is available through the game settings and not repeated here.
 /// </summary>
 public sealed record HexagonObservation

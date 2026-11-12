@@ -5,6 +5,7 @@ using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.Report;
 using Simulturn.Core.Model.State;
+using System.Collections.Immutable;
 
 namespace Simulturn.AI.Players;
 
@@ -58,23 +59,21 @@ public sealed class SimulatorPlayer : CommanderPlayer
         // proven in the arena; a candidate only overrides them when it is clearly better
         // under BOTH models. This prevents the perfect-defense model from vetoing attacks
         // that win against weaker real opponents.
-        GameState believed = BelievedState.Build(view, Known, EstimatedEnemyArmy(probe), _analysis!);
-        // The rolled out commander starts where this player stands: it remembers the same turns.
-        List<PlayerGameState> earlierViews = [.. Views.Take(Views.Count - 1)];
+        GameState believed = BelievedState.Build(view, Memories, EstimatedEnemyArmy(probe), _analysis!);
         Func<IArtificialPlayer>[] enemyModels =
         [
             () => new CommanderPlayer(_simulatorOptions),
             () => new IdlePlayer()
         ];
         double[] ruleScores = enemyModels
-            .Select(x => Rollout(believed, earlierViews, view.PlayerId, ruleMode, x))
+            .Select(x => Rollout(believed, view.PlayerId, ruleMode, x))
             .ToArray();
         MilitaryMode best = ruleMode;
         double bestTotal = ruleScores.Sum();
         foreach (MilitaryMode candidate in candidates.Where(x => x != ruleMode))
         {
             double[] scores = enemyModels
-                .Select(x => Rollout(believed, earlierViews, view.PlayerId, candidate, x))
+                .Select(x => Rollout(believed, view.PlayerId, candidate, x))
                 .ToArray();
             bool dominates = scores
                 .Zip(ruleScores, (candidateScore, ruleScore) => candidateScore > ruleScore + _simulatorOptions.OverrideMargin)
@@ -92,17 +91,13 @@ public sealed class SimulatorPlayer : CommanderPlayer
     /// Plays the believed state forward: we hold the candidate mode for the whole horizon,
     /// every opponent plays the given enemy model. Returns the evaluation of the final position.
     /// </summary>
-    private double Rollout(GameState believed,
-        IReadOnlyList<PlayerGameState> earlierViews,
-        string playerId,
-        MilitaryMode candidate,
-        Func<IArtificialPlayer> enemyModel)
+    private double Rollout(GameState believed, string playerId, MilitaryMode candidate, Func<IArtificialPlayer> enemyModel)
     {
         Dictionary<string, IArtificialPlayer> policies = [];
         foreach (string id in believed.PlayerIds.OrderBy(x => x))
         {
             policies[id] = id == playerId
-                ? new ForcedModeCommander(candidate, _simulatorOptions, earlierViews)
+                ? new ForcedModeCommander(candidate, _simulatorOptions, Memories)
                 : enemyModel();
         }
         TurnResult turnResult = new(believed, TurnReport.Empty);
@@ -125,8 +120,8 @@ public sealed class SimulatorPlayer : CommanderPlayer
     {
         private readonly MilitaryMode _forcedMode;
 
-        public ForcedModeCommander(MilitaryMode forcedMode, CommanderPlayerOptions options, IReadOnlyList<PlayerGameState> earlierViews)
-            : base(options, $"Forced {forcedMode}", earlierViews)
+        public ForcedModeCommander(MilitaryMode forcedMode, CommanderPlayerOptions options, ImmutableDictionary<Hexagon, HexagonMemory> earlierMemories)
+            : base(options, $"Forced {forcedMode}", earlierMemories)
         {
             _forcedMode = forcedMode;
         }

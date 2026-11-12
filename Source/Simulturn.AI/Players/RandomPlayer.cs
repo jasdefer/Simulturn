@@ -1,4 +1,5 @@
 using Simulturn.Core.Extensions;
+using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
@@ -20,7 +21,7 @@ public sealed class RandomPlayer : IArtificialPlayer
 
     private readonly Random _random;
     private readonly RandomPlayerOptions _options;
-    private readonly Knowledge _knowledge = new();
+    private ImmutableDictionary<Hexagon, HexagonMemory> _memories = ImmutableDictionary<Hexagon, HexagonMemory>.Empty;
 
     public string Name { get; }
 
@@ -33,7 +34,7 @@ public sealed class RandomPlayer : IArtificialPlayer
 
     public IReadOnlyDictionary<Hexagon, Command> GetCommands(PlayerGameState playerGameState)
     {
-        var known = _knowledge.Observe(playerGameState);
+        _memories = FogOfWar.UpdateMemories(_memories, playerGameState);
         PlayerState playerState = playerGameState.PlayerState;
         GameSettings gameSettings = playerGameState.GameSettings;
         int matter = playerState.Matter;
@@ -59,7 +60,7 @@ public sealed class RandomPlayer : IArtificialPlayer
 
         Dictionary<Hexagon, Compound> constructions = PickConstructions(playerGameState, armyHexagons, constructionDots, ref matter);
         Dictionary<Hexagon, Army> trainings = PickTrainings(playerGameState, ref matter, ref freeSpace);
-        Dictionary<Hexagon, MovementCommand> movements = PickMovements(playerGameState, known, armyHexagons, constructionDots, researchHexagons);
+        Dictionary<Hexagon, MovementCommand> movements = PickMovements(playerGameState, armyHexagons, constructionDots, researchHexagons);
 
         Dictionary<Hexagon, Command> commands = [];
         IEnumerable<Hexagon> commandHexagons = constructions.Keys
@@ -215,14 +216,13 @@ public sealed class RandomPlayer : IArtificialPlayer
     }
 
     private Dictionary<Hexagon, MovementCommand> PickMovements(PlayerGameState playerGameState,
-        ImmutableDictionary<Hexagon, KnownHexagon> known,
         List<Hexagon> armyHexagons,
         Dictionary<Hexagon, int> constructionDots,
         HashSet<Hexagon> researchHexagons)
     {
         PlayerState playerState = playerGameState.PlayerState;
-        List<Hexagon> enemyHexagons = known
-            .Where(x => x.Value.OpponentCompounds.Any(y => !y.Value.IsEmpty))
+        List<Hexagon> enemyHexagons = _memories
+            .Where(x => x.Value.Static.OpponentCompounds.Any(y => !y.Value.IsEmpty))
             .Select(x => x.Key)
             .OrderBy(x => x.X).ThenBy(x => x.Y)
             .ToList();
@@ -263,7 +263,7 @@ public sealed class RandomPlayer : IArtificialPlayer
             {
                 continue;
             }
-            Hexagon destination = PickWeightedDestination(known, hexagon, neighbors, enemyHexagons, ownCompoundHexagons);
+            Hexagon destination = PickWeightedDestination(hexagon, neighbors, enemyHexagons, ownCompoundHexagons);
             movements[hexagon] = new MovementCommand()
             {
                 Army = moving,
@@ -273,7 +273,7 @@ public sealed class RandomPlayer : IArtificialPlayer
         return movements;
     }
 
-    private Hexagon PickWeightedDestination(ImmutableDictionary<Hexagon, KnownHexagon> known,
+    private Hexagon PickWeightedDestination(
         Hexagon origin,
         List<Hexagon> candidates,
         List<Hexagon> enemyHexagons,
@@ -294,9 +294,9 @@ public sealed class RandomPlayer : IArtificialPlayer
             {
                 weight += _options.DefendWeight;
             }
-            KnownHexagon observation = known[candidate];
-            if (observation.LastSeenTurn is null ||
-                (observation.RemainingMatter > 0 && !ownCompoundHexagons.Contains(candidate)))
+            StaticSighting? sighting = _memories.GetValueOrDefault(candidate)?.Static;
+            if (sighting is null ||
+                (sighting.RemainingMatter > 0 && !ownCompoundHexagons.Contains(candidate)))
             {
                 weight += _options.ExpandWeight;
             }

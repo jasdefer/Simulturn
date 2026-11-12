@@ -26,9 +26,9 @@ internal sealed class TurnPlan
     public PlayerGameState View { get; }
 
     /// <summary>
-    /// The view completed by what the player remembers from earlier turns.
+    /// What the player last saw on every hexagon it has seen so far, the current turn included.
     /// </summary>
-    public ImmutableDictionary<Hexagon, KnownHexagon> Known { get; }
+    public ImmutableDictionary<Hexagon, HexagonMemory> Memories { get; }
     public int Matter { get; private set; }
     public int FreeSpace { get; private set; }
     public int PendingSpace { get; }
@@ -43,12 +43,12 @@ internal sealed class TurnPlan
     public Army TotalFighterArmy { get; }
 
     public TurnPlan(PlayerGameState view,
-        ImmutableDictionary<Hexagon, KnownHexagon> known,
+        ImmutableDictionary<Hexagon, HexagonMemory> memories,
         SettingsAnalysis analysis,
         StateMachinePlayerOptions options)
     {
         View = view;
-        Known = known;
+        Memories = memories;
         _analysis = analysis;
         PlayerState playerState = view.PlayerState;
         GameSettings gameSettings = view.GameSettings;
@@ -91,7 +91,7 @@ internal sealed class TurnPlan
             .OrderBy(x => x.X).ThenBy(x => x.Y)
             .ToList();
         ActiveIncomeHexagons = IncomeHexagons
-            .Where(x => (known[x].RemainingMatter ?? gameSettings.HexagonSettings[x].Matter) > 0)
+            .Where(x => (memories.GetValueOrDefault(x)?.Static.RemainingMatter ?? gameSettings.HexagonSettings[x].Matter) > 0)
             .ToList();
         OwnArmyHexagons = playerState.Armies
             .Where(x => !x.Value.IsEmpty)
@@ -110,7 +110,7 @@ internal sealed class TurnPlan
         WorkerCount = playerState.Armies.Values.Sum(x => (int)x[analysis.Worker]);
         WorkerCapacity = IncomeHexagons.Sum(hexagon =>
         {
-            int remaining = known[hexagon].RemainingMatter ?? gameSettings.HexagonSettings[hexagon].Matter;
+            int remaining = memories.GetValueOrDefault(hexagon)?.Static.RemainingMatter ?? gameSettings.HexagonSettings[hexagon].Matter;
             return remaining > 0 ? (int)gameSettings.HexagonSettings[hexagon].MaxNumberOfUnitsGeneratingMatter[analysis.Worker] : 0;
         });
         TargetWorkers = Math.Min(WorkerCapacity, options.MaxWorkers);

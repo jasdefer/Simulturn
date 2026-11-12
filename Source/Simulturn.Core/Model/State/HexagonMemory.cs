@@ -1,22 +1,22 @@
 namespace Simulturn.Core.Model.State;
 
 /// <summary>
-/// What a player last saw on a hexagon in an earlier turn, for the information the current
-/// view does not show. Built by <see cref="Engine.FogOfWar.GetMemories"/> from the views of
-/// the player; neither the game state nor the view of a turn holds it.
-/// The values are snapshots and can be outdated.
+/// What a player last saw on a hexagon, each part with the turn it was seen. A sighting of
+/// the current turn is what the player sees right now, an older one can be outdated.
+/// A hexagon that was never seen has no memory.
+/// Carried forward by <see cref="Engine.FogOfWar.UpdateMemories"/>; neither the game state
+/// nor the view of a turn holds it.
 /// </summary>
 public sealed record HexagonMemory
 {
     /// <summary>
-    /// The last sighting of the remaining matter and the buildings. Null if they were never
-    /// seen, or if the current view shows them.
+    /// The last sighting of the remaining matter and the buildings.
     /// </summary>
-    public StaticSighting? Static { get; init; }
+    public required StaticSighting Static { get; init; }
 
     /// <summary>
-    /// The last sighting of the units. Null if they were never seen, or if the current view
-    /// shows them.
+    /// The last sighting of the units, or null if the hexagon was never fully visible.
+    /// Never newer than <see cref="Static"/>: units need more visibility than buildings.
     /// </summary>
     public UnitSighting? Units { get; init; }
 }

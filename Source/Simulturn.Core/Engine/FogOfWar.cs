@@ -64,88 +64,72 @@ public static class FogOfWar
     }
 
     /// <summary>
-    /// What a player last saw on the hexagons the current view does not show, taken from the
-    /// earlier views of that player. Goes back turn by turn until every hexagon is settled.
+    /// Carries the memories of a player into the next turn: what the view shows is taken over
+    /// with the turn of the view, everything else stays as it was last seen.
     /// </summary>
     /// <remarks>
-    /// The remaining matter and the buildings are remembered for every hexagon that is not at
-    /// least partially visible now, the units for every hexagon that is not fully visible now.
-    /// The two sightings of a hexagon can stem from different turns. A hexagon without any
-    /// sighting has no entry. A view that is missing from the list is a turn without knowledge.
+    /// The remaining matter and the buildings are seen on every hexagon that is at least
+    /// partially visible, the units on every hexagon that is fully visible, so the two
+    /// sightings of a hexagon can stem from different turns. A sighting with the turn of the
+    /// view is what the player sees right now. A hexagon that was never seen has no entry.
     /// </remarks>
+    /// <param name="memories">The memories up to the turn before the view. Empty at the start of the game.</param>
+    /// <param name="view">The view of the current turn.</param>
+    public static ImmutableDictionary<Hexagon, HexagonMemory> UpdateMemories(ImmutableDictionary<Hexagon, HexagonMemory> memories,
+        PlayerGameState view)
+    {
+        var builder = memories.ToBuilder();
+        Remember(builder, view);
+        return builder.ToImmutable();
+    }
+
+    /// <summary>
+    /// The memories of a player after the last of the given views, for a client that kept its
+    /// views but not its memories. The same as applying <see cref="UpdateMemories"/> view by view.
+    /// </summary>
     /// <param name="views">
-    /// The views of one player in ascending turn order. The last one is the current view.
+    /// The views of one player in ascending turn order. A view that is missing is a turn
+    /// without knowledge.
     /// </param>
     public static ImmutableDictionary<Hexagon, HexagonMemory> GetMemories(IReadOnlyList<PlayerGameState> views)
     {
-        if (views.Count == 0)
-        {
-            throw new ArgumentException("At least the current view is required.", nameof(views));
-        }
-        for (int i = 1; i < views.Count; i++)
+        var memories = ImmutableDictionary.CreateBuilder<Hexagon, HexagonMemory>();
+        for (int i = 0; i < views.Count; i++)
         {
             if (views[i].PlayerId != views[0].PlayerId)
             {
                 throw new ArgumentException($"The views belong to different players: '{views[0].PlayerId}' and '{views[i].PlayerId}'.", nameof(views));
             }
-            if (views[i].Turn <= views[i - 1].Turn)
+            if (i > 0 && views[i].Turn <= views[i - 1].Turn)
             {
                 throw new ArgumentException($"The views are not in ascending turn order: turn {views[i - 1].Turn} is followed by turn {views[i].Turn}.", nameof(views));
             }
+            Remember(memories, views[i]);
         }
+        return memories.ToImmutable();
+    }
 
-        HashSet<Hexagon> withoutStatic = [];
-        HashSet<Hexagon> withoutUnits = [];
-        foreach ((Hexagon hexagon, HexagonObservation observation) in views[^1].Observations)
+    private static void Remember(ImmutableDictionary<Hexagon, HexagonMemory>.Builder memories, PlayerGameState view)
+    {
+        foreach ((Hexagon hexagon, HexagonObservation observation) in view.Observations)
         {
             if (observation.Visibility < StaticObservationThreshold)
             {
-                withoutStatic.Add(hexagon);
+                // Nothing of the hexagon is in sight; the units need at least as much visibility.
+                continue;
             }
-            if (observation.Visibility < UnitObservationThreshold)
+            StaticSighting staticSighting = new()
             {
-                withoutUnits.Add(hexagon);
-            }
-        }
-
-        Dictionary<Hexagon, StaticSighting> staticSightings = [];
-        Dictionary<Hexagon, UnitSighting> unitSightings = [];
-        for (int i = views.Count - 2; i >= 0 && (withoutStatic.Count > 0 || withoutUnits.Count > 0); i--)
-        {
-            PlayerGameState view = views[i];
-            foreach ((Hexagon hexagon, HexagonObservation observation) in view.Observations)
-            {
-                if (observation.Visibility >= StaticObservationThreshold && withoutStatic.Remove(hexagon))
-                {
-                    staticSightings[hexagon] = new StaticSighting()
-                    {
-                        Turn = view.Turn,
-                        RemainingMatter = observation.RemainingMatter
-                            ?? throw new InvalidOperationException($"The view of turn {view.Turn} shows {hexagon} as {observation.Visibility} but holds no remaining matter."),
-                        OpponentCompounds = observation.OpponentCompounds
-                    };
-                }
-                if (observation.Visibility >= UnitObservationThreshold && withoutUnits.Remove(hexagon))
-                {
-                    unitSightings[hexagon] = new UnitSighting()
-                    {
-                        Turn = view.Turn,
-                        OpponentUnitCounts = observation.OpponentUnitCounts
-                    };
-                }
-            }
-        }
-
-        var memories = ImmutableDictionary.CreateBuilder<Hexagon, HexagonMemory>();
-        foreach (Hexagon hexagon in staticSightings.Keys.Union(unitSightings.Keys))
-        {
-            memories[hexagon] = new HexagonMemory()
-            {
-                Static = staticSightings.GetValueOrDefault(hexagon),
-                Units = unitSightings.GetValueOrDefault(hexagon)
+                Turn = view.Turn,
+                RemainingMatter = observation.RemainingMatter
+                    ?? throw new InvalidOperationException($"The view of turn {view.Turn} shows {hexagon} as {observation.Visibility} but holds no remaining matter."),
+                OpponentCompounds = observation.OpponentCompounds
             };
+            UnitSighting? unitSighting = observation.Visibility >= UnitObservationThreshold
+                ? new UnitSighting() { Turn = view.Turn, OpponentUnitCounts = observation.OpponentUnitCounts }
+                : memories.GetValueOrDefault(hexagon)?.Units;
+            memories[hexagon] = new HexagonMemory() { Static = staticSighting, Units = unitSighting };
         }
-        return memories.ToImmutableDictionary();
     }
 
     /// <summary>
@@ -160,7 +144,7 @@ public static class FogOfWar
     /// <summary>
     /// Builds the partially informed view of the game for a single player: the state and the
     /// report of the resolved turn, both cut down to what the player is allowed to know.
-    /// The view holds this turn only; <see cref="GetMemories"/> adds what was seen before.
+    /// The view holds this turn only; <see cref="UpdateMemories"/> carries what was seen before.
     /// </summary>
     public static PlayerGameState GetPlayerGameState(TurnResult turnResult, string playerId)
     {

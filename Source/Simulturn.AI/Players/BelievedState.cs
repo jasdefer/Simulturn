@@ -14,7 +14,7 @@ namespace Simulturn.AI.Players;
 internal static class BelievedState
 {
     public static GameState Build(PlayerGameState view,
-        ImmutableDictionary<Hexagon, KnownHexagon> known,
+        ImmutableDictionary<Hexagon, HexagonMemory> memories,
         Army estimatedEnemyArmy,
         SettingsAnalysis analysis)
     {
@@ -25,9 +25,9 @@ internal static class BelievedState
         foreach (string opponentId in view.PlayerIds.Where(x => x != view.PlayerId).OrderBy(x => x))
         {
             var compounds = ImmutableDictionary.CreateBuilder<Hexagon, Compound>();
-            foreach ((Hexagon hexagon, KnownHexagon observation) in known)
+            foreach ((Hexagon hexagon, HexagonMemory memory) in memories)
             {
-                Compound compound = observation.OpponentCompounds.GetValueOrDefault(opponentId);
+                Compound compound = memory.Static.OpponentCompounds.GetValueOrDefault(opponentId);
                 if (!compound.IsEmpty)
                 {
                     compounds[hexagon] = compound;
@@ -74,9 +74,9 @@ internal static class BelievedState
             };
         }
 
-        var remainingMatter = known.ToImmutableDictionary(
+        var remainingMatter = gameSettings.HexagonSettings.ToImmutableDictionary(
             x => x.Key,
-            x => x.Value.RemainingMatter ?? gameSettings.HexagonSettings[x.Key].Matter);
+            x => memories.GetValueOrDefault(x.Key)?.Static.RemainingMatter ?? x.Value.Matter);
         return GameState.FromParts(gameSettings, view.Turn, playerStates.ToImmutableDictionary(), remainingMatter);
     }
 }

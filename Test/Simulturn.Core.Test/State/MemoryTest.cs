@@ -46,11 +46,23 @@ public sealed class MemoryTest
     }
 
     [Test]
-    public void FirstView_HasNoMemories()
+    public void FirstView_RemembersWhatIsInSight()
     {
         var views = Scout();
 
-        FogOfWar.GetMemories(views).ShouldBeEmpty();
+        var memories = FogOfWar.GetMemories(views);
+
+        // The occupied start hexagon: matter, buildings and units are seen.
+        HexagonMemory start = memories[_player1Start];
+        start.Static.Turn.ShouldBe((ushort)0);
+        start.Static.RemainingMatter.ShouldBe(1000);
+        start.Units.ShouldNotBeNull();
+        start.Units.Turn.ShouldBe((ushort)0);
+        start.Units.OpponentUnitCounts.ShouldBeEmpty();
+
+        // Two hexagons away: partially visible, so matter and buildings but no units.
+        memories[new Hexagon(-1, 0)].Static.Turn.ShouldBe((ushort)0);
+        memories[new Hexagon(-1, 0)].Units.ShouldBeNull();
     }
 
     [Test]
@@ -62,12 +74,17 @@ public sealed class MemoryTest
     }
 
     [Test]
-    public void HexagonInSight_HasNoMemory()
+    public void HexagonInSight_CarriesTheCurrentTurn()
     {
         // The start hexagon stays occupied by the remaining four dots.
         var views = Scout(-2, -1);
 
-        FogOfWar.GetMemories(views).ShouldNotContainKey(_player1Start);
+        HexagonMemory memory = FogOfWar.GetMemories(views)[_player1Start];
+
+        memory.Static.Turn.ShouldBe((ushort)2);
+        ((int?)memory.Static.RemainingMatter).ShouldBe(views[^1].Observations[_player1Start].RemainingMatter);
+        memory.Units.ShouldNotBeNull();
+        memory.Units.Turn.ShouldBe((ushort)2);
     }
 
     [Test]
@@ -79,7 +96,6 @@ public sealed class MemoryTest
 
         HexagonMemory memory = FogOfWar.GetMemories(views)[_player2Start];
 
-        memory.Static.ShouldNotBeNull();
         memory.Static.Turn.ShouldBe((ushort)4);
         memory.Static.RemainingMatter.ShouldBe(1000 - 4 * 50); // 5 dots harvest 50 matter per turn
         memory.Static.OpponentCompounds.ShouldHaveSingleItem();
@@ -88,7 +104,7 @@ public sealed class MemoryTest
     }
 
     [Test]
-    public void Memory_GetsStaleWhileOutOfSightAndIsReplacedByTheView()
+    public void Memory_GetsStaleWhileOutOfSightAndIsRenewedBySeeingAgain()
     {
         var (views, state) = Scout(new GameState(_gameSettings), _player1Start, -2, -1, 0, 1, 0);
 
@@ -101,17 +117,17 @@ public sealed class MemoryTest
         views.Add(FogOfWar.GetPlayerGameState(state, "Player01"));
         state.PlayerStates["Player02"].Compounds[_player2Start].ShouldBe(new Compound() { Plane = 1, Axis = 1 });
 
-        StaticSighting? sighting = FogOfWar.GetMemories(views)[_player2Start].Static;
-        sighting.ShouldNotBeNull();
+        StaticSighting sighting = FogOfWar.GetMemories(views)[_player2Start].Static;
         sighting.Turn.ShouldBe((ushort)4);
         sighting.OpponentCompounds["Player02"].ShouldBe(new Compound() { Plane = 1 });
 
-        // Scout again: the view shows the new buildings, nothing is left to remember.
+        // Scout again: the memory takes over what the view shows.
         var (rescoutViews, _) = Scout(state, new Hexagon(0, 0), 1);
         views.Add(rescoutViews[^1]);
 
-        views[^1].Observations[_player2Start].OpponentCompounds["Player02"].ShouldBe(new Compound() { Plane = 1, Axis = 1 });
-        FogOfWar.GetMemories(views).ShouldNotContainKey(_player2Start);
+        sighting = FogOfWar.GetMemories(views)[_player2Start].Static;
+        sighting.Turn.ShouldBe((ushort)8);
+        sighting.OpponentCompounds["Player02"].ShouldBe(new Compound() { Plane = 1, Axis = 1 });
     }
 
     [Test]
@@ -126,11 +142,11 @@ public sealed class MemoryTest
         memory.Units.Turn.ShouldBe((ushort)5);
         memory.Units.OpponentUnitCounts.ShouldHaveSingleItem();
         memory.Units.OpponentUnitCounts["Player02"].ShouldBe(5);
-        memory.Static.ShouldBeNull(); // the view of turn 6 shows matter and buildings
+        memory.Static.Turn.ShouldBe((ushort)6); // matter and buildings are still in sight
     }
 
     [Test]
-    public void MatterAndUnits_CanStemFromDifferentTurns()
+    public void MatterAndUnits_CanStemFromDifferentEarlierTurns()
     {
         // Units last seen on turn 5 from (2,0), buildings last seen on turn 6 from (1,0),
         // on turn 7 the scout is back on (0,0).
@@ -138,7 +154,6 @@ public sealed class MemoryTest
 
         HexagonMemory memory = FogOfWar.GetMemories(views)[_player2Start];
 
-        memory.Static.ShouldNotBeNull();
         memory.Static.Turn.ShouldBe((ushort)6);
         memory.Static.RemainingMatter.ShouldBe(1000 - 6 * 50);
         memory.Units.ShouldNotBeNull();
@@ -157,7 +172,30 @@ public sealed class MemoryTest
         memory.Units.ShouldNotBeNull();
         memory.Units.Turn.ShouldBe((ushort)4);
         memory.Units.OpponentUnitCounts.ShouldBeEmpty();
-        memory.Static.ShouldBeNull(); // (2,0) is still partially visible from (0,0)
+    }
+
+    [Test]
+    public void UpdateMemories_TakesOverTheViewAndKeepsTheRest()
+    {
+        var views = Scout(-2, -1, 0, 1, 0);
+        var memories = FogOfWar.GetMemories(views[..5]); // up to turn 4, the opponent start hexagon in sight
+
+        memories = FogOfWar.UpdateMemories(memories, views[5]);
+
+        memories[new Hexagon(0, 0)].Static.Turn.ShouldBe((ushort)5); // the scout stands here on turn 5
+        memories[_player2Start].Static.Turn.ShouldBe((ushort)4); // out of sight on turn 5
+        memories[_player2Start].Static.RemainingMatter.ShouldBe(1000 - 4 * 50);
+    }
+
+    [Test]
+    public void UpdateMemories_LeavesTheGivenMemoriesUnchanged()
+    {
+        var views = Scout(-2);
+        var memories = FogOfWar.GetMemories(views[..1]);
+
+        FogOfWar.UpdateMemories(memories, views[1]);
+
+        memories[_player1Start].Static.Turn.ShouldBe((ushort)0);
     }
 
     [Test]
@@ -170,9 +208,9 @@ public sealed class MemoryTest
     }
 
     [Test]
-    public void GetMemories_ThrowsWithoutViews()
+    public void GetMemories_IsEmptyWithoutViews()
     {
-        Should.Throw<ArgumentException>(() => FogOfWar.GetMemories([]));
+        FogOfWar.GetMemories([]).ShouldBeEmpty();
     }
 
     [Test]
