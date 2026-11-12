@@ -9,8 +9,8 @@ namespace Simulturn.Core.Engine;
 internal sealed class PlayerReportBuilder
 {
     public ImmutableDictionary<Hexagon, IncomeReport>.Builder Incomes { get; } = ImmutableDictionary.CreateBuilder<Hexagon, IncomeReport>();
-    public ImmutableDictionary<Hexagon, Army> CompletedTrainings { get; set; } = ImmutableDictionary<Hexagon, Army>.Empty;
-    public ImmutableDictionary<Hexagon, Compound> CompletedConstructions { get; set; } = ImmutableDictionary<Hexagon, Compound>.Empty;
+    public ImmutableDictionary<Hexagon, Army>.Builder CompletedTrainings { get; } = ImmutableDictionary.CreateBuilder<Hexagon, Army>();
+    public ImmutableDictionary<Hexagon, Compound>.Builder CompletedConstructions { get; } = ImmutableDictionary.CreateBuilder<Hexagon, Compound>();
     public ImmutableDictionary<Hexagon, ResearchReport>.Builder CompletedResearches { get; } = ImmutableDictionary.CreateBuilder<Hexagon, ResearchReport>();
     public ImmutableArray<MovementReport>.Builder Movements { get; } = ImmutableArray.CreateBuilder<MovementReport>();
     public ImmutableDictionary<Hexagon, Compound>.Builder CanceledConstructions { get; } = ImmutableDictionary.CreateBuilder<Hexagon, Compound>();
@@ -24,8 +24,8 @@ internal sealed class PlayerReportBuilder
             MatterBefore = matterBefore,
             MatterAfter = matterAfter,
             Incomes = Incomes.ToImmutable(),
-            CompletedTrainings = CompletedTrainings,
-            CompletedConstructions = CompletedConstructions,
+            CompletedTrainings = CompletedTrainings.ToImmutable(),
+            CompletedConstructions = CompletedConstructions.ToImmutable(),
             CompletedResearches = CompletedResearches.ToImmutable(),
             Movements = Movements.ToImmutable(),
             CanceledConstructions = CanceledConstructions.ToImmutable(),

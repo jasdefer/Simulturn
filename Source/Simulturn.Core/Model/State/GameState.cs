@@ -30,8 +30,8 @@ public sealed record GameState
                     Compounds = x.ToImmutableDictionary(y => y.Key, y => y.Value.PlayerInitialization!.Value.InitialCompound),
                     AvailableSpace = x.Sum(y => y.Value.PlayerInitialization!.Value.InitialCompound * GameSettings.ProvidedSpace),
                     UsedSpace = x.Sum(y => y.Value.PlayerInitialization!.Value.InitialArmy * GameSettings.RequiredSpace),
-                    Constructions = Constructions.Empty,
-                    Trainings = Trainings.Empty,
+                    Constructions = ImmutableDictionary<TurnHexagon, Compound>.Empty,
+                    Trainings = ImmutableDictionary<TurnHexagon, Army>.Empty,
                     Matter = GameSettings.StartMatter,
                     Researches = ImmutableDictionary<Hexagon, Research>.Empty,
                     UpgradeLevels = GameSettings.StartUpgrades.ContainsKey(x.Key)

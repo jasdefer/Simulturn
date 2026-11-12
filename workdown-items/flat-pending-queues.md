@@ -1,8 +1,9 @@
 ---
 id: flat-pending-queues
 title: Warteschlangen für Trainings und Konstruktionen ohne verschachtelte Dictionaries
-status: todo
+status: done
 created: 2026-11-10
+completed: 2026-11-12
 ---
 ## Problem
 

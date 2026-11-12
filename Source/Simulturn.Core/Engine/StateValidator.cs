@@ -1,3 +1,4 @@
+using Simulturn.Core.Extensions;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.State;
 using Simulturn.Core.Model.State.Validation;
@@ -91,29 +92,34 @@ public static class StateValidator
 
     private static IEnumerable<StateValidation> ValidateTrainings(GameSettings settings, ushort currentTurn, string playerId, PlayerState playerState)
     {
-        foreach ((ushort turn, var trainings) in playerState.Trainings)
+        foreach ((TurnHexagon key, Army training) in playerState.Trainings)
         {
-            if (turn < currentTurn)
+            if (key.Turn < currentTurn)
             {
-                yield return new ExpiredTraining(playerId, turn);
+                yield return new ExpiredTraining(playerId, key.Turn);
             }
-            foreach ((Hexagon hexagon, Army training) in trainings)
+            if (!settings.HexagonSettings.ContainsKey(key.Hexagon))
             {
-                if (!settings.HexagonSettings.ContainsKey(hexagon))
+                yield return new HexagonMissingInSettings(key.Hexagon);
+            }
+            foreach (var unit in EnumValues.Units)
+            {
+                if (training[unit] < 0)
                 {
-                    yield return new HexagonMissingInSettings(hexagon);
+                    yield return new NegativeTrainingCount(playerId, key.Hexagon, unit, training[unit]);
                 }
-                Compound compound = playerState.Compounds.GetValueOrDefault(hexagon, Compound.Empty);
-                foreach (var unit in EnumValues.Units)
+            }
+        }
+        // Every unit in training needs its own building, whatever its completion turn.
+        foreach (Hexagon hexagon in playerState.Trainings.Keys.Select(x => x.Hexagon).Distinct())
+        {
+            Army trainings = playerState.Trainings.On(hexagon);
+            Compound compound = playerState.Compounds.GetValueOrDefault(hexagon, Compound.Empty);
+            foreach (var unit in EnumValues.Units)
+            {
+                if (trainings[unit] > compound[GameSettings.TrainingBuilding(unit)])
                 {
-                    if (training[unit] < 0)
-                    {
-                        yield return new NegativeTrainingCount(playerId, hexagon, unit, training[unit]);
-                    }
-                    if (training[unit] > compound[GameSettings.TrainingBuilding(unit)])
-                    {
-                        yield return new MissingBuildingForTraining(playerId, hexagon, unit, training[unit], compound[GameSettings.TrainingBuilding(unit)]);
-                    }
+                    yield return new MissingBuildingForTraining(playerId, hexagon, unit, trainings[unit], compound[GameSettings.TrainingBuilding(unit)]);
                 }
             }
         }
@@ -121,30 +127,32 @@ public static class StateValidator
 
     private static IEnumerable<StateValidation> ValidateConstructions(GameSettings settings, ushort currentTurn, string playerId, PlayerState playerState)
     {
-        foreach ((ushort turn, var constructions) in playerState.Constructions)
+        foreach ((TurnHexagon key, Compound construction) in playerState.Constructions)
         {
-            if (turn < currentTurn)
+            if (key.Turn < currentTurn)
             {
-                yield return new ExpiredConstruction(playerId, turn);
+                yield return new ExpiredConstruction(playerId, key.Turn);
             }
-            foreach ((Hexagon hexagon, Compound construction) in constructions)
+            if (!settings.HexagonSettings.ContainsKey(key.Hexagon))
             {
-                if (!settings.HexagonSettings.ContainsKey(hexagon))
+                yield return new HexagonMissingInSettings(key.Hexagon);
+            }
+            foreach (var building in EnumValues.Buildings)
+            {
+                if (construction[building] < 0)
                 {
-                    yield return new HexagonMissingInSettings(hexagon);
+                    yield return new NegativeConstructionCount(playerId, key.Hexagon, building, construction[building]);
                 }
-                short dotCount = playerState.Armies.GetValueOrDefault(hexagon, Army.Empty).Dot;
-                foreach (var building in EnumValues.Buildings)
-                {
-                    if (construction[building] < 0)
-                    {
-                        yield return new NegativeConstructionCount(playerId, hexagon, building, construction[building]);
-                    }
-                    if (construction.Sum() > dotCount)
-                    {
-                        yield return new MissingDotsForConstruction(playerId, hexagon, construction, dotCount);
-                    }
-                }
+            }
+        }
+        // Every building under construction needs its own dot, whatever its completion turn.
+        foreach (Hexagon hexagon in playerState.Constructions.Keys.Select(x => x.Hexagon).Distinct())
+        {
+            Compound constructions = playerState.Constructions.On(hexagon);
+            short dotCount = playerState.Armies.GetValueOrDefault(hexagon, Army.Empty).Dot;
+            if (constructions.Sum() > dotCount)
+            {
+                yield return new MissingDotsForConstruction(playerId, hexagon, constructions, dotCount);
             }
         }
     }

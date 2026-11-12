@@ -82,6 +82,7 @@ At generation time, `dotnet build Simulturn.sln` and
 - The cut of a player (`PlayerTurnReport`) is the own activity, the complete fights the player took part in and the destructions as attacker or owner
 - A player only gets the cut made by `FogOfWar`: `GetPlayerGameState(turnResult, playerId)` cuts state and report, the `PlayerTurnReport` sits in `PlayerGameState.Report`. `GetPlayerGameState(state, playerId)` is for a state without a resolved turn (start of the game) and yields an empty report
 - The game state holds nothing about what a player knows. The visibility follows from the armies (`FogOfWar.GetVisibility`) and is never stored. A view (`PlayerGameState.Observations`) shows one turn only. What a player last saw is a `HexagonMemory` per hexagon, each part with the turn it was seen; a sighting of the current turn is what the player sees now. `FogOfWar.UpdateMemories(memories, view)` carries the memories into the next turn, `FogOfWar.GetMemories(views)` applies the same rule to all views a client has kept. The engine keeps neither views nor memories; a client does (the AI players hold their memories themselves)
+- Pending trainings and constructions are flat: `ImmutableDictionary<TurnHexagon, Army>` and `<TurnHexagon, Compound>`, keyed by completion turn and hexagon. Write them with `Merge(key, value)`, which drops an entry once it is empty; read a hexagon with `On(hexagon)`. A dictionary has no order: sort explicitly wherever the order matters (cancellation, output)
 - `Engine` depends on `Model`; the only edge back is the `GameState` constructor building the start state
 - Standard rules and maps live in `Source/Simulturn.Core/Setup/`: `DefaultSettings` (the only copy of the rules), `Maps` (fixed maps), `MapGenerator` (seeded, symmetric maps)
 - Mutable transition helpers use builders in `PlayerStateBuilder` (internal working state of `TurnResolution`)
@@ -99,7 +100,7 @@ Follow local conventions in touched files first.
 
 ### Imports and usings
 - Keep usings minimal and relevant to the file
-- Reuse global aliases/usings (`Constructions`, `Trainings`) where applicable
+- Reuse the global usings in `GlobalUsings.cs`; do not add type aliases for nested collections, flatten the collection instead
 - Prefer normal `using` imports over fully-qualified names in method bodies
 - Add to `GlobalUsings.cs` only when a using is truly cross-cutting
 

@@ -98,10 +98,7 @@ public sealed class CommandValidator
             yield break;
         }
         Compound compound = _playerState.Compounds.GetValueOrDefault(hexagon, Compound.Empty);
-        Army trainings = _playerState.Trainings
-            .Select(x => x.Value.GetValueOrDefault(hexagon))
-            .Sum();
-        trainings += command.Training;
+        Army trainings = _playerState.Trainings.On(hexagon) + command.Training;
         foreach (var unit in EnumValues.Units)
         {
             short trainedUnits = trainings[unit];
@@ -122,10 +119,7 @@ public sealed class CommandValidator
         {
             yield break;
         }
-        Compound constructions = _playerState.Constructions
-            .Select(x => x.Value.GetValueOrDefault(hexagon))
-            .Sum();
-        constructions += command.Construction;
+        Compound constructions = _playerState.Constructions.On(hexagon) + command.Construction;
         short dots = _playerState.Armies.GetValueOrDefault(hexagon)[Unit.Dot];
         if (constructions.Sum() > dots)
         {

@@ -27,26 +27,6 @@ internal static class DictionaryExtensions
         }
     }
 
-    extension<TKey, TValue>(ImmutableDictionary<TKey, TValue>.Builder builder)
-        where TKey : notnull
-        where TValue : IAdditionOperators<TValue, TValue, TValue>
-    {
-        public void Merge(IReadOnlyDictionary<TKey, TValue> other)
-        {
-            foreach (var kvp in other)
-            {
-                if (builder.TryGetValue(kvp.Key, out var existingValue))
-                {
-                    builder[kvp.Key] += kvp.Value;
-                }
-                else
-                {
-                    builder.Add(kvp.Key, kvp.Value);
-                }
-            }
-        }
-    }
-
     extension<TInner>(IReadOnlyDictionary<string, TInner> dict)
         where TInner : IReadOnlyDictionary<Hexagon, Command>
     {
@@ -57,35 +37,6 @@ internal static class DictionaryExtensions
                 return innerDict;
             }
             return ImmutableDictionary<Hexagon, Command>.Empty;
-        }
-    }
-
-    extension<TKey1, TKey2, TValue>(ImmutableDictionary<TKey1, ImmutableDictionary<TKey2, TValue>.Builder>.Builder dict)
-        where TKey1 : notnull
-        where TKey2 : notnull
-        where TValue : IAdditionOperators<TValue, TValue, TValue>
-    {
-        public void Merge(ImmutableDictionary<TKey1, ImmutableDictionary<TKey2, TValue>.Builder>.Builder other)
-        {
-            foreach (var kvp in other)
-            {
-                if (!dict.TryGetValue(kvp.Key, out var innerDict))
-                {
-                    dict[kvp.Key] = kvp.Value;
-                    continue;
-                }
-                foreach (var innerKvp in kvp.Value)
-                {
-                    if (innerDict.TryGetValue(innerKvp.Key, out var existingValue))
-                    {
-                        innerDict[innerKvp.Key] += innerKvp.Value;
-                    }
-                    else
-                    {
-                        innerDict.Add(innerKvp.Key, innerKvp.Value);
-                    }
-                }
-            }
         }
     }
 

@@ -174,7 +174,6 @@ public sealed class GameStateTest
         turn1.PlayerStates["Player01"].Trainings.ShouldBeEmpty();
         turn1.PlayerStates["Player02"].Trainings.ShouldBeEmpty();
         turn1.PlayerStates["Player01"].Constructions
-            .ShouldHaveSingleItem().Value
             .ShouldHaveSingleItem().Value.ShouldBe(new Compound() { Pyramid = 1 });
         turn1.PlayerStates["Player02"].Constructions.ShouldBeEmpty();
         turn1.GameSettings.ShouldBe(_gameSettings);
@@ -356,7 +355,7 @@ public sealed class GameStateTest
 
         // Assert
         turn2.PlayerStates["Player01"]
-            .Constructions.ShouldHaveSingleItem().Value.ShouldHaveSingleItem().Value.ShouldBe(new Compound() { Pyramid = 2 });
+            .Constructions.ShouldHaveSingleItem().Value.ShouldBe(new Compound() { Pyramid = 2 });
     }
 
     /// <summary>
@@ -388,8 +387,40 @@ public sealed class GameStateTest
         var player = turn2.PlayerStates["Player01"];
         player.Compounds[_player1Start].ShouldBe(new Compound() { Pyramid = 2, Cube = 2, Plane = 2 });
         player.Armies.GetValueOrDefault(_player1Start).ShouldBe(Army.Empty);
-        player.Trainings.ShouldHaveSingleItem().Value[_player1Start].ShouldBe(new Army() { Square = 1, Triangle = 1 });
+        player.Trainings.ShouldHaveSingleItem().Value.ShouldBe(new Army() { Square = 1, Triangle = 1 });
         player.UsedSpace.ShouldBe(6);
+    }
+
+    /// <summary>
+    /// As above, but only circles are trained: the canceled training was the only pending one,
+    /// so nothing is left in the queue, not even an empty entry.
+    /// </summary>
+    [Test]
+    public void CancelTheOnlyPendingTraining_LeavesTheQueueEmpty()
+    {
+        // Arrange
+        var gameSettings = WithStarts((new Army() { Dot = 0 }, new Compound() { Pyramid = 2, Cube = 2, Dome = 2, Plane = 2 }), (new Army() { Square = 10 }, new Compound() { Plane = 10 })) with { StartMatter = 20000 };
+        var gameState = new GameState(gameSettings);
+        var commands = DictionaryExtensions.CommandsToDictionary([
+            ("Player01", _player1Start, new Command() { Training = new Army(){ Circle = 1 } }),
+            ("Player02", _player2Start, new Command() { MovementCommands = [ new MovementCommand() { Army = new Army() { Square = 10}, Destination = new Hexagon(0,0) }] }),
+        ]);
+
+        // Act
+        var turn1 = gameState.PlayTurn(commands);
+
+        commands = DictionaryExtensions.CommandsToDictionary([
+            ("Player01", _player1Start, new Command() { Training = new Army(){ Circle = 1 } }),
+            ("Player02", new Hexagon(0,0), new Command() { MovementCommands = [ new MovementCommand() { Army = new Army() { Square = 10}, Destination = _player1Start }] }),
+        ]);
+
+        var turn2 = turn1.PlayTurn(commands);
+
+        // Assert
+        var player = turn2.PlayerStates["Player01"];
+        player.Compounds[_player1Start].ShouldBe(new Compound() { Pyramid = 2, Cube = 2, Plane = 2 });
+        player.Trainings.ShouldBeEmpty();
+        player.UsedSpace.ShouldBe(0);
     }
 
     [Test]

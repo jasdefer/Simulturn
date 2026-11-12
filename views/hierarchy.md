@@ -4,7 +4,7 @@ Hierarchical outline following `parent` upward to roots.
 
 - [Kampfausgang vorab berechnen können](../workdown-items/combat-forecast-core.md) — status: todo · created: 2026-10-14
 - [Auf die nächste .NET-Version wechseln und neue Sprachfeatures nutzen](../workdown-items/dotnet-upgrade-and-union-types.md) — status: done · created: 2026-11-09 · updated: 2026-11-10 · completed: 2026-11-10
-- [Warteschlangen für Trainings und Konstruktionen ohne verschachtelte Dictionaries](../workdown-items/flat-pending-queues.md) — status: todo · created: 2026-11-10
+- [Warteschlangen für Trainings und Konstruktionen ohne verschachtelte Dictionaries](../workdown-items/flat-pending-queues.md) — status: done · created: 2026-11-10 · completed: 2026-11-12
 - [Spielstände speichern und wiederherstellen](../workdown-items/game-persistence.md) — status: todo · created: 2026-10-14
 - [Karten erzeugen und Settings nicht sechsfach pflegen](../workdown-items/map-generator-and-default-settings.md) — status: done · created: 2026-10-14 · updated: 2026-11-11 · completed: 2026-11-10
 - [Bewegungsreichweite pro Einheitentyp](../workdown-items/movement-range.md) — status: todo · created: 2026-10-14

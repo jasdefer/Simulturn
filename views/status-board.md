@@ -4,7 +4,6 @@ Cards grouped into columns by `status`.
 
 ## todo
 - [Kampfausgang vorab berechnen können](../workdown-items/combat-forecast-core.md)
-- [Warteschlangen für Trainings und Konstruktionen ohne verschachtelte Dictionaries](../workdown-items/flat-pending-queues.md)
 - [Spielstände speichern und wiederherstellen](../workdown-items/game-persistence.md)
 - [Bewegungsreichweite pro Einheitentyp](../workdown-items/movement-range.md)
 - [Neue UI](../workdown-items/ui.md)
@@ -15,6 +14,7 @@ _(no cards)_
 
 ## done
 - [Auf die nächste .NET-Version wechseln und neue Sprachfeatures nutzen](../workdown-items/dotnet-upgrade-and-union-types.md)
+- [Warteschlangen für Trainings und Konstruktionen ohne verschachtelte Dictionaries](../workdown-items/flat-pending-queues.md)
 - [Karten erzeugen und Settings nicht sechsfach pflegen](../workdown-items/map-generator-and-default-settings.md)
 - [Warteschlangen enthalten nur offene Aufträge](../workdown-items/pending-only-queues.md)
 - [Wissen der Spieler liegt im Regelzustand](../workdown-items/player-knowledge-in-state.md)
