@@ -20,8 +20,9 @@ public static class FogOfWar
     public const Visibility UnitObservationThreshold = Visibility.Visible;
 
     /// <summary>
-    /// The visibility of every hexagon a player with the given armies can see.
-    /// Hexagons out of range are left out. The visibility is never stored: it follows from
+    /// The visibility of every hexagon of the map for a player with the given armies.
+    /// A hexagon out of range is <see cref="Visibility.Mapped"/>: the map itself is known to
+    /// every player through the settings. The visibility is never stored: it follows from
     /// the armies and the settings alone and is computed where it is needed.
     /// </summary>
     public static ImmutableDictionary<Hexagon, Visibility> GetVisibility(IReadOnlyDictionary<Hexagon, Army> armies,
@@ -55,10 +56,7 @@ public static class FogOfWar
                     visibility = Visibility.PartiallyVisible;
                 }
             }
-            if (visibility > Visibility.Unknown)
-            {
-                visibilities[hexagon] = visibility;
-            }
+            visibilities[hexagon] = visibility;
         }
         return visibilities.ToImmutableDictionary();
     }
@@ -180,7 +178,7 @@ public static class FogOfWar
         var observations = ImmutableDictionary.CreateBuilder<Hexagon, HexagonObservation>();
         foreach (Hexagon hexagon in gameState.Hexagons)
         {
-            Visibility visibility = visibilities.GetValueOrDefault(hexagon, Visibility.Unknown);
+            Visibility visibility = visibilities[hexagon];
             int? remainingMatter = null;
             var opponentCompounds = ImmutableDictionary<string, Compound>.Empty;
             if (visibility >= StaticObservationThreshold)
