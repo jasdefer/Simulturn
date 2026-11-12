@@ -24,10 +24,9 @@ public sealed record GameState
             .GroupBy(x => x.Value.PlayerInitialization!.Value.StartingPlayerId)
             .ToImmutableDictionary(x => x.Key, x =>
             {
-                var armies = x.ToImmutableDictionary(y => y.Key, y => y.Value.PlayerInitialization!.Value.InitialArmy);
                 return new PlayerState()
                 {
-                    Armies = armies,
+                    Armies = x.ToImmutableDictionary(y => y.Key, y => y.Value.PlayerInitialization!.Value.InitialArmy),
                     Compounds = x.ToImmutableDictionary(y => y.Key, y => y.Value.PlayerInitialization!.Value.InitialCompound),
                     AvailableSpace = x.Sum(y => y.Value.PlayerInitialization!.Value.InitialCompound * GameSettings.ProvidedSpace),
                     UsedSpace = x.Sum(y => y.Value.PlayerInitialization!.Value.InitialArmy * GameSettings.RequiredSpace),
@@ -35,13 +34,11 @@ public sealed record GameState
                     Trainings = Trainings.Empty,
                     Matter = GameSettings.StartMatter,
                     Researches = ImmutableDictionary<Hexagon, Research>.Empty,
-                    Visibilities = FogOfWar.GetVisibility(armies, Hexagons, gameSettings.PartialVisibilityRange, gameSettings.VisibilityRange),
                     UpgradeLevels = GameSettings.StartUpgrades.ContainsKey(x.Key)
                         ? GameSettings.StartUpgrades[x.Key].GroupBy(x => x).ToImmutableDictionary(x => x.Key, x => Convert.ToByte(x.Count()))
                         : ImmutableDictionary<Upgrade, byte>.Empty
                 };
             });
-        PlayerStates = FogOfWar.UpdateMemories(PlayerStates, RemainingMatter, Turn);
         PlayerIds = PlayerStates.Keys.ToImmutableHashSet();
     }
 

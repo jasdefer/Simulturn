@@ -1,4 +1,5 @@
 using Simulturn.Core.Extensions;
+using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
@@ -20,6 +21,7 @@ public sealed class RandomPlayer : IArtificialPlayer
 
     private readonly Random _random;
     private readonly RandomPlayerOptions _options;
+    private ImmutableDictionary<Hexagon, HexagonMemory> _memories = ImmutableDictionary<Hexagon, HexagonMemory>.Empty;
 
     public string Name { get; }
 
@@ -32,6 +34,7 @@ public sealed class RandomPlayer : IArtificialPlayer
 
     public IReadOnlyDictionary<Hexagon, Command> GetCommands(PlayerGameState playerGameState)
     {
+        _memories = FogOfWar.UpdateMemories(_memories, playerGameState);
         PlayerState playerState = playerGameState.PlayerState;
         GameSettings gameSettings = playerGameState.GameSettings;
         int matter = playerState.Matter;
@@ -218,8 +221,8 @@ public sealed class RandomPlayer : IArtificialPlayer
         HashSet<Hexagon> researchHexagons)
     {
         PlayerState playerState = playerGameState.PlayerState;
-        List<Hexagon> enemyHexagons = playerGameState.Observations
-            .Where(x => x.Value.OpponentCompounds.Any(y => !y.Value.IsEmpty))
+        List<Hexagon> enemyHexagons = _memories
+            .Where(x => x.Value.Static.OpponentCompounds.Any(y => !y.Value.IsEmpty))
             .Select(x => x.Key)
             .OrderBy(x => x.X).ThenBy(x => x.Y)
             .ToList();
@@ -260,7 +263,7 @@ public sealed class RandomPlayer : IArtificialPlayer
             {
                 continue;
             }
-            Hexagon destination = PickWeightedDestination(playerGameState, hexagon, neighbors, enemyHexagons, ownCompoundHexagons);
+            Hexagon destination = PickWeightedDestination(hexagon, neighbors, enemyHexagons, ownCompoundHexagons);
             movements[hexagon] = new MovementCommand()
             {
                 Army = moving,
@@ -270,7 +273,7 @@ public sealed class RandomPlayer : IArtificialPlayer
         return movements;
     }
 
-    private Hexagon PickWeightedDestination(PlayerGameState playerGameState,
+    private Hexagon PickWeightedDestination(
         Hexagon origin,
         List<Hexagon> candidates,
         List<Hexagon> enemyHexagons,
@@ -291,9 +294,9 @@ public sealed class RandomPlayer : IArtificialPlayer
             {
                 weight += _options.DefendWeight;
             }
-            HexagonObservation observation = playerGameState.Observations[candidate];
-            if (observation.LastSeenTurn is null ||
-                (observation.RemainingMatter > 0 && !ownCompoundHexagons.Contains(candidate)))
+            StaticSighting? sighting = _memories.GetValueOrDefault(candidate)?.Static;
+            if (sighting is null ||
+                (sighting.RemainingMatter > 0 && !ownCompoundHexagons.Contains(candidate)))
             {
                 weight += _options.ExpandWeight;
             }

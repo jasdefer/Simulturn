@@ -1,5 +1,4 @@
 using Simulturn.AI.Analysis;
-using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.State;
 using System.Collections.Immutable;
@@ -8,13 +7,16 @@ namespace Simulturn.AI.Players;
 
 /// <summary>
 /// Constructs a full game state from a partially informed player view by filling the
-/// unknowns with estimates: enemy buildings from the fog of war memories, enemy armies
+/// unknowns with estimates: enemy buildings from what the player remembers, enemy armies
 /// from the estimated strength, remaining matter from the last observations.
 /// The result is a guess to simulate on, not the truth.
 /// </summary>
 internal static class BelievedState
 {
-    public static GameState Build(PlayerGameState view, Army estimatedEnemyArmy, SettingsAnalysis analysis)
+    public static GameState Build(PlayerGameState view,
+        ImmutableDictionary<Hexagon, HexagonMemory> memories,
+        Army estimatedEnemyArmy,
+        SettingsAnalysis analysis)
     {
         GameSettings gameSettings = view.GameSettings;
         var playerStates = ImmutableDictionary.CreateBuilder<string, PlayerState>();
@@ -23,9 +25,9 @@ internal static class BelievedState
         foreach (string opponentId in view.PlayerIds.Where(x => x != view.PlayerId).OrderBy(x => x))
         {
             var compounds = ImmutableDictionary.CreateBuilder<Hexagon, Compound>();
-            foreach ((Hexagon hexagon, HexagonObservation observation) in view.Observations)
+            foreach ((Hexagon hexagon, HexagonMemory memory) in memories)
             {
-                Compound compound = observation.OpponentCompounds.GetValueOrDefault(opponentId);
+                Compound compound = memory.Static.OpponentCompounds.GetValueOrDefault(opponentId);
                 if (!compound.IsEmpty)
                 {
                     compounds[hexagon] = compound;
@@ -68,17 +70,13 @@ internal static class BelievedState
                 Compounds = compounds.ToImmutableDictionary(),
                 Trainings = ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Army>>.Empty,
                 Constructions = ImmutableDictionary<ushort, ImmutableDictionary<Hexagon, Compound>>.Empty,
-                Researches = ImmutableDictionary<Hexagon, Research>.Empty,
-                Visibilities = FogOfWar.GetVisibility(armies,
-                    gameSettings.HexagonSettings.Keys,
-                    gameSettings.PartialVisibilityRange,
-                    gameSettings.VisibilityRange)
+                Researches = ImmutableDictionary<Hexagon, Research>.Empty
             };
         }
 
-        var remainingMatter = view.Observations.ToImmutableDictionary(
+        var remainingMatter = gameSettings.HexagonSettings.ToImmutableDictionary(
             x => x.Key,
-            x => x.Value.RemainingMatter ?? gameSettings.HexagonSettings[x.Key].Matter);
+            x => memories.GetValueOrDefault(x.Key)?.Static.RemainingMatter ?? x.Value.Matter);
         return GameState.FromParts(gameSettings, view.Turn, playerStates.ToImmutableDictionary(), remainingMatter);
     }
 }

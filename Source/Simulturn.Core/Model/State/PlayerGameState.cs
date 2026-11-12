@@ -18,12 +18,12 @@ public sealed record PlayerGameState
     public required ImmutableHashSet<string> PlayerIds { get; init; }
 
     /// <summary>
-    /// The full own state of the player, including visibilities and memories.
+    /// The full own state of the player.
     /// </summary>
     public required PlayerState PlayerState { get; init; }
 
     /// <summary>
-    /// The knowledge of the player about every hexagon of the map.
+    /// What the player sees on every hexagon of the map in this turn.
     /// </summary>
     public required ImmutableDictionary<Hexagon, HexagonObservation> Observations { get; init; }
 

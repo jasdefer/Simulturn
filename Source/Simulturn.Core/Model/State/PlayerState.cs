@@ -16,17 +16,10 @@ public sealed record PlayerState
     /// upgrade is researched on at most one hexagon at a time (work item research-cost-and-duration).
     /// </summary>
     public required ImmutableDictionary<Hexagon, Research> Researches { get; init; }
-    public required ImmutableDictionary<Hexagon, Visibility> Visibilities { get; init; }
     /// <summary>
     /// A level of 0 means the upgrade is not researched and is equivalent to not having the element in the dictionary.
     /// </summary>
     public ImmutableDictionary<Upgrade, byte> UpgradeLevels { get; init; } = ImmutableDictionary<Upgrade, byte>.Empty;
-
-    /// <summary>
-    /// What the player remembers about each hexagon from the last turn it was at least partially visible.
-    /// Hexagons that were never seen have no entry.
-    /// </summary>
-    public ImmutableDictionary<Hexagon, HexagonMemory> Memories { get; init; } = ImmutableDictionary<Hexagon, HexagonMemory>.Empty;
 
     /// <summary>
     /// The upgrades with a pending research. The next level of such an upgrade can only be

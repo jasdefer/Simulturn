@@ -1,7 +1,8 @@
 namespace Simulturn.Core.Model.State;
 
 /// <summary>
-/// Everything a player knows about a single hexagon.
+/// What a player sees on a single hexagon in the current turn. Nothing from earlier turns:
+/// what was seen before is carried in the memories (<see cref="Engine.FogOfWar.UpdateMemories"/>).
 /// Static information (terrain, initial matter) is available through the game settings and not repeated here.
 /// </summary>
 public sealed record HexagonObservation
@@ -12,19 +13,13 @@ public sealed record HexagonObservation
     public required Visibility Visibility { get; init; }
 
     /// <summary>
-    /// The turn on which the hexagon was last at least partially visible, or null if it was never seen.
-    /// Equals the current turn while the hexagon is at least partially visible.
-    /// </summary>
-    public ushort? LastSeenTurn { get; init; }
-
-    /// <summary>
-    /// The remaining harvestable matter as of <see cref="LastSeenTurn"/>, or null if the hexagon was never seen.
+    /// The remaining harvestable matter, or null if the hexagon is not at least partially visible.
     /// </summary>
     public int? RemainingMatter { get; init; }
 
     /// <summary>
-    /// The buildings of other players as of <see cref="LastSeenTurn"/>, keyed by player id.
-    /// Can be outdated if the hexagon is no longer visible.
+    /// The buildings of other players, keyed by player id.
+    /// Only populated while the hexagon is at least partially visible.
     /// </summary>
     public ImmutableDictionary<string, Compound> OpponentCompounds { get; init; } = ImmutableDictionary<string, Compound>.Empty;
 

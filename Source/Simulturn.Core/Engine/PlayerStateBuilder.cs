@@ -18,16 +18,11 @@ internal sealed class PlayerStateBuilder
     public required ImmutableDictionary<Upgrade, byte>.Builder UpgradeLevels { get; init; }
 
     /// <summary>
-    /// Carried over unchanged; memories are updated by <see cref="FogOfWar.UpdateMemories"/> once all player states of a turn are resolved.
-    /// </summary>
-    public required ImmutableDictionary<Hexagon, HexagonMemory> Memories { get; init; }
-
-    /// <summary>
     /// What happens to the player in this turn. Not part of the state: it goes into the report.
     /// </summary>
     public PlayerReportBuilder Report { get; } = new();
 
-    public PlayerState ToPlayerState(GameSettings gameSettings)
+    public PlayerState ToPlayerState()
     {
         return new PlayerState()
         {
@@ -43,12 +38,7 @@ internal sealed class PlayerStateBuilder
                 kvp => kvp.Key,
                 kvp => kvp.Value.ToImmutableDictionary()),
             Researches = Researches.ToImmutableDictionary(),
-            UpgradeLevels = UpgradeLevels.ToImmutableDictionary(),
-            Visibilities = FogOfWar.GetVisibility(Armies,
-                gameSettings.HexagonSettings.Keys,
-                gameSettings.PartialVisibilityRange,
-                gameSettings.VisibilityRange),
-            Memories = Memories
+            UpgradeLevels = UpgradeLevels.ToImmutableDictionary()
         };
     }
 
@@ -68,8 +58,7 @@ internal sealed class PlayerStateBuilder
                 kvp => kvp.Key,
                 kvp => kvp.Value.ToBuilder()).ToBuilder(),
             Researches = playerState.Researches.ToBuilder(),
-            UpgradeLevels = playerState.UpgradeLevels.ToBuilder(),
-            Memories = playerState.Memories
+            UpgradeLevels = playerState.UpgradeLevels.ToBuilder()
         };
     }
 }

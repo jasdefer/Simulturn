@@ -24,22 +24,12 @@ public static class GameStateSnapshot
             text.Append(CultureInfo.InvariantCulture, $"Player {playerId} matter={player.Matter} used={player.UsedSpace} available={player.AvailableSpace}\n");
             AppendPerHexagon(text, "  Army", player.Armies);
             AppendPerHexagon(text, "  Compound", player.Compounds);
-            AppendPerHexagon(text, "  Visibility", player.Visibilities);
             AppendPerTurn(text, "  Training", player.Trainings);
             AppendPerTurn(text, "  Construction", player.Constructions);
             AppendPerHexagon(text, "  Research", player.Researches);
             foreach ((Upgrade upgrade, byte level) in player.UpgradeLevels.OrderBy(x => x.Key))
             {
                 text.Append(CultureInfo.InvariantCulture, $"  Upgrade {upgrade} {level}\n");
-            }
-            foreach ((Hexagon hexagon, HexagonMemory memory) in Sorted(player.Memories))
-            {
-                text.Append(CultureInfo.InvariantCulture, $"  Memory {hexagon} turn={memory.LastSeenTurn} matter={memory.RemainingMatter}");
-                foreach ((string opponent, Compound compound) in memory.OpponentCompounds.OrderBy(x => x.Key, StringComparer.Ordinal))
-                {
-                    text.Append(CultureInfo.InvariantCulture, $" {opponent}={compound}");
-                }
-                text.Append('\n');
             }
         }
         return text.ToString();

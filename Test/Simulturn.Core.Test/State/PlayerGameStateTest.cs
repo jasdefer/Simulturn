@@ -4,6 +4,7 @@ using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
+using Simulturn.Core.Model.State.Validation;
 using Simulturn.Core.Setup;
 using Simulturn.Test.Common;
 using System.Collections.Immutable;
@@ -59,7 +60,6 @@ public sealed class PlayerGameStateTest
 
         // Own start hexagon is occupied and fully known.
         view.Observations[_player1Start].Visibility.ShouldBe(Visibility.Occupied);
-        view.Observations[_player1Start].LastSeenTurn.ShouldBe((ushort)0);
         view.Observations[_player1Start].RemainingMatter.ShouldBe(1000);
 
         // The adjacent hexagon is visible, the one behind partially visible.
@@ -70,7 +70,6 @@ public sealed class PlayerGameStateTest
         // The opponent start hexagon is out of sight: no matter, no buildings, no units.
         var enemyStart = view.Observations[_player2Start];
         enemyStart.Visibility.ShouldBe(Visibility.Mapped);
-        enemyStart.LastSeenTurn.ShouldBeNull();
         enemyStart.RemainingMatter.ShouldBeNull();
         enemyStart.OpponentCompounds.ShouldBeEmpty();
         enemyStart.OpponentUnitCounts.ShouldBeEmpty();
@@ -109,7 +108,7 @@ public sealed class PlayerGameStateTest
     }
 
     [Test]
-    public void Memory_UpdatesWhileVisible()
+    public void VisibleHexagon_ShowsTheRemainingMatterOfTheTurn()
     {
         var gameState = new GameState(_gameSettings);
         var turn1 = gameState.PlayTurn(_noCommands);
@@ -117,11 +116,10 @@ public sealed class PlayerGameStateTest
 
         // 5 dots harvested 50 matter on the own hexagon.
         view.Observations[_player1Start].RemainingMatter.ShouldBe(1000 - 50);
-        view.Observations[_player1Start].LastSeenTurn.ShouldBe((ushort)1);
     }
 
     [Test]
-    public void Scouting_MemoryPersistsAndGetsStaleAfterLosingVision()
+    public void Scouting_ViewShowsOnlyWhatIsInSightThisTurn()
     {
         var gameState = new GameState(_gameSettings);
         var scout = new Army() { Dot = 1 };
@@ -136,44 +134,23 @@ public sealed class PlayerGameStateTest
         var view = FogOfWar.GetPlayerGameState(turn4, "Player01");
         var observation = view.Observations[_player2Start];
         observation.Visibility.ShouldBe(Visibility.PartiallyVisible);
-        observation.LastSeenTurn.ShouldBe((ushort)4);
         observation.RemainingMatter.ShouldBe(1000 - 4 * 50); // 5 dots harvested 50 matter per turn
         observation.OpponentCompounds["Player02"].ShouldBe(new Compound() { Plane = 1 });
         observation.OpponentUnitCounts.ShouldBeEmpty();
 
-        // Retreat: the opponent start hexagon is out of sight again, the memory keeps the stale snapshot.
+        // Retreat: the opponent start hexagon is out of sight again, the view shows nothing of it.
         var turn5 = turn4.PlayTurn(Move("Player01", new Hexagon(1, 0), new Hexagon(0, 0), scout));
         view = FogOfWar.GetPlayerGameState(turn5, "Player01");
         observation = view.Observations[_player2Start];
         observation.Visibility.ShouldBe(Visibility.Mapped);
-        observation.LastSeenTurn.ShouldBe((ushort)4);
-        observation.RemainingMatter.ShouldBe(800); // stale: the actual value is 750
-        observation.OpponentCompounds["Player02"].ShouldBe(new Compound() { Plane = 1 });
-
-        // The opponent constructs an axis while unseen; the memory must not change.
-        var constructAxis = DictionaryExtensions.CommandsToDictionary([
-            ("Player02", _player2Start, new Command() { Construction = new Compound() { Axis = 1 } })
-        ]);
-        var turn6 = turn5.PlayTurn(constructAxis);
-        var turn7 = turn6.PlayTurn(_noCommands); // axis completes
-        turn7.PlayerStates["Player02"].Compounds[_player2Start].ShouldBe(new Compound() { Plane = 1, Axis = 1 });
-        view = FogOfWar.GetPlayerGameState(turn7, "Player01");
-        observation = view.Observations[_player2Start];
-        observation.LastSeenTurn.ShouldBe((ushort)4);
-        observation.OpponentCompounds["Player02"].ShouldBe(new Compound() { Plane = 1 });
-
-        // Scout again: the memory updates to the new buildings.
-        var turn8 = turn7.PlayTurn(Move("Player01", new Hexagon(0, 0), new Hexagon(1, 0), scout));
-        view = FogOfWar.GetPlayerGameState(turn8, "Player01");
-        observation = view.Observations[_player2Start];
-        observation.Visibility.ShouldBe(Visibility.PartiallyVisible);
-        observation.LastSeenTurn.ShouldBe((ushort)8);
-        observation.OpponentCompounds["Player02"].ShouldBe(new Compound() { Plane = 1, Axis = 1 });
+        observation.RemainingMatter.ShouldBeNull();
+        observation.OpponentCompounds.ShouldBeEmpty();
         observation.OpponentUnitCounts.ShouldBeEmpty();
 
-        // Move next to the opponent: full visibility reveals the unit count.
-        var turn9 = turn8.PlayTurn(Move("Player01", new Hexagon(1, 0), new Hexagon(2, 0), scout));
-        view = FogOfWar.GetPlayerGameState(turn9, "Player01");
+        // Scout again and move next to the opponent: full visibility reveals the unit count.
+        var turn6 = turn5.PlayTurn(Move("Player01", new Hexagon(0, 0), new Hexagon(1, 0), scout));
+        var turn7 = turn6.PlayTurn(Move("Player01", new Hexagon(1, 0), new Hexagon(2, 0), scout));
+        view = FogOfWar.GetPlayerGameState(turn7, "Player01");
         observation = view.Observations[_player2Start];
         observation.Visibility.ShouldBe(Visibility.Visible);
         observation.OpponentUnitCounts["Player02"].ShouldBe(5);
@@ -185,5 +162,29 @@ public sealed class PlayerGameStateTest
         var gameState = new GameState(_gameSettings);
 
         Should.Throw<ArgumentException>(() => FogOfWar.GetPlayerGameState(gameState, "UnknownPlayer"));
+    }
+
+    [Test]
+    public void ValidateWithView_AcceptsValidCommands()
+    {
+        var gameState = new GameState(_gameSettings);
+        var view = FogOfWar.GetPlayerGameState(gameState, "Player01");
+        var commands = Move("Player01", _player1Start, new Hexagon(-2, 0), new Army() { Dot = 2 });
+
+        CommandValidator.Validate(view, commands["Player01"]).ShouldBeEmpty();
+    }
+
+    [Test]
+    public void ValidateWithView_ReportsTheSameViolationsAsWithTheGameState()
+    {
+        var gameState = new GameState(_gameSettings);
+        var view = FogOfWar.GetPlayerGameState(gameState, "Player01");
+        var commands = Move("Player01", _player1Start, new Hexagon(-2, 0), new Army() { Dot = 10 });
+
+        var withView = CommandValidator.Validate(view, commands["Player01"]).Select(x => x.Value).ToList();
+        var withState = CommandValidator.Validate(gameState, "Player01", commands["Player01"]).Select(x => x.Value).ToList();
+
+        withView.ShouldHaveSingleItem().ShouldBe(new MissingArmyForMovement("Player01", _player1Start, Unit.Dot, 10, 5));
+        withView.ShouldBe(withState);
     }
 }

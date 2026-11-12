@@ -49,20 +49,6 @@ public static class StateInvariants
                 violations.Add($"{playerId}: available space is {player.AvailableSpace}, but the compounds provide {providedSpace}.");
             }
 
-            var expectedVisibilities = FogOfWar.GetVisibility(player.Armies,
-                state.Hexagons,
-                settings.PartialVisibilityRange,
-                settings.VisibilityRange);
-            foreach (Hexagon hexagon in state.Hexagons)
-            {
-                Visibility expected = expectedVisibilities.GetValueOrDefault(hexagon, Visibility.Unknown);
-                Visibility actual = player.Visibilities.GetValueOrDefault(hexagon, Visibility.Unknown);
-                if (expected != actual)
-                {
-                    violations.Add($"{playerId}: visibility of {hexagon} is {actual}, but the armies imply {expected}.");
-                }
-            }
-
             CheckPlayerView(state, playerId, violations);
         }
 
@@ -70,20 +56,21 @@ public static class StateInvariants
     }
 
     /// <summary>
-    /// The player view must show exactly what the visibility allows: nothing current about hidden
+    /// The player view must show exactly what the visibility allows: nothing about hidden
     /// hexagons, the truth about visible ones.
     /// </summary>
     private static void CheckPlayerView(GameState state, string playerId, List<string> violations)
     {
         PlayerGameState view = FogOfWar.GetPlayerGameState(state, playerId);
         PlayerState player = state.PlayerStates[playerId];
+        var visibilities = FogOfWar.GetVisibility(player.Armies, state.GameSettings);
         var opponents = state.PlayerStates.Where(x => x.Key != playerId).ToList();
         foreach ((Hexagon hexagon, HexagonObservation observation) in view.Observations)
         {
-            Visibility visibility = player.Visibilities.GetValueOrDefault(hexagon, Visibility.Unknown);
+            Visibility visibility = visibilities.GetValueOrDefault(hexagon, Visibility.Unknown);
             if (observation.Visibility != visibility)
             {
-                violations.Add($"{playerId}: the view reports {observation.Visibility} for {hexagon}, the state has {visibility}.");
+                violations.Add($"{playerId}: the view reports {observation.Visibility} for {hexagon}, the armies imply {visibility}.");
             }
 
             if (visibility >= FogOfWar.UnitObservationThreshold)
@@ -103,10 +90,6 @@ public static class StateInvariants
 
             if (visibility >= FogOfWar.StaticObservationThreshold)
             {
-                if (observation.LastSeenTurn != state.Turn)
-                {
-                    violations.Add($"{playerId}: {hexagon} is {visibility} but was last seen on turn {observation.LastSeenTurn?.ToString() ?? "never"} instead of {state.Turn}.");
-                }
                 if (observation.RemainingMatter != state.RemainingMatter[hexagon])
                 {
                     violations.Add($"{playerId}: the view reports {observation.RemainingMatter} remaining matter on {hexagon}, the state has {state.RemainingMatter[hexagon]}.");
@@ -119,9 +102,9 @@ public static class StateInvariants
                     violations.Add($"{playerId}: the view reports wrong opponent compounds on {hexagon}.");
                 }
             }
-            else if (observation.LastSeenTurn >= state.Turn)
+            else if (observation.RemainingMatter is not null || observation.OpponentCompounds.Count > 0)
             {
-                violations.Add($"{playerId}: {hexagon} is {visibility} but the view claims it was seen on turn {observation.LastSeenTurn}.");
+                violations.Add($"{playerId}: the view reveals remaining matter or opponent compounds on {hexagon} with visibility {visibility}.");
             }
         }
     }

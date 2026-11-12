@@ -1,7 +1,9 @@
 using Simulturn.AI.Analysis;
+using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
+using System.Collections.Immutable;
 
 namespace Simulturn.AI.Players;
 
@@ -22,6 +24,7 @@ public sealed class StateMachinePlayer : IArtificialPlayer
     private SettingsAnalysis? _analysis;
     private Hexagon? _expansionTarget;
     private int _estimatedEnemyUnits = -1;
+    private ImmutableDictionary<Hexagon, HexagonMemory> _memories = ImmutableDictionary<Hexagon, HexagonMemory>.Empty;
 
     public EconomyMode Economy { get; private set; } = EconomyMode.Eco;
     public MilitaryMode Military { get; private set; } = MilitaryMode.Scout;
@@ -36,7 +39,8 @@ public sealed class StateMachinePlayer : IArtificialPlayer
     public IReadOnlyDictionary<Hexagon, Command> GetCommands(PlayerGameState playerGameState)
     {
         _analysis ??= GameSettingsAnalyzer.Analyze(playerGameState.GameSettings);
-        var turn = new TurnPlan(playerGameState, _analysis, _options);
+        _memories = FogOfWar.UpdateMemories(_memories, playerGameState);
+        var turn = new TurnPlan(playerGameState, _memories, _analysis, _options);
         UpdateEnemyEstimate(playerGameState);
         Economy = DecideEconomyMode(turn);
         Military = DecideMilitaryMode(turn);
@@ -308,19 +312,19 @@ public sealed class StateMachinePlayer : IArtificialPlayer
     private bool IsExpansionCandidate(TurnPlan turn, Hexagon hexagon)
     {
         GameSettings gameSettings = turn.View.GameSettings;
-        HexagonObservation observation = turn.View.Observations[hexagon];
-        int expectedMatter = observation.RemainingMatter ?? gameSettings.HexagonSettings[hexagon].Matter;
+        StaticSighting? sighting = turn.Memories.GetValueOrDefault(hexagon)?.Static;
+        int expectedMatter = sighting?.RemainingMatter ?? gameSettings.HexagonSettings[hexagon].Matter;
         return gameSettings.HexagonSettings[hexagon].IsBuildable &&
             gameSettings.HexagonSettings[hexagon].MaxNumberOfUnitsGeneratingMatter[_analysis!.Worker] > 0 &&
             expectedMatter >= _options.MinExpansionMatter &&
             turn.View.PlayerState.Compounds.GetValueOrDefault(hexagon).IsEmpty &&
-            observation.OpponentCompounds.All(x => x.Value.IsEmpty);
+            (sighting is null || sighting.OpponentCompounds.All(x => x.Value.IsEmpty));
     }
 
     private Hexagon? NearestKnownEnemyCompound(TurnPlan turn)
     {
-        return turn.View.Observations
-            .Where(x => x.Value.OpponentCompounds.Any(y => !y.Value.IsEmpty))
+        return turn.Memories
+            .Where(x => x.Value.Static.OpponentCompounds.Any(y => !y.Value.IsEmpty))
             .Select(x => x.Key)
             .OrderBy(x => x.DistanceTo(turn.MainBase))
             .ThenBy(x => x.X).ThenBy(x => x.Y)
@@ -341,9 +345,9 @@ public sealed class StateMachinePlayer : IArtificialPlayer
 
     private int IntelAge(TurnPlan turn)
     {
-        ushort? lastSeen = turn.View.Observations.Values
-            .Where(x => x.OpponentCompounds.Any(y => !y.Value.IsEmpty))
-            .Max(x => x.LastSeenTurn);
+        ushort? lastSeen = turn.Memories.Values
+            .Where(x => x.Static.OpponentCompounds.Any(y => !y.Value.IsEmpty))
+            .Max(x => (ushort?)x.Static.Turn);
         return lastSeen is null ? int.MaxValue : turn.View.Turn - lastSeen.Value;
     }
 }

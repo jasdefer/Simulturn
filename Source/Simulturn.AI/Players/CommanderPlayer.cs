@@ -1,8 +1,10 @@
 using Simulturn.AI.Analysis;
 using Simulturn.Core.Extensions;
+using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
+using System.Collections.Immutable;
 
 namespace Simulturn.AI.Players;
 
@@ -37,16 +39,32 @@ public class CommanderPlayer : IArtificialPlayer
     public string Name { get; }
 
     public CommanderPlayer(CommanderPlayerOptions? options = null, string? name = null)
+        : this(options, name, ImmutableDictionary<Hexagon, HexagonMemory>.Empty)
+    {
+    }
+
+    /// <param name="earlierMemories">
+    /// The memories of the turns before the first one this player is asked for, so that a
+    /// player taking over a running game remembers what was seen before.
+    /// </param>
+    private protected CommanderPlayer(CommanderPlayerOptions? options, string? name, ImmutableDictionary<Hexagon, HexagonMemory> earlierMemories)
     {
         _options = options ?? new CommanderPlayerOptions();
         Name = name ?? "Commander";
+        Memories = earlierMemories;
     }
+
+    /// <summary>
+    /// What the player last saw on every hexagon it has seen so far, the current turn included.
+    /// </summary>
+    private protected ImmutableDictionary<Hexagon, HexagonMemory> Memories { get; private set; }
 
     public IReadOnlyDictionary<Hexagon, Command> GetCommands(PlayerGameState playerGameState)
     {
         _analysis ??= GameSettingsAnalyzer.Analyze(playerGameState.GameSettings);
+        Memories = FogOfWar.UpdateMemories(Memories, playerGameState);
         UpdateEnemyEstimate(playerGameState);
-        var probe = new TurnPlan(playerGameState, _analysis, _options);
+        var probe = new TurnPlan(playerGameState, Memories, _analysis, _options);
         Economy = DecideEconomyMode(probe);
         Military = SelectMilitaryMode(playerGameState, probe);
         return BuildTurnCommands(playerGameState, Military);
@@ -67,7 +85,7 @@ public class CommanderPlayer : IArtificialPlayer
     /// </summary>
     private protected IReadOnlyDictionary<Hexagon, Command> BuildTurnCommands(PlayerGameState view, MilitaryMode militaryMode)
     {
-        var turn = new TurnPlan(view, _analysis!, _options);
+        var turn = new TurnPlan(view, Memories, _analysis!, _options);
         if (Economy == EconomyMode.Expand)
         {
             Expand(turn);
@@ -285,9 +303,9 @@ public class CommanderPlayer : IArtificialPlayer
     /// </summary>
     private protected Hexagon? RaidTarget(TurnPlan turn)
     {
-        var known = turn.View.Observations
-            .Where(x => x.Value.OpponentCompounds.Any(y => !y.Value.IsEmpty))
-            .Select(x => (Hexagon: x.Key, Buildings: x.Value.OpponentCompounds.Values.Sum(y => y.Sum())))
+        var known = turn.Memories
+            .Where(x => x.Value.Static.OpponentCompounds.Any(y => !y.Value.IsEmpty))
+            .Select(x => (Hexagon: x.Key, Buildings: x.Value.Static.OpponentCompounds.Values.Sum(y => y.Sum())))
             .ToList();
         if (known.Count < 2)
         {
@@ -323,10 +341,9 @@ public class CommanderPlayer : IArtificialPlayer
     /// </summary>
     private void Sweep(TurnPlan turn)
     {
-        List<Hexagon> staleHexagons = turn.View.Observations
-            .OrderBy(x => (int?)x.Value.LastSeenTurn ?? -1)
-            .ThenBy(x => x.Key.X).ThenBy(x => x.Key.Y)
-            .Select(x => x.Key)
+        List<Hexagon> staleHexagons = turn.View.Observations.Keys
+            .OrderBy(x => (int?)turn.Memories.GetValueOrDefault(x)?.Static.Turn ?? -1)
+            .ThenBy(x => x.X).ThenBy(x => x.Y)
             .Take(6)
             .ToList();
         foreach (Hexagon hexagon in turn.OwnArmyHexagons)
@@ -506,8 +523,8 @@ public class CommanderPlayer : IArtificialPlayer
     /// </summary>
     private void AttackKnownEnemyCompounds(TurnPlan turn)
     {
-        List<Hexagon> targets = turn.View.Observations
-            .Where(x => x.Value.OpponentCompounds.Any(y => !y.Value.IsEmpty))
+        List<Hexagon> targets = turn.Memories
+            .Where(x => x.Value.Static.OpponentCompounds.Any(y => !y.Value.IsEmpty))
             .Select(x => x.Key)
             .ToList();
         if (targets.Count == 0)
@@ -633,13 +650,13 @@ public class CommanderPlayer : IArtificialPlayer
         }
         // The richest hexagon first (contested wealth must be fought for), safety second:
         // among equally rich spots, prefer the ones away from the enemy.
-        List<Hexagon> knownEnemyCompounds = turn.View.Observations
-            .Where(x => x.Value.OpponentCompounds.Any(y => !y.Value.IsEmpty))
+        List<Hexagon> knownEnemyCompounds = turn.Memories
+            .Where(x => x.Value.Static.OpponentCompounds.Any(y => !y.Value.IsEmpty))
             .Select(x => x.Key)
             .ToList();
         var candidates = turn.View.Observations.Keys
             .Where(x => IsExpansionCandidate(turn, x))
-            .OrderByDescending(x => turn.View.Observations[x].RemainingMatter ?? turn.View.GameSettings.HexagonSettings[x].Matter)
+            .OrderByDescending(x => turn.Memories.GetValueOrDefault(x)?.Static.RemainingMatter ?? turn.View.GameSettings.HexagonSettings[x].Matter)
             .ThenByDescending(x => knownEnemyCompounds.Count == 0 ? 0 : knownEnemyCompounds.Min(y => y.DistanceTo(x)))
             .ThenBy(x => x.DistanceTo(turn.MainBase))
             .ThenBy(x => x.X).ThenBy(x => x.Y);
@@ -649,20 +666,20 @@ public class CommanderPlayer : IArtificialPlayer
     private bool IsExpansionCandidate(TurnPlan turn, Hexagon hexagon)
     {
         GameSettings gameSettings = turn.View.GameSettings;
-        HexagonObservation observation = turn.View.Observations[hexagon];
-        int expectedMatter = observation.RemainingMatter ?? gameSettings.HexagonSettings[hexagon].Matter;
+        StaticSighting? sighting = turn.Memories.GetValueOrDefault(hexagon)?.Static;
+        int expectedMatter = sighting?.RemainingMatter ?? gameSettings.HexagonSettings[hexagon].Matter;
         return gameSettings.HexagonSettings[hexagon].IsBuildable &&
             gameSettings.HexagonSettings[hexagon].MaxNumberOfUnitsGeneratingMatter[_analysis!.Worker] > 0 &&
             expectedMatter >= _options.MinExpansionMatter &&
             turn.View.PlayerState.Compounds.GetValueOrDefault(hexagon).IsEmpty &&
-            observation.OpponentCompounds.All(x => x.Value.IsEmpty) &&
-            observation.OpponentUnitCounts.Values.Sum() == 0;
+            (sighting is null || sighting.OpponentCompounds.All(x => x.Value.IsEmpty)) &&
+            turn.View.Observations[hexagon].OpponentUnitCounts.Values.Sum() == 0;
     }
 
     private protected Hexagon? NearestKnownEnemyCompound(TurnPlan turn)
     {
-        return turn.View.Observations
-            .Where(x => x.Value.OpponentCompounds.Any(y => !y.Value.IsEmpty))
+        return turn.Memories
+            .Where(x => x.Value.Static.OpponentCompounds.Any(y => !y.Value.IsEmpty))
             .Select(x => x.Key)
             .OrderBy(x => x.DistanceTo(turn.MainBase))
             .ThenBy(x => x.X).ThenBy(x => x.Y)
@@ -683,9 +700,9 @@ public class CommanderPlayer : IArtificialPlayer
 
     private int IntelAge(TurnPlan turn)
     {
-        ushort? lastSeen = turn.View.Observations.Values
-            .Where(x => x.OpponentCompounds.Any(y => !y.Value.IsEmpty))
-            .Max(x => x.LastSeenTurn);
+        ushort? lastSeen = turn.Memories.Values
+            .Where(x => x.Static.OpponentCompounds.Any(y => !y.Value.IsEmpty))
+            .Max(x => (ushort?)x.Static.Turn);
         return lastSeen is null ? int.MaxValue : turn.View.Turn - lastSeen.Value;
     }
 }
