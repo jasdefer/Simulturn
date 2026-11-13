@@ -234,6 +234,11 @@ public static class StateInvariants
             {
                 moved[movement.Origin] = moved.GetValueOrDefault(movement.Origin) - movement.Army;
                 moved[movement.Destination] = moved.GetValueOrDefault(movement.Destination) + movement.Army;
+                int distance = movement.Origin.DistanceTo(movement.Destination);
+                if (Movement.ReachableArmy(settings, movement.Army, distance) != movement.Army)
+                {
+                    violations.Add($"Report: {playerId} moved {movement.Army} from {movement.Origin} to {movement.Destination}, the distance {distance} exceeds the range {Movement.Range(settings)}.");
+                }
             }
 
             Army ordered = Army.Empty;

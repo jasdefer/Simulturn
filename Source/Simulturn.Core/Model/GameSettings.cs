@@ -15,6 +15,11 @@ public sealed record GameSettings
     public required Army TrainingDuration { get; init; }
     public required Army Income { get; init; }
     public required Army StructureDamage { get; init; }
+
+    /// <summary>
+    /// The number of hexagons every unit type moves per turn. The rule is applied by <see cref="Engine.Movement"/>.
+    /// </summary>
+    public required Army MovementRange { get; init; }
     public required byte PartialVisibilityRange { get; init; }
     public required byte VisibilityRange { get; init; }
 

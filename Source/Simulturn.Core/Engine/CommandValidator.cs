@@ -138,6 +138,27 @@ public sealed class CommandValidator
                 yield return new MissingArmyForMovement(_playerId, hexagon, unit, departingArmy[unit], availableArmy[unit]);
             }
         }
+        foreach (MovementCommand movement in command.MovementCommands)
+        {
+            // The turn resolution skips a movement without units.
+            if (movement.Army.IsEmpty)
+            {
+                continue;
+            }
+            if (!_settings.HexagonSettings.ContainsKey(movement.Destination))
+            {
+                yield return new MovementDestinationOffMap(_playerId, hexagon, movement.Destination);
+            }
+            int distance = hexagon.DistanceTo(movement.Destination);
+            Army reachableArmy = Movement.ReachableArmy(_settings, movement.Army, distance);
+            foreach (var unit in EnumValues.Units)
+            {
+                if (movement.Army[unit] != reachableArmy[unit])
+                {
+                    yield return new MovementExceedsRange(_playerId, hexagon, movement.Destination, unit, distance, Movement.Range(_settings)[unit]);
+                }
+            }
+        }
     }
 
     /// <summary>
