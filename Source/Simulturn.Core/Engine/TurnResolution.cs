@@ -196,65 +196,39 @@ public sealed class TurnResolution
     {
         foreach (Hexagon hexagon in _potentialFightHexagons)
         {
-            List<(string PlayerId, Army Army)> armies = GetArmiesOn(hexagon);
-            if (armies.Count < 2)
+            Dictionary<string, Combatant> combatants = GetCombatantsOn(hexagon);
+            if (combatants.Count < 2)
             {
                 continue;
             }
-            Dictionary<string, Army> losses = CalculateLosses(armies);
-            _fights.Add(hexagon, new FightReport()
-            {
-                Armies = armies.ToImmutableDictionary(x => x.PlayerId, x => x.Army),
-                Losses = armies.ToImmutableDictionary(x => x.PlayerId, x => losses.GetValueOrDefault(x.PlayerId))
-            });
-            foreach ((string playerId, Army loss) in losses)
+            FightReport fight = Combat.Fight(_settings, combatants);
+            _fights.Add(hexagon, fight);
+            foreach ((string playerId, Army loss) in fight.Losses)
             {
                 ApplyLosses(_players[playerId], hexagon, loss);
             }
         }
     }
 
-    private List<(string PlayerId, Army Army)> GetArmiesOn(Hexagon hexagon)
+    /// <summary>
+    /// The upgrade levels come from the state at the start of the turn: a research completed
+    /// this turn counts from the next turn on.
+    /// </summary>
+    private Dictionary<string, Combatant> GetCombatantsOn(Hexagon hexagon)
     {
-        List<(string PlayerId, Army Army)> armies = [];
+        Dictionary<string, Combatant> combatants = [];
         foreach (string playerId in _state.PlayerIds)
         {
             if (_players[playerId].Armies.TryGetValue(hexagon, out var army))
             {
-                armies.Add((playerId, army));
+                combatants.Add(playerId, new Combatant()
+                {
+                    Army = army,
+                    UpgradeLevels = _state.PlayerStates[playerId].UpgradeLevels
+                });
             }
         }
-        return armies;
-    }
-
-    /// <summary>
-    /// Every army fights every other army on the hexagon with its full strength; the losses of a player add up.
-    /// </summary>
-    private Dictionary<string, Army> CalculateLosses(List<(string PlayerId, Army Army)> armies)
-    {
-        Dictionary<string, Army> losses = [];
-        for (var i = 0; i < armies.Count - 1; i++)
-        {
-            for (int j = i + 1; j < armies.Count; j++)
-            {
-                (Army lossesPlayerI, Army lossesPlayerJ) = Combat.Fight(armies[i].Army,
-                    GetFightExponent(armies[i].PlayerId),
-                    armies[j].Army,
-                    GetFightExponent(armies[j].PlayerId));
-                losses.Merge(armies[i].PlayerId, lossesPlayerI);
-                losses.Merge(armies[j].PlayerId, lossesPlayerJ);
-            }
-        }
-        return losses;
-    }
-
-    /// <summary>
-    /// The upgrade bonus comes from the state at the start of the turn: a research completed
-    /// this turn counts from the next turn on.
-    /// </summary>
-    private Army GetFightExponent(string playerId)
-    {
-        return _settings.FightExponent + _state.PlayerStates[playerId].ExponentBonusFromUpgrades(_settings);
+        return combatants;
     }
 
     private void ApplyLosses(PlayerStateBuilder player, Hexagon hexagon, Army loss)

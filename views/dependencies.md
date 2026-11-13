@@ -21,6 +21,7 @@ flowchart TD
     subgraph ui ["Neue UI"]
         ui-concept["UI-Konzept erarbeiten"]
     end
+    upgrade-concept["Upgrade-Konzept erarbeiten"]
     validate-regression-tests["Regressionstests für Validate mit Warteschlangen auf anderen Hexagons"]
     pending-only-queues --> training-cancellation-after-completion
     research-cost-and-duration --> research-level-validation

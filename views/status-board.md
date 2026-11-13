@@ -3,16 +3,17 @@
 Cards grouped into columns by `status`.
 
 ## todo
-- [Kampfausgang vorab berechnen können](../workdown-items/combat-forecast-core.md)
 - [Spielstände speichern und wiederherstellen](../workdown-items/game-persistence.md)
 - [Bewegungsreichweite pro Einheitentyp](../workdown-items/movement-range.md)
 - [Neue UI](../workdown-items/ui.md)
 - [UI-Konzept erarbeiten](../workdown-items/ui-concept.md)
+- [Upgrade-Konzept erarbeiten](../workdown-items/upgrade-concept.md)
 
 ## in_progress
 _(no cards)_
 
 ## done
+- [Kampfausgang vorab berechnen können](../workdown-items/combat-forecast-core.md)
 - [Auf die nächste .NET-Version wechseln und neue Sprachfeatures nutzen](../workdown-items/dotnet-upgrade-and-union-types.md)
 - [Warteschlangen für Trainings und Konstruktionen ohne verschachtelte Dictionaries](../workdown-items/flat-pending-queues.md)
 - [Karten erzeugen und Settings nicht sechsfach pflegen](../workdown-items/map-generator-and-default-settings.md)

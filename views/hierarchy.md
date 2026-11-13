@@ -2,7 +2,7 @@
 
 Hierarchical outline following `parent` upward to roots.
 
-- [Kampfausgang vorab berechnen können](../workdown-items/combat-forecast-core.md) — status: todo · created: 2026-10-14
+- [Kampfausgang vorab berechnen können](../workdown-items/combat-forecast-core.md) — status: done · created: 2026-10-14 · updated: 2026-11-13 · completed: 2026-11-13
 - [Auf die nächste .NET-Version wechseln und neue Sprachfeatures nutzen](../workdown-items/dotnet-upgrade-and-union-types.md) — status: done · created: 2026-11-09 · updated: 2026-11-10 · completed: 2026-11-10
 - [Warteschlangen für Trainings und Konstruktionen ohne verschachtelte Dictionaries](../workdown-items/flat-pending-queues.md) — status: done · created: 2026-11-10 · completed: 2026-11-12
 - [Spielstände speichern und wiederherstellen](../workdown-items/game-persistence.md) — status: todo · created: 2026-10-14
@@ -18,4 +18,5 @@ Hierarchical outline following `parent` upward to roots.
 - [NextTurn liefert Zustand und Ereignisse getrennt](../workdown-items/turn-result.md) — status: done · created: 2026-11-10 · updated: 2026-11-11 · completed: 2026-11-11
 - [Neue UI](../workdown-items/ui.md) — status: todo · created: 2026-10-14
   - [UI-Konzept erarbeiten](../workdown-items/ui-concept.md) — status: todo · created: 2026-10-14
+- [Upgrade-Konzept erarbeiten](../workdown-items/upgrade-concept.md) — status: todo · created: 2026-11-13
 - [Regressionstests für Validate mit Warteschlangen auf anderen Hexagons](../workdown-items/validate-regression-tests.md) — status: done · created: 2026-10-14 · updated: 2026-11-08 · completed: 2026-11-08
