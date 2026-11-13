@@ -177,6 +177,26 @@ public static class StateInvariants
         TurnReport report = result.Report;
         GameSettings settings = before.GameSettings;
 
+        // A forecast with the armies of the fight and the upgrade levels from the start of the turn
+        // gives the losses of the fight.
+        foreach ((Hexagon hexagon, FightReport fight) in report.Fights)
+        {
+            FightReport forecast = Combat.Fight(settings, fight.Armies.ToDictionary(
+                x => x.Key,
+                x => new Combatant() { Army = x.Value, UpgradeLevels = before.PlayerStates[x.Key].UpgradeLevels }));
+            foreach ((string playerId, Army loss) in fight.Losses)
+            {
+                if (forecast.Losses[playerId] != loss)
+                {
+                    violations.Add($"Report: {playerId} lost {loss} in the fight on {hexagon}, Combat.Fight gives {forecast.Losses[playerId]}.");
+                }
+                if (Army.Min(loss, fight.Armies[playerId]) != loss)
+                {
+                    violations.Add($"Report: {playerId} lost {loss} in the fight on {hexagon}, more than the army {fight.Armies[playerId]}.");
+                }
+            }
+        }
+
         foreach (Hexagon hexagon in before.Hexagons)
         {
             int reported = report.Activities.Values.Sum(x => x.Incomes.TryGetValue(hexagon, out var income) ? income.Matter : 0);

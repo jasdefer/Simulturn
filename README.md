@@ -140,6 +140,7 @@
   - Fight pairwise
   - Fights with no dominant players result in a tie for all players
   - Only a dominant player (who defeats everything in the direct fight) can win a fight
+  - The losses of the dominant player add up over the direct fights and end at the army: it only survives if the other armies together do not wear it down
 
 ### Building destruction
 

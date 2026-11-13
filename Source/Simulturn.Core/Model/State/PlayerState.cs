@@ -1,5 +1,3 @@
-using Simulturn.Core.Model.Upgrades;
-
 namespace Simulturn.Core.Model.State;
 
 public sealed record PlayerState
@@ -34,17 +32,5 @@ public sealed record PlayerState
     public ImmutableHashSet<Upgrade> UpgradesInResearch()
     {
         return Researches.Values.Select(research => research.Upgrade).ToImmutableHashSet();
-    }
-
-    public Army ExponentBonusFromUpgrades(GameSettings gameSettings)
-    {
-        // TODO: Extend upgrade exponent bonuses to support all unit-specific upgrades.
-        Army bonus = Army.Empty;
-        if (UpgradeLevels.TryGetValue(Upgrade.DotUpgrade, out byte dotUpgradeLevel) && dotUpgradeLevel > 0)
-        {
-            // A level of 1 means the first upgrade, which is at index 0.
-            bonus = bonus.AddUnit(Unit.Dot, ((DotUpgrade)gameSettings.Upgrades[Upgrade.DotUpgrade][dotUpgradeLevel - 1]).ExponentBonus);
-        }
-        return bonus;
     }
 }

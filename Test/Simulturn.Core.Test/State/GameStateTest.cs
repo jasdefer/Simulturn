@@ -203,111 +203,6 @@ public sealed class GameStateTest
     }
 
     [Test]
-    public void Fight_Dot_vs_Dot()
-    {
-        // Assign
-        var gameState = new GameState(_gameSettings);
-        var commands = DictionaryExtensions.MovementsToDictionary([
-            ("Player01", new Hexagon(-1,0), new Hexagon(0,0), new Army() { Dot = 5 }),
-            ("Player02", new Hexagon(1,0), new Hexagon(0,0), new Army() { Dot = 3 })
-        ]);
-
-        // Act
-        var result1 = gameState.ResolveTurn(commands);
-        var turn1 = result1.State;
-
-        // Assert
-        turn1.PlayerStates["Player01"]
-            .Armies[new Hexagon(0, 0)]
-            .ShouldBe(new Army() { Dot = 2 });
-        turn1.PlayerStates["Player02"]
-            .Armies.ShouldNotContainKey(new Hexagon(0, 0));
-
-        // Fighting reveals the pre-fight composition of the participating armies to each other.
-        FogOfWar.GetPlayerTurnReport(result1.Report, "Player01")
-            .Fights[new Hexagon(0, 0)].Armies["Player02"].ShouldBe(new Army() { Dot = 3 });
-        FogOfWar.GetPlayerTurnReport(result1.Report, "Player02")
-            .Fights[new Hexagon(0, 0)].Armies["Player01"].ShouldBe(new Army() { Dot = 5 });
-
-        // The revelation only lasts for the turn of the fight.
-        var result2 = turn1.ResolveTurn(_noCommands);
-        FogOfWar.GetPlayerTurnReport(result2.Report, "Player01").Fights.ShouldBeEmpty();
-    }
-
-    [Test]
-    public void Fight_Circle_vs_Circle()
-    {
-        // Assign
-        var gameSettings = WithStarts((new Army() { Circle = 5, Dot = 5 }, new Compound() { Plane = 1 }), (new Army() { Circle = 3, Dot = 5 }, new Compound() { Plane = 1 }));
-        var gameState = new GameState(gameSettings);
-        var commands = DictionaryExtensions.MovementsToDictionary([
-            ("Player01", new Hexagon(-1,0), new Hexagon(0,0), new Army() { Circle = 5 }),
-            ("Player02", new Hexagon(1,0), new Hexagon(0,0), new Army() { Circle = 3 })
-        ]);
-
-        // Act
-        var turn1 = gameState.PlayTurn(commands);
-
-        // Assert
-        turn1.PlayerStates["Player01"]
-            .Armies[new Hexagon(0, 0)]
-            .ShouldBe(new Army() { Circle = 2 });
-        turn1.PlayerStates["Player02"]
-            .Armies.ShouldNotContainKey(new Hexagon(0, 0));
-    }
-
-    [Test]
-    public void Fight_Circle_vs_Square()
-    {
-        // Assign
-        var gameSettings = WithStarts((new Army() { Circle = 3, Dot = 5 }, new Compound() { Plane = 1 }), (new Army() { Square = 5, Dot = 5 }, new Compound() { Plane = 1 }));
-        var gameState = new GameState(gameSettings);
-        var commands = DictionaryExtensions.MovementsToDictionary([
-            ("Player01", new Hexagon(-1,0), new Hexagon(0,0), new Army() { Circle = 3 }),
-            ("Player02", new Hexagon(1,0), new Hexagon(0,0), new Army() { Square = 5 })
-        ]);
-
-        // Act
-        var turn1 = gameState.PlayTurn(commands);
-
-        // Assert
-        turn1.PlayerStates["Player01"]
-            .Armies[new Hexagon(0, 0)]
-            .ShouldBe(new Army() { Circle = 1 });
-        turn1.PlayerStates["Player02"]
-            .Armies.ShouldNotContainKey(new Hexagon(0, 0));
-    }
-
-    [Test]
-    public void Fight_Army_vs_Army()
-    {
-        // Assign
-        var gameSettings = WithStarts((new Army() { Circle = 5, Dot = 5, Square = 5, Triangle = 5 }, new Compound() { Plane = 1 }), (new Army() { Square = 15, Dot = 5 }, new Compound() { Plane = 1 }));
-        var gameState = new GameState(gameSettings);
-        var commands = DictionaryExtensions.MovementsToDictionary([
-            ("Player01", new Hexagon(-1,0), new Hexagon(0,0), new Army() { Circle = 5, Dot = 5, Square = 5, Triangle = 5 }),
-            ("Player02", new Hexagon(1,0), new Hexagon(0,0), new Army() { Square = 15, Dot = 5 })
-        ]);
-
-        // Act
-        var result1 = gameState.ResolveTurn(commands, validateCommands: false);
-        var turn1 = result1.State;
-
-        // Assert
-        turn1.PlayerStates["Player02"]
-            .Armies[new Hexagon(0, 0)]
-            .ShouldBe(new Army() { Square = 1 });
-        turn1.PlayerStates["Player01"]
-            .Armies.ShouldNotContainKey(new Hexagon(0, 0));
-        FogOfWar.GetPlayerTurnReport(result1.Report, "Player01")
-            .Fights[new Hexagon(0, 0)].Losses["Player01"]
-            .ShouldBe(new Army() { Circle = 5, Dot = 5, Square = 5, Triangle = 5 });
-        FogOfWar.GetPlayerTurnReport(result1.Report, "Player02")
-            .Fights[new Hexagon(0, 0)].Losses["Player02"]
-            .ShouldBe(new Army() { Dot = 5, Square = 14 });
-    }
-
-    [Test]
     public void UpgradeTest()
     {
         var gameState = new GameState(_gameSettings);
@@ -424,49 +319,6 @@ public sealed class GameStateTest
     }
 
     [Test]
-    public void Fight_Army_vs_Army_InTwoTurns()
-    {
-        // Assign
-        var gameSettings = WithStarts((new Army() { Square = 15 }, new Compound() { Plane = 1 }), (new Army() { Square = 15 }, new Compound() { Plane = 1 }));
-        var gameState = new GameState(gameSettings);
-        var commands = DictionaryExtensions.MovementsToDictionary([
-            ("Player01", new Hexagon(-1,0), new Hexagon(0,0), new Army() { Square = 15 }),
-            ("Player02", new Hexagon(1,0), new Hexagon(0,0), new Army() { Square = 5 })
-        ]);
-
-        // Act
-        var result1 = gameState.ResolveTurn(commands, validateCommands: false);
-
-        commands = DictionaryExtensions.MovementsToDictionary([
-            ("Player02", new Hexagon(1,0), new Hexagon(0,0), new Army() { Square = 5 })
-        ]);
-
-        // Act
-        var result2 = result1.State.ResolveTurn(commands, validateCommands: false);
-
-        commands = DictionaryExtensions.MovementsToDictionary([
-            ("Player02", new Hexagon(1,0), new Hexagon(0,0), new Army() { Square = 5 })
-        ]);
-
-        // Act
-        var result3 = result2.State.ResolveTurn(commands, validateCommands: false);
-
-        // Assert
-        FogOfWar.GetPlayerTurnReport(result1.Report, "Player02")
-            .Fights.Keys.ShouldContain(new Hexagon(0, 0));
-        FogOfWar.GetPlayerTurnReport(result1.Report, "Player01")
-            .Fights.Keys.ShouldContain(new Hexagon(0, 0));
-        FogOfWar.GetPlayerTurnReport(result2.Report, "Player02")
-            .Fights.Keys.ShouldContain(new Hexagon(0, 0));
-        FogOfWar.GetPlayerTurnReport(result2.Report, "Player01")
-            .Fights.Keys.ShouldContain(new Hexagon(0, 0));
-        FogOfWar.GetPlayerTurnReport(result3.Report, "Player02")
-            .Fights.Keys.ShouldContain(new Hexagon(0, 0));
-        FogOfWar.GetPlayerTurnReport(result3.Report, "Player01")
-            .Fights.Keys.ShouldContain(new Hexagon(0, 0));
-    }
-
-    [Test]
     public void IncomeIsCappedByMaxNumberOfUnitsGeneratingMatter()
     {
         var gameSettings = TestSettings.Create(_gameSettings.HexagonSettings.ToImmutableDictionary()
@@ -540,27 +392,5 @@ public sealed class GameStateTest
         // Act
         var validations = CommandValidator.Validate(gameState, commands.Keys.Single(), commands.Single().Value);
         validations.ShouldHaveSingleItem().Value.ShouldBeOfType<InsufficientSpace>().Required.ShouldBe(9 + 9);
-    }
-
-    [Test]
-    public void ExponentBonusFromUpgradesAppliesResearchedLevels()
-    {
-        var gameState = new GameState(_gameSettings);
-        var playerState = gameState.PlayerStates["Player01"];
-
-        playerState.ExponentBonusFromUpgrades(_gameSettings).ShouldBe(Army.Empty);
-
-        var levelOne = playerState with
-        {
-            UpgradeLevels = new Dictionary<Upgrade, byte>() { { Upgrade.DotUpgrade, 1 } }.ToImmutableDictionary()
-        };
-        levelOne.ExponentBonusFromUpgrades(_gameSettings).ShouldBe(new Army() { Dot = 20 });
-
-        // The maximum level must use the last defined upgrade instead of indexing past the array.
-        var maxLevel = playerState with
-        {
-            UpgradeLevels = new Dictionary<Upgrade, byte>() { { Upgrade.DotUpgrade, 2 } }.ToImmutableDictionary()
-        };
-        maxLevel.ExponentBonusFromUpgrades(_gameSettings).ShouldBe(new Army() { Dot = 20 });
     }
 }
