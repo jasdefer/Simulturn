@@ -11,6 +11,8 @@ public union CommandValidation(
     MissingBuildingForTraining,
     MissingDotsForConstruction,
     MissingArmyForMovement,
+    MovementExceedsRange,
+    MovementDestinationOffMap,
     UpgradeExceedsAvailableLevel,
     UpgradeAlreadyInResearch,
     UpgradeRequestedOnMultipleHexagons,
@@ -33,6 +35,17 @@ public sealed record MissingBuildingForTraining(string PlayerId, Hexagon Hexagon
 public sealed record MissingDotsForConstruction(string PlayerId, Hexagon Hexagon, Compound Constructions, short AvailableDots);
 
 public sealed record MissingArmyForMovement(string PlayerId, Hexagon Hexagon, Unit Unit, short MovingUnits, short AvailableUnits);
+
+/// <summary>
+/// The destination is further away than the unit type moves in one turn, see <see cref="Movement"/>.
+/// Reported for every unit type of the movement that does not get there.
+/// </summary>
+public sealed record MovementExceedsRange(string PlayerId, Hexagon Hexagon, Hexagon Destination, Unit Unit, int Distance, short Range);
+
+/// <summary>
+/// The destination is no hexagon of the map.
+/// </summary>
+public sealed record MovementDestinationOffMap(string PlayerId, Hexagon Hexagon, Hexagon Destination);
 
 /// <summary>
 /// Every level of the upgrade defined in <see cref="GameSettings.Upgrades"/> is already completed.

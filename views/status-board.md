@@ -4,7 +4,6 @@ Cards grouped into columns by `status`.
 
 ## todo
 - [Spielstände speichern und wiederherstellen](../workdown-items/game-persistence.md)
-- [Bewegungsreichweite pro Einheitentyp](../workdown-items/movement-range.md)
 - [Neue UI](../workdown-items/ui.md)
 - [UI-Konzept erarbeiten](../workdown-items/ui-concept.md)
 - [Upgrade-Konzept erarbeiten](../workdown-items/upgrade-concept.md)
@@ -17,6 +16,7 @@ _(no cards)_
 - [Auf die nächste .NET-Version wechseln und neue Sprachfeatures nutzen](../workdown-items/dotnet-upgrade-and-union-types.md)
 - [Warteschlangen für Trainings und Konstruktionen ohne verschachtelte Dictionaries](../workdown-items/flat-pending-queues.md)
 - [Karten erzeugen und Settings nicht sechsfach pflegen](../workdown-items/map-generator-and-default-settings.md)
+- [Bewegungsreichweite pro Einheitentyp](../workdown-items/movement-range.md)
 - [Warteschlangen enthalten nur offene Aufträge](../workdown-items/pending-only-queues.md)
 - [Wissen der Spieler liegt im Regelzustand](../workdown-items/player-knowledge-in-state.md)
 - [Forschung kostet nichts und nutzt die falsche Stufe](../workdown-items/research-cost-and-duration.md)

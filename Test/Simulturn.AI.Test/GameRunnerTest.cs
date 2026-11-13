@@ -23,6 +23,11 @@ public sealed class GameRunnerTest
             .SetItem(_player2Start, Maps.Start("Player02", army: player2Army)));
     }
 
+    /// <summary>
+    /// Squares that cross the whole line in one turn, for the tests that attack the opposite start directly.
+    /// </summary>
+    private static readonly Army _rangeAcrossTheLine = new() { Triangle = 1, Circle = 1, Square = 2, Dot = 1 };
+
     private static Dictionary<Hexagon, Command> MoveAll(Hexagon from, Hexagon to, Army army)
     {
         return new Dictionary<Hexagon, Command>()
@@ -59,7 +64,7 @@ public sealed class GameRunnerTest
     [Test]
     public void AggressivePlayer_WinsByDestroyingAllBuildings()
     {
-        var gameSettings = CreateSettings(new Army() { Square = 20 }, new Army() { Dot = 5 });
+        var gameSettings = CreateSettings(new Army() { Square = 20 }, new Army() { Dot = 5 }) with { MovementRange = _rangeAcrossTheLine };
         var attacker = new ScriptedPlayer(view => view.Turn == 0
             ? MoveAll(_player1Start, _player2Start, new Army() { Square = 20 })
             : new Dictionary<Hexagon, Command>());
@@ -80,7 +85,7 @@ public sealed class GameRunnerTest
     [Test]
     public void SimultaneousBaseTrade_EndsInMutualDestruction()
     {
-        var gameSettings = CreateSettings(new Army() { Square = 20 }, new Army() { Square = 20 });
+        var gameSettings = CreateSettings(new Army() { Square = 20 }, new Army() { Square = 20 }) with { MovementRange = _rangeAcrossTheLine };
         var players = new Dictionary<string, IArtificialPlayer>()
         {
             {
