@@ -3,6 +3,8 @@
 Cards grouped into columns by `status`.
 
 ## todo
+- [AI-Gegner spielen zu schwach](../workdown-items/ai-opponents-too-weak.md)
+- [Ein Client muss Regeln der Engine nachbauen](../workdown-items/engine-rules-for-clients.md)
 - [Spielstände speichern und wiederherstellen](../workdown-items/game-persistence.md)
 - [Neue UI](../workdown-items/ui.md)
 - [UI-Konzept erarbeiten](../workdown-items/ui-concept.md)

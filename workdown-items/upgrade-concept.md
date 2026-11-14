@@ -3,14 +3,22 @@ id: upgrade-concept
 title: Upgrade-Konzept erarbeiten
 status: todo
 created: 2026-11-13
+updated: 2026-11-14
 ---
 ## Ziel
 
 Ein Modell für Upgrades, das viele und sehr verschiedene Upgrades trägt, und eine Regel dafür, was ein Spieler über die Upgrades eines Gegners erfährt. Upgrades sollen dem Spiel Vielfalt und Asymmetrie geben; heute ist alles symmetrisch.
 
+## Feststehend
+
+Regeln des Spiels, am 2026-11-14 festgelegt:
+
+- **Dots haben keinen Kampfexponenten.** Dots arbeiten und sind schlechte Kämpfer. Einen Bonus auf den Exponenten bekommen nur die Kampfeinheiten. Ein Upgrade auf den Exponenten der Dots gibt es nicht.
+- **Die drei Kampfeinheiten bekommen je ein Upgrade auf ihren Exponenten** (Triangle, Circle, Square). Das sind die ersten Upgrades, die im Spiel etwas bewirken. Sie gehören zu diesem Item und werden nicht auf ein Folge-Item verschoben: Ohne sie kauft die Forschung in einer UI nichts.
+
 ## Ideen
 
-- Einfache Boni auf Einheiten (heute: Dot-Upgrade auf den Exponenten der Dots) und Gebäude.
+- Einfache Boni auf Einheiten und Gebäude.
 - Änderungen an Sicht oder Bewegung.
 - Stark bedingte Upgrades, zum Beispiel: eine Einheit sieht die Upgrades von Einheiten, die genau vier Felder entfernt stehen.
 - Upgrades, die schon zu Beginn des Spiels gewählt werden (Draft). `GameSettings.StartUpgrades` ist bereits pro Spieler.
@@ -34,10 +42,15 @@ Beim Item [[combat-forecast-core]] besprochen, hier zu bestätigen oder zu verwe
 
 ## Funde im heutigen Code
 
-- Das Dot-Upgrade wirkt im Kampf nicht: `Combat.GetExponent` erhöht den Dot-Exponenten, `Army.GetStrengthOver` rechnet Dots aber linear und liest ihn nie.
-- Die Stufen sind nicht kumulativ: Es zählt nur der Bonus der höchsten Stufe. Stufe 2 des Dot-Upgrades gibt 20, nicht 40.
+- Keines der beiden Upgrades der Standardregeln bewirkt etwas. Forschung kostet Matter und Zeit ohne Wirkung.
+  - Das Dot-Upgrade: `Combat.GetExponent` erhöht den Dot-Exponenten, `Army.GetStrengthOver` rechnet Dots aber linear und liest ihn nie. Die lineare Rechnung passt zur Regel oben, das Upgrade nicht.
+  - `UpgradeStartMatter`: In `DefaultSettings` steht `Matter = 0`, und der Wert wird nirgends gelesen.
+- `DefaultSettings.FightExponent` hat für Dots den Wert 1, der ebenfalls nie gelesen wird.
+- Die Stufen sind nicht kumulativ: Es zählt nur der Bonus der höchsten Stufe. Stufe 2 des Dot-Upgrades gibt 20, nicht 40. Offen ist, ob das so gewollt ist.
 - Aus den Verlusten im `FightReport` lässt sich der Kampf nicht nachrechnen, solange die Upgrades der Beteiligten fehlen.
+- Welche Upgrades erforschbar sind, hängt an der Karte: `HexagonSettings.ResearchableUpgrades`. `MapGeneratorOptions` bietet als Standard nur das Dot-Upgrade an, und `MapGeneratorTest` prüft genau das.
+- Drei Stellen der AI lesen `GameSettings.FightExponent` direkt statt über `Combat`: `CommanderPlayer`, `StateMachinePlayer` und `CompositionOptimizer`. Sie schätzen Kämpfe ohne Upgrades ein, auch die eigenen. Was daraus für die Gegner folgt, behandelt [[ai-opponents-too-weak]].
 
 ## Ergebnis
 
-Ein Konzept in diesem Item und daraus abgeleitete Items für die Umsetzung.
+Ein Konzept in diesem Item, die drei Exponent-Upgrades der Kampfeinheiten im Spiel und daraus abgeleitete Items für alles Weitere.

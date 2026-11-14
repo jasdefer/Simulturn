@@ -4,8 +4,10 @@ Directed graph of items connected through `depends_on`, nested by `parent`.
 
 ```mermaid
 flowchart TD
+    ai-opponents-too-weak["AI-Gegner spielen zu schwach"]
     combat-forecast-core["Kampfausgang vorab berechnen können"]
     dotnet-upgrade-and-union-types["Auf die nächste .NET-Version wechseln und neue Sprachfeatures nutzen"]
+    engine-rules-for-clients["Ein Client muss Regeln der Engine nachbauen"]
     flat-pending-queues["Warteschlangen für Trainings und Konstruktionen ohne verschachtelte Dictionaries"]
     game-persistence["Spielstände speichern und wiederherstellen"]
     map-generator-and-default-settings["Karten erzeugen und Settings nicht sechsfach pflegen"]
@@ -23,7 +25,11 @@ flowchart TD
     end
     upgrade-concept["Upgrade-Konzept erarbeiten"]
     validate-regression-tests["Regressionstests für Validate mit Warteschlangen auf anderen Hexagons"]
+    ai-opponents-too-weak --> engine-rules-for-clients
+    ai-opponents-too-weak --> upgrade-concept
     pending-only-queues --> training-cancellation-after-completion
     research-cost-and-duration --> research-level-validation
     turn-report --> turn-result
+    ui --> engine-rules-for-clients
+    ui --> upgrade-concept
 ```

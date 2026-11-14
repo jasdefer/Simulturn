@@ -2,8 +2,10 @@
 
 Hierarchical outline following `parent` upward to roots.
 
+- [AI-Gegner spielen zu schwach](../workdown-items/ai-opponents-too-weak.md) — status: todo · created: 2026-11-14
 - [Kampfausgang vorab berechnen können](../workdown-items/combat-forecast-core.md) — status: done · created: 2026-10-14 · updated: 2026-11-13 · completed: 2026-11-13
 - [Auf die nächste .NET-Version wechseln und neue Sprachfeatures nutzen](../workdown-items/dotnet-upgrade-and-union-types.md) — status: done · created: 2026-11-09 · updated: 2026-11-10 · completed: 2026-11-10
+- [Ein Client muss Regeln der Engine nachbauen](../workdown-items/engine-rules-for-clients.md) — status: todo · created: 2026-11-14
 - [Warteschlangen für Trainings und Konstruktionen ohne verschachtelte Dictionaries](../workdown-items/flat-pending-queues.md) — status: done · created: 2026-11-10 · completed: 2026-11-12
 - [Spielstände speichern und wiederherstellen](../workdown-items/game-persistence.md) — status: todo · created: 2026-10-14
 - [Karten erzeugen und Settings nicht sechsfach pflegen](../workdown-items/map-generator-and-default-settings.md) — status: done · created: 2026-10-14 · updated: 2026-11-11 · completed: 2026-11-10
@@ -16,7 +18,7 @@ Hierarchical outline following `parent` upward to roots.
 - [Zerstörte Gebäude brechen bereits fertige Trainings ab](../workdown-items/training-cancellation-after-completion.md) — status: done · created: 2026-11-08 · updated: 2026-11-09 · completed: 2026-11-09
 - [Nachvollziehbarkeit der Zugauflösung](../workdown-items/turn-report.md) — status: done · created: 2026-10-14 · updated: 2026-11-11 · completed: 2026-11-11
 - [NextTurn liefert Zustand und Ereignisse getrennt](../workdown-items/turn-result.md) — status: done · created: 2026-11-10 · updated: 2026-11-11 · completed: 2026-11-11
-- [Neue UI](../workdown-items/ui.md) — status: todo · created: 2026-10-14
-  - [UI-Konzept erarbeiten](../workdown-items/ui-concept.md) — status: todo · created: 2026-10-14
-- [Upgrade-Konzept erarbeiten](../workdown-items/upgrade-concept.md) — status: todo · created: 2026-11-13
+- [Neue UI](../workdown-items/ui.md) — status: todo · created: 2026-10-14 · updated: 2026-11-14
+  - [UI-Konzept erarbeiten](../workdown-items/ui-concept.md) — status: todo · created: 2026-10-14 · updated: 2026-11-14
+- [Upgrade-Konzept erarbeiten](../workdown-items/upgrade-concept.md) — status: todo · created: 2026-11-13 · updated: 2026-11-14
 - [Regressionstests für Validate mit Warteschlangen auf anderen Hexagons](../workdown-items/validate-regression-tests.md) — status: done · created: 2026-10-14 · updated: 2026-11-08 · completed: 2026-11-08
