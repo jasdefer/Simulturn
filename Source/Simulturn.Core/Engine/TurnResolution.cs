@@ -17,9 +17,12 @@ public sealed class TurnResolution
     private readonly GameSettings _settings;
     private readonly Dictionary<string, PlayerStateBuilder> _players;
     private readonly ImmutableDictionary<Hexagon, int>.Builder _remainingMatter;
+    private readonly ImmutableDictionary<Hexagon, Army>.Builder _neutralArmies;
     private readonly HashSet<Hexagon> _potentialFightHexagons = [];
     private readonly ImmutableDictionary<Hexagon, FightReport>.Builder _fights = ImmutableDictionary.CreateBuilder<Hexagon, FightReport>();
     private readonly ImmutableArray<DestructionReport>.Builder _destructions = ImmutableArray.CreateBuilder<DestructionReport>();
+
+    private readonly ImmutableHashSet<string>.Builder _defeats = ImmutableHashSet.CreateBuilder<string>();
 
     private TurnResolution(GameState state)
     {
@@ -27,6 +30,7 @@ public sealed class TurnResolution
         _settings = state.GameSettings;
         _players = state.PlayerStates.ToDictionary(x => x.Key, x => PlayerStateBuilder.FromPlayerState(x.Value));
         _remainingMatter = state.RemainingMatter.ToBuilder();
+        _neutralArmies = state.NeutralArmies.ToBuilder();
     }
 
     /// <summary>
@@ -45,12 +49,14 @@ public sealed class TurnResolution
         resolution.ResolveFights();
         resolution.DestroyBuildings();
         resolution.CancelResearchesWithoutDot();
+        resolution.DefeatPlayers();
         return new TurnResult(resolution.BuildNextState(), resolution.BuildReport());
     }
 
     private void ResolveOrders(PlayerStateBuilder player, IReadOnlyDictionary<Hexagon, Command> commands)
     {
         CollectIncome(player, commands);
+        PayOrders(player, commands);
         ResolveTrainings(player, commands);
         ResolveConstructions(player, commands);
         ResolveResearches(player, commands);
@@ -58,39 +64,36 @@ public sealed class TurnResolution
     }
 
     /// <summary>
-    /// Dots that start a construction this turn do not harvest.
+    /// Every army harvests on its hexagon by the rule of <see cref="Harvest"/>.
     /// </summary>
     private void CollectIncome(PlayerStateBuilder player, IReadOnlyDictionary<Hexagon, Command> commands)
     {
         foreach ((Hexagon hexagon, Army army) in player.Armies)
         {
-            if (!player.Compounds.TryGetValue(hexagon, out var compound) || compound.Plane == 0)
+            Compound startedConstructions = commands.TryGetValue(hexagon, out Command? command) ? command.Construction : Compound.Empty;
+            IncomeReport income = Harvest.Of(_settings, hexagon, army, player.Compounds.GetValueOrDefault(hexagon), startedConstructions, _remainingMatter[hexagon]);
+            if (income.Matter <= 0)
             {
                 continue;
             }
-            int startedConstructions = commands.TryGetValue(hexagon, out Command? command)
-                ? EnumValues.Buildings.Sum(building => Math.Max(0, (int)command.Construction[building]))
-                : 0;
-
-            var idleArmy = army with
-            {
-                Dot = (short)Math.Max(0, army.Dot - startedConstructions)
-            };
-            idleArmy = Army.Min(idleArmy, _settings.HexagonSettings[hexagon].MaxNumberOfUnitsGeneratingMatter);
-            int hexagonIncome = _settings.Income * idleArmy;
-            hexagonIncome = Math.Min(hexagonIncome, _remainingMatter[hexagon]);
-            if (hexagonIncome <= 0)
-            {
-                continue;
-            }
-            _remainingMatter[hexagon] -= hexagonIncome;
-            player.Matter += hexagonIncome;
-            player.Report.Incomes.Add(hexagon, new IncomeReport(idleArmy, hexagonIncome));
+            _remainingMatter[hexagon] -= income.Matter;
+            player.Matter += income.Matter;
+            player.Report.Incomes.Add(hexagon, income);
         }
     }
 
     /// <summary>
-    /// Pays and queues the new trainings, then completes the ones due this turn.
+    /// Pays all orders of the turn at once: the price the command validation checked, by the same call.
+    /// </summary>
+    private void PayOrders(PlayerStateBuilder player, IReadOnlyDictionary<Hexagon, Command> commands)
+    {
+        OrderCost cost = Costs.Of(_settings, player.UpgradeLevels, commands);
+        player.Matter -= cost.Matter;
+        player.UsedSpace += cost.Space;
+    }
+
+    /// <summary>
+    /// Queues the new trainings, then completes the ones due this turn.
     /// </summary>
     private void ResolveTrainings(PlayerStateBuilder player, IReadOnlyDictionary<Hexagon, Command> commands)
     {
@@ -106,8 +109,6 @@ public sealed class TurnResolution
                 // Subtract 1 to account for the current turn, the turn increments after all game state logic is completed
                 ushort completionTurn = (ushort)(_state.Turn + _settings.TrainingDuration[unit] - 1);
                 player.Trainings.Merge(new TurnHexagon(completionTurn, hexagon), training);
-                player.UsedSpace += training * _settings.RequiredSpace;
-                player.Matter -= training * _settings.ArmyCost;
             }
         }
         foreach ((TurnHexagon key, Army training) in player.Trainings.Where(x => x.Key.Turn == _state.Turn).ToList())
@@ -120,7 +121,7 @@ public sealed class TurnResolution
     }
 
     /// <summary>
-    /// Pays and queues the new constructions, then completes the ones due this turn.
+    /// Queues the new constructions, then completes the ones due this turn.
     /// </summary>
     private void ResolveConstructions(PlayerStateBuilder player, IReadOnlyDictionary<Hexagon, Command> commands)
     {
@@ -136,7 +137,6 @@ public sealed class TurnResolution
                 // Subtract 1 to account for the current turn, the turn increments after all game state logic is completed
                 ushort completionTurn = (ushort)(_state.Turn + _settings.ConstructionDuration[building] - 1);
                 player.Constructions.Merge(new TurnHexagon(completionTurn, hexagon), construction);
-                player.Matter -= construction * _settings.CompoundCost;
             }
         }
         foreach ((TurnHexagon key, Compound construction) in player.Constructions.Where(x => x.Key.Turn == _state.Turn).ToList())
@@ -149,7 +149,7 @@ public sealed class TurnResolution
     }
 
     /// <summary>
-    /// Pays and queues the new researches, then completes the ones due this turn.
+    /// Queues the new researches, then completes the ones due this turn.
     /// Nothing stacks (one pending research per upgrade), so the next level is the one after the completed ones.
     /// </summary>
     private void ResolveResearches(PlayerStateBuilder player, IReadOnlyDictionary<Hexagon, Command> commands)
@@ -165,7 +165,6 @@ public sealed class TurnResolution
                 ?? throw new InvalidOperationException($"{upgrade} has no level after {completedLevels}; the research command was not validated.");
             // Subtract 1 to account for the current turn, the turn increments after all game state logic is completed
             player.Researches.Add(hexagon, new Research(upgrade, (ushort)(_state.Turn + level.Duration - 1)));
-            player.Matter -= level.Cost;
         }
         foreach ((Hexagon hexagon, Research research) in player.Researches.Where(x => x.Value.CompletionTurn == _state.Turn).ToList())
         {
@@ -207,6 +206,11 @@ public sealed class TurnResolution
             _fights.Add(hexagon, fight);
             foreach ((string playerId, Army loss) in fight.Losses)
             {
+                if (playerId == Neutral.Id)
+                {
+                    _neutralArmies.Merge(hexagon, -loss);
+                    continue;
+                }
                 ApplyLosses(_players[playerId], hexagon, loss);
             }
         }
@@ -214,7 +218,8 @@ public sealed class TurnResolution
 
     /// <summary>
     /// The upgrade levels come from the state at the start of the turn: a research completed
-    /// this turn counts from the next turn on.
+    /// this turn counts from the next turn on. A neutral army on the hexagon fights like the
+    /// army of a player without upgrades.
     /// </summary>
     private Dictionary<string, Combatant> GetCombatantsOn(Hexagon hexagon)
     {
@@ -230,13 +235,17 @@ public sealed class TurnResolution
                 });
             }
         }
+        if (_neutralArmies.TryGetValue(hexagon, out var neutralArmy))
+        {
+            combatants.Add(Neutral.Id, new Combatant() { Army = neutralArmy });
+        }
         return combatants;
     }
 
     private void ApplyLosses(PlayerStateBuilder player, Hexagon hexagon, Army loss)
     {
         player.Armies.Merge(hexagon, -loss);
-        player.UsedSpace -= loss * _settings.RequiredSpace;
+        player.UsedSpace -= Costs.Training(_settings, loss).Space;
         if (loss.Dot > 0)
         {
             CancelConstructions(player, hexagon, loss.Dot);
@@ -290,7 +299,7 @@ public sealed class TurnResolution
                     {
                         continue;
                     }
-                    Compound destroyedCompound = GetDestroyedBuildings(army, compound);
+                    Compound destroyedCompound = Destruction.Of(_settings, army, compound);
                     if (destroyedCompound.IsEmpty)
                     {
                         continue;
@@ -302,27 +311,6 @@ public sealed class TurnResolution
                 }
             }
         }
-    }
-
-    /// <summary>
-    /// The damage of the army is spent on the buildings with the lowest armor first.
-    /// </summary>
-    private Compound GetDestroyedBuildings(Army army, Compound compound)
-    {
-        double damage = _settings.StructureDamage * army;
-        var buildings = EnumValues.Buildings.OrderBy(x => _settings.Armor[x]);
-        var destroyedCompound = Compound.Empty;
-        foreach (var building in buildings)
-        {
-            var destroyedBuildings = (short)Math.Min(compound[building], Math.Floor(damage / (double)_settings.Armor[building]));
-            if (destroyedBuildings <= 0)
-            {
-                continue;
-            }
-            damage -= destroyedBuildings * _settings.Armor[building];
-            destroyedCompound = destroyedCompound + Compound.FromBuilding(building, destroyedBuildings);
-        }
-        return destroyedCompound;
     }
 
     /// <summary>
@@ -351,7 +339,7 @@ public sealed class TurnResolution
                     short canceledCount = (short)Math.Min(training[unit], destroyedCount);
                     destroyedCount -= canceledCount;
                     Army canceled = Army.FromUnit(unit, canceledCount);
-                    player.UsedSpace -= canceled * _settings.RequiredSpace;
+                    player.UsedSpace -= Costs.Training(_settings, canceled).Space;
                     player.Trainings.Merge(key, -canceled);
                     player.Report.CanceledTrainings.Merge(hexagon, canceled);
                 }
@@ -378,6 +366,30 @@ public sealed class TurnResolution
         }
     }
 
+    /// <summary>
+    /// A player without a building and without a pending construction is defeated, see <see cref="Standing"/>.
+    /// The pending researches end, the matter is lost. The armies stay where they are.
+    /// </summary>
+    private void DefeatPlayers()
+    {
+        foreach ((string playerId, PlayerStateBuilder player) in _players)
+        {
+            if (!Standing.IsDefeated(player.Compounds, player.Constructions))
+            {
+                continue;
+            }
+            foreach ((Hexagon hexagon, Research research) in player.Researches.ToList())
+            {
+                player.Researches.Remove(hexagon);
+                player.Report.CanceledResearches.Add(hexagon, research.Upgrade);
+            }
+            if (!Standing.IsDefeated(_state.PlayerStates[playerId]))
+            {
+                _defeats.Add(playerId);
+            }
+        }
+    }
+
     private GameState BuildNextState()
     {
         if (_state.Turn == ushort.MaxValue)
@@ -387,7 +399,7 @@ public sealed class TurnResolution
         ushort nextTurn = (ushort)(1 + _state.Turn);
         var remainingMatter = _remainingMatter.ToImmutableDictionary();
         var playerStates = _players.ToImmutableDictionary(x => x.Key, x => x.Value.ToPlayerState());
-        return GameState.FromParts(_settings, nextTurn, playerStates, remainingMatter);
+        return GameState.FromParts(_settings, nextTurn, playerStates, remainingMatter, _neutralArmies.ToImmutable());
     }
 
     private TurnReport BuildReport()
@@ -398,7 +410,8 @@ public sealed class TurnResolution
                 x => x.Key,
                 x => x.Value.Report.ToReport(_state.PlayerStates[x.Key].Matter, x.Value.Matter)),
             Fights = _fights.ToImmutable(),
-            Destructions = _destructions.ToImmutable()
+            Destructions = _destructions.ToImmutable(),
+            Defeats = _defeats.ToImmutable()
         };
     }
 }

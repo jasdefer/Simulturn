@@ -23,6 +23,10 @@ internal static class Printer
         {
             info.Add($"Remaining Matter: {remainingMatter}");
         }
+        if (gameState.NeutralArmies.TryGetValue(hexagon, out var neutralArmy))
+        {
+            info.Add($"{Neutral.Id}: {neutralArmy.ToCompactString()}");
+        }
         foreach ((string playerId, var playerState) in gameState.PlayerStates)
         {
             if (playerState.Armies.TryGetValue(hexagon, out var army) && !army.IsEmpty)

@@ -18,6 +18,7 @@ public sealed class CommandValidator
     private readonly ImmutableHashSet<Upgrade> _upgradesInResearch;
     private readonly Dictionary<Upgrade, byte> _requestedUpgradeCounts;
     private readonly Dictionary<Hexagon, int> _arrivingDots;
+    private readonly OrderCost _cost;
 
     private CommandValidator(GameSettings settings, string playerId, PlayerState playerState, IReadOnlyDictionary<Hexagon, Command> commands)
     {
@@ -28,6 +29,7 @@ public sealed class CommandValidator
         _upgradesInResearch = _playerState.UpgradesInResearch();
         _requestedUpgradeCounts = GetRequestedUpgradeCounts(commands);
         _arrivingDots = GetArrivingDots(commands);
+        _cost = Costs.Of(settings, playerState.UpgradeLevels, commands);
     }
 
     /// <summary>
@@ -59,11 +61,27 @@ public sealed class CommandValidator
         return validator.ValidateCommands();
     }
 
+    /// <summary>
+    /// A defeated player takes no more orders. Nothing else is reported then: every other rule
+    /// would only repeat that the player has nothing left to order with.
+    /// </summary>
     private IEnumerable<CommandValidation> ValidateCommands()
     {
+        if (Standing.IsDefeated(_playerState))
+        {
+            return _commands.Values.Any(IsOrder) ? [new PlayerDefeated(_playerId)] : [];
+        }
         return ValidateSpace()
             .Concat(_commands.SelectMany(x => ValidateCommand(x.Key, x.Value)))
             .Concat(ValidateMatter());
+    }
+
+    private static bool IsOrder(Command command)
+    {
+        return !command.Training.IsEmpty ||
+            !command.Construction.IsEmpty ||
+            command.Research is not null ||
+            command.MovementCommands.Any(x => !x.Army.IsEmpty);
     }
 
     private IEnumerable<CommandValidation> ValidateCommand(Hexagon hexagon, Command command)
@@ -80,11 +98,10 @@ public sealed class CommandValidator
     /// </summary>
     private IEnumerable<CommandValidation> ValidateSpace()
     {
-        int additionalSpace = _commands.Sum(command => command.Value.Training * _settings.RequiredSpace);
         if (_commands.Any(x => x.Value.Training.Total > 0) &&
-            _playerState.UsedSpace + additionalSpace > _playerState.AvailableSpace)
+            _playerState.UsedSpace + _cost.Space > _playerState.AvailableSpace)
         {
-            yield return new InsufficientSpace(_playerId, _playerState.UsedSpace + additionalSpace, _playerState.AvailableSpace);
+            yield return new InsufficientSpace(_playerId, _playerState.UsedSpace + _cost.Space, _playerState.AvailableSpace);
         }
     }
 
@@ -111,13 +128,18 @@ public sealed class CommandValidator
     }
 
     /// <summary>
-    /// Every building under construction, pending ones included, needs its own dot (worker).
+    /// Every building under construction, pending ones included, needs its own dot (worker),
+    /// and the hexagon must be buildable.
     /// </summary>
     private IEnumerable<CommandValidation> ValidateConstruction(Hexagon hexagon, Command command)
     {
         if (command.Construction.IsEmpty)
         {
             yield break;
+        }
+        if (!_settings.HexagonSettings.TryGetValue(hexagon, out var hexagonSettings) || !hexagonSettings.IsBuildable)
+        {
+            yield return new HexagonNotBuildable(_playerId, hexagon);
         }
         Compound constructions = _playerState.Constructions.On(hexagon) + command.Construction;
         short dots = _playerState.Armies.GetValueOrDefault(hexagon)[Unit.Dot];
@@ -219,27 +241,10 @@ public sealed class CommandValidator
 
     private IEnumerable<CommandValidation> ValidateMatter()
     {
-        int trainingCost = _commands.Sum(command => command.Value.Training * _settings.ArmyCost);
-        int constructionCost = _commands.Sum(command => command.Value.Construction * _settings.CompoundCost);
-        int totalCost = trainingCost + constructionCost + GetResearchCost();
-        if (totalCost > _playerState.Matter)
+        if (_cost.Matter > _playerState.Matter)
         {
-            yield return new InsufficientMatter(_playerId, totalCost, _playerState.Matter);
+            yield return new InsufficientMatter(_playerId, _cost.Matter, _playerState.Matter);
         }
-    }
-
-    /// <summary>
-    /// Every requested upgrade pays the level after the completed ones. An upgrade
-    /// requested twice is invalid anyway and is counted once.
-    /// </summary>
-    private int GetResearchCost()
-    {
-        int researchCost = 0;
-        foreach (Upgrade upgrade in _requestedUpgradeCounts.Keys)
-        {
-            researchCost += _settings.NextUpgradeLevel(upgrade, _playerState.UpgradeLevels.GetValueOrDefault(upgrade))?.Cost ?? 0;
-        }
-        return researchCost;
     }
 
     /// <summary>

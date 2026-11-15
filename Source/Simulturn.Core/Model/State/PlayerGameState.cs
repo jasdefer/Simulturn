@@ -33,5 +33,8 @@ public sealed record PlayerGameState
     /// </summary>
     public required PlayerTurnReport Report { get; init; }
 
-    public required bool IsGameOver { get; init; }
+    /// <summary>
+    /// The defeated players and the outcome of the game, known to every player.
+    /// </summary>
+    public required GameStanding Standing { get; init; }
 }

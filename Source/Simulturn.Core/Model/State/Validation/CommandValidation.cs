@@ -6,10 +6,12 @@
 /// </summary>
 public union CommandValidation(
     InvalidPlayerId,
+    PlayerDefeated,
     InsufficientMatter,
     InsufficientSpace,
     MissingBuildingForTraining,
     MissingDotsForConstruction,
+    HexagonNotBuildable,
     MissingArmyForMovement,
     MovementExceedsRange,
     MovementDestinationOffMap,
@@ -26,6 +28,11 @@ public union CommandValidation(
 
 public sealed record InvalidPlayerId(string PlayerId);
 
+/// <summary>
+/// The player is defeated (<see cref="Standing.IsDefeated(PlayerState)"/>) and takes no more orders.
+/// </summary>
+public sealed record PlayerDefeated(string PlayerId);
+
 public sealed record InsufficientMatter(string PlayerId, int Required, int Available);
 
 public sealed record InsufficientSpace(string PlayerId, int Required, int Available);
@@ -33,6 +40,11 @@ public sealed record InsufficientSpace(string PlayerId, int Required, int Availa
 public sealed record MissingBuildingForTraining(string PlayerId, Hexagon Hexagon, Unit Unit, short TrainedCount, short BuildingCount);
 
 public sealed record MissingDotsForConstruction(string PlayerId, Hexagon Hexagon, Compound Constructions, short AvailableDots);
+
+/// <summary>
+/// A construction is ordered on a hexagon whose <see cref="HexagonSettings.IsBuildable"/> is false.
+/// </summary>
+public sealed record HexagonNotBuildable(string PlayerId, Hexagon Hexagon);
 
 public sealed record MissingArmyForMovement(string PlayerId, Hexagon Hexagon, Unit Unit, short MovingUnits, short AvailableUnits);
 

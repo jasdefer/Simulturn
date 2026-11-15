@@ -3,6 +3,8 @@ using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.Report;
 using Simulturn.Core.Model.State;
+using Simulturn.Core.Model.State.Validation;
+using System.Collections.Immutable;
 
 namespace Simulturn.AI;
 
@@ -27,61 +29,46 @@ public static class GameRunner
         ushort maxTurns = DefaultMaxTurns,
         Action<TurnResult>? onTurnCompleted = null)
     {
-        GameState gameState = new(gameSettings);
+        TurnResult turnResult = Game.Start(gameSettings);
+        GameState gameState = turnResult.State;
         if (!gameState.PlayerIds.SetEquals(players.Keys))
         {
             throw new ArgumentException($"The players do not match the game settings. " +
                 $"Expected: {string.Join(", ", gameState.PlayerIds)}. Provided: {string.Join(", ", players.Keys)}.", nameof(players));
         }
 
-        TurnResult turnResult = new(gameState, TurnReport.Empty);
-        while (!gameState.IsGameOver && gameState.Turn < maxTurns)
+        GameStanding standing = Standing.Of(gameState);
+        while (!standing.IsGameOver && gameState.Turn < maxTurns)
         {
             Dictionary<string, IReadOnlyDictionary<Hexagon, Command>> commands = [];
-            foreach (string playerId in gameState.PlayerIds)
+            foreach (string playerId in gameState.PlayerIds.Except(standing.DefeatedPlayerIds))
             {
                 PlayerGameState view = FogOfWar.GetPlayerGameState(turnResult, playerId);
-                IReadOnlyDictionary<Hexagon, Command> playerCommands = players[playerId].GetCommands(view);
-                var validations = CommandValidator.Validate(gameState, playerId, playerCommands).ToList();
-                if (validations.Count > 0)
-                {
-                    throw new InvalidCommandsException(playerId, validations);
-                }
-                commands[playerId] = playerCommands;
+                commands[playerId] = players[playerId].GetCommands(view);
             }
-            turnResult = TurnResolution.Resolve(gameState, commands);
+            switch (Game.PlayTurn(gameState, commands))
+            {
+                case RefusedCommands refused:
+                    (string playerId, ImmutableArray<CommandValidation> validations) = refused.Validations.OrderBy(x => x.Key, StringComparer.Ordinal).First();
+                    throw new InvalidCommandsException(playerId, validations);
+                case TurnResult resolved:
+                    turnResult = resolved;
+                    break;
+            }
             gameState = turnResult.State;
+            standing = Standing.Of(gameState);
             onTurnCompleted?.Invoke(turnResult);
         }
 
-        return ToResult(gameState);
-    }
-
-    private static GameResult ToResult(GameState gameState)
-    {
-        List<string> playersWithCompounds = gameState.PlayerStates
-            .Where(x => x.Value.Compounds.Any(compound => !compound.Value.IsEmpty))
-            .Select(x => x.Key)
-            .ToList();
-        GameEndReason endReason;
-        string? winnerId = null;
-        if (!gameState.IsGameOver)
-        {
-            endReason = GameEndReason.TurnLimit;
-        }
-        else if (playersWithCompounds.Count == 1)
-        {
-            endReason = GameEndReason.Victory;
-            winnerId = playersWithCompounds[0];
-        }
-        else
-        {
-            endReason = GameEndReason.MutualDestruction;
-        }
         return new GameResult()
         {
-            EndReason = endReason,
-            WinnerId = winnerId,
+            EndReason = standing.Outcome switch
+            {
+                GameRunning => GameEndReason.TurnLimit,
+                Victory => GameEndReason.Victory,
+                MutualDefeat => GameEndReason.MutualDestruction
+            },
+            WinnerId = standing.Outcome.Value is Victory victory ? victory.WinnerId : null,
             Turns = gameState.Turn,
             FinalState = gameState
         };

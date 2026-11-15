@@ -28,6 +28,18 @@ public static class StateInvariants
             violations.Add($"IsValid: {validation}");
         }
 
+        foreach ((Hexagon hexagon, Army army) in state.NeutralArmies)
+        {
+            if (army.IsEmpty)
+            {
+                violations.Add($"Neutral: the state holds an empty neutral army on {hexagon}.");
+            }
+            if (state.PlayerStates.Any(x => !x.Value.Compounds.GetValueOrDefault(hexagon).IsEmpty))
+            {
+                violations.Add($"Neutral: a neutral army stands on the buildings of a player on {hexagon}.");
+            }
+        }
+
         foreach ((string playerId, PlayerState player) in state.PlayerStates)
         {
             if (player.Matter < 0)
@@ -46,6 +58,11 @@ public static class StateInvariants
             if (player.AvailableSpace != providedSpace)
             {
                 violations.Add($"{playerId}: available space is {player.AvailableSpace}, but the compounds provide {providedSpace}.");
+            }
+
+            if (Standing.IsDefeated(player) && (!player.Trainings.IsEmpty || !player.Researches.IsEmpty))
+            {
+                violations.Add($"{playerId}: is defeated, but has {player.Trainings.Count} pending trainings and {player.Researches.Count} pending researches.");
             }
 
             CheckPlayerView(state, playerId, violations);
@@ -77,6 +94,10 @@ public static class StateInvariants
                 var expectedCounts = opponents
                     .Where(x => x.Value.Armies.TryGetValue(hexagon, out var army) && !army.IsEmpty)
                     .ToDictionary(x => x.Key, x => x.Value.Armies[hexagon].Total);
+                if (state.NeutralArmies.TryGetValue(hexagon, out Army neutralArmy))
+                {
+                    expectedCounts.Add(Neutral.Id, neutralArmy.Total);
+                }
                 if (!DictionariesEqual(expectedCounts, observation.OpponentUnitCounts))
                 {
                     violations.Add($"{playerId}: the view reports wrong opponent unit counts on visible {hexagon}.");
@@ -186,7 +207,11 @@ public static class StateInvariants
                 x => new Combatant() { Army = x.Value, UpgradeLevels = fight.UpgradeLevels[x.Key] }));
             foreach ((string playerId, Army loss) in fight.Losses)
             {
-                var acting = UpgradeRules.ActingOn(settings, before.PlayerStates[playerId].UpgradeLevels, fight.Armies[playerId]);
+                // A neutral army has no upgrades.
+                IReadOnlyDictionary<Upgrade, byte> upgradeLevels = playerId == Neutral.Id
+                    ? ImmutableDictionary<Upgrade, byte>.Empty
+                    : before.PlayerStates[playerId].UpgradeLevels;
+                var acting = UpgradeRules.ActingOn(settings, upgradeLevels, fight.Armies[playerId]);
                 if (!DictionariesEqual(acting, fight.UpgradeLevels[playerId]))
                 {
                     violations.Add($"Report: the fight on {hexagon} shows the upgrades [{string.Join(", ", fight.UpgradeLevels[playerId].OrderBy(x => x.Key))}] of {playerId}, [{string.Join(", ", acting.OrderBy(x => x.Key))}] act on the army {fight.Armies[playerId]}.");
@@ -200,6 +225,26 @@ public static class StateInvariants
                     violations.Add($"Report: {playerId} lost {loss} in the fight on {hexagon}, more than the army {fight.Armies[playerId]}.");
                 }
             }
+        }
+
+        // A neutral army never moves and never grows: it only shrinks by its losses in a fight.
+        foreach (Hexagon hexagon in before.Hexagons)
+        {
+            Army neutralLoss = report.Fights.TryGetValue(hexagon, out FightReport? fight)
+                ? fight.Losses.GetValueOrDefault(Neutral.Id)
+                : Army.Empty;
+            Army expectedNeutral = before.NeutralArmies.GetValueOrDefault(hexagon) - neutralLoss;
+            if (after.NeutralArmies.GetValueOrDefault(hexagon) != expectedNeutral)
+            {
+                violations.Add($"Report: the neutral army on {hexagon} is {after.NeutralArmies.GetValueOrDefault(hexagon)}, the report explains {expectedNeutral}.");
+            }
+        }
+
+        // A defeat is reported in the turn it happens, and only then.
+        var defeated = Standing.Of(after).DefeatedPlayerIds.Except(Standing.Of(before).DefeatedPlayerIds);
+        if (!defeated.SetEquals(report.Defeats))
+        {
+            violations.Add($"Report: [{string.Join(", ", defeated.Order())}] were defeated in this turn, reported are [{string.Join(", ", report.Defeats.Order())}].");
         }
 
         foreach (Hexagon hexagon in before.Hexagons)
@@ -342,21 +387,20 @@ public static class StateInvariants
     }
 
     /// <summary>
-    /// The matter the commands cost according to the rules, mirroring <see cref="CommandValidator.Validate"/>.
+    /// The matter the commands cost according to the rules. Computed here on its own and not
+    /// through <see cref="Costs"/>, so the invariant does not check the engine against itself.
     /// </summary>
     public static int CostOf(GameState state, string playerId, IReadOnlyDictionary<Hexagon, Command> commands)
     {
         GameSettings settings = state.GameSettings;
         PlayerState player = state.PlayerStates[playerId];
         int cost = 0;
-        // Every requested upgrade pays the level after the completed ones. Researches never stack,
-        // so an upgrade requested twice is invalid and counted once, like in Validate.
-        HashSet<Upgrade> requestedUpgrades = [];
+        // Every requested upgrade pays the level after the completed ones.
         foreach (Command command in commands.Values)
         {
             cost += command.Training * settings.ArmyCost;
             cost += command.Construction * settings.CompoundCost;
-            if (command.Research is Upgrade upgrade && requestedUpgrades.Add(upgrade))
+            if (command.Research is Upgrade upgrade)
             {
                 int level = player.UpgradeLevels.GetValueOrDefault(upgrade);
                 ImmutableArray<UpgradeLevel> levels = settings.Upgrades[upgrade].Levels;

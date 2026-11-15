@@ -33,6 +33,18 @@ internal static class BelievedState
                     compounds[hexagon] = compound;
                 }
             }
+            if (compounds.Count == 0 && !view.Standing.DefeatedPlayerIds.Contains(opponentId))
+            {
+                // The standing is known to everyone: an opponent who is not defeated still has a
+                // building or a construction somewhere. Without a sighting the start buildings are the guess.
+                foreach ((Hexagon hexagon, HexagonSettings settings) in gameSettings.HexagonSettings)
+                {
+                    if (settings.PlayerInitialization?.StartingPlayerId == opponentId)
+                    {
+                        compounds[hexagon] = settings.PlayerInitialization.Value.InitialCompound;
+                    }
+                }
+            }
 
             // Place currently visible stacks where they are seen and the unseen remainder
             // at the opponent's home (their biggest known base or their starting hexagon).
@@ -77,6 +89,33 @@ internal static class BelievedState
         var remainingMatter = gameSettings.HexagonSettings.ToImmutableDictionary(
             x => x.Key,
             x => memories.GetValueOrDefault(x.Key)?.Static.RemainingMatter ?? x.Value.Matter);
-        return GameState.FromParts(gameSettings, view.Turn, playerStates.ToImmutableDictionary(), remainingMatter);
+        return GameState.FromParts(gameSettings, view.Turn, playerStates.ToImmutableDictionary(), remainingMatter, NeutralArmies(view, memories));
+    }
+
+    /// <summary>
+    /// The guards start as the settings say. Where the player has seen a guarded hexagon since,
+    /// the army is scaled to the number of units last seen there.
+    /// </summary>
+    private static ImmutableDictionary<Hexagon, Army> NeutralArmies(PlayerGameState view, ImmutableDictionary<Hexagon, HexagonMemory> memories)
+    {
+        var neutralArmies = ImmutableDictionary.CreateBuilder<Hexagon, Army>();
+        foreach ((Hexagon hexagon, HexagonSettings settings) in view.GameSettings.HexagonSettings)
+        {
+            Army army = settings.NeutralArmy;
+            if (army.IsEmpty)
+            {
+                continue;
+            }
+            if (memories.GetValueOrDefault(hexagon)?.Units is UnitSighting sighting)
+            {
+                int seen = sighting.OpponentUnitCounts.GetValueOrDefault(Neutral.Id);
+                army = Army.Min(army, army.MultiplyAndRoundUp(seen / (double)army.Total));
+            }
+            if (!army.IsEmpty)
+            {
+                neutralArmies[hexagon] = army;
+            }
+        }
+        return neutralArmies.ToImmutable();
     }
 }

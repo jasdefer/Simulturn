@@ -141,7 +141,7 @@ public class CommanderPlayer : IArtificialPlayer
     {
         var revealed = view.Report.Fights.Values
             .SelectMany(x => x.Armies)
-            .Where(x => x.Key != view.PlayerId)
+            .Where(x => x.Key != view.PlayerId && x.Key != Neutral.Id)
             .Select(x => x.Value)
             .ToList();
         if (revealed.Count > 0)
@@ -155,7 +155,8 @@ public class CommanderPlayer : IArtificialPlayer
                 .Sum(x => x.PlayerInitialization!.Value.InitialArmy.Total);
             _lastEnemyObservationTurn = 0;
         }
-        int observed = view.Observations.Values.Sum(x => x.OpponentUnitCounts.Values.Sum());
+        // The guards are no part of the enemy army.
+        int observed = view.Observations.Values.Sum(x => x.OpponentUnitCounts.Where(y => y.Key != Neutral.Id).Sum(y => y.Value));
         if (observed > 0)
         {
             _lastObservedEnemyUnits = observed;
@@ -252,7 +253,7 @@ public class CommanderPlayer : IArtificialPlayer
         }
         // The map is mined out and no more units can be afforded: waiting has no value,
         // so attack with everything that is left instead of drawing at the turn limit.
-        int cheapestFighterCost = _analysis!.Fighters.Min(x => turn.View.GameSettings.ArmyCost[x]);
+        int cheapestFighterCost = _analysis!.Fighters.Min(x => Costs.Training(turn.View.GameSettings, x).Matter);
         bool economyExhausted = turn.ActiveIncomeHexagons.Count == 0 && turn.Matter < cheapestFighterCost;
         if (economyExhausted && fighters.Total >= _options.MinAttackArmy / 2)
         {
@@ -400,7 +401,7 @@ public class CommanderPlayer : IArtificialPlayer
         }
         Hexagon target = _expansionTarget.Value;
         GameSettings gameSettings = turn.View.GameSettings;
-        short planeCost = gameSettings.CompoundCost[_analysis!.IncomeBuilding];
+        int planeCost = Costs.Construction(gameSettings, _analysis!.IncomeBuilding).Matter;
 
         if (turn.IdleWorkers(target) > 0 && turn.Matter >= planeCost &&
             turn.CountOwnedOrPendingBuildings(target, _analysis.IncomeBuilding) == 0)
@@ -474,7 +475,7 @@ public class CommanderPlayer : IArtificialPlayer
             Building building = GameSettings.TrainingBuilding(fighter);
             if (turn.CountOwnedOrPendingBuildings(turn.MainBase, building) < _options.TrainingBuildingsPerFighter &&
                 turn.IdleWorkers(turn.MainBase) > 0 &&
-                turn.Matter >= gameSettings.CompoundCost[building])
+                turn.Matter >= Costs.Construction(gameSettings, building).Matter)
             {
                 turn.Construct(turn.MainBase, building);
             }
@@ -669,7 +670,7 @@ public class CommanderPlayer : IArtificialPlayer
         StaticSighting? sighting = turn.Memories.GetValueOrDefault(hexagon)?.Static;
         int expectedMatter = sighting?.RemainingMatter ?? gameSettings.HexagonSettings[hexagon].Matter;
         return gameSettings.HexagonSettings[hexagon].IsBuildable &&
-            gameSettings.HexagonSettings[hexagon].MaxNumberOfUnitsGeneratingMatter[_analysis!.Worker] > 0 &&
+            Harvest.Capacity(gameSettings, hexagon)[_analysis!.Worker] > 0 &&
             expectedMatter >= _options.MinExpansionMatter &&
             turn.View.PlayerState.Compounds.GetValueOrDefault(hexagon).IsEmpty &&
             (sighting is null || sighting.OpponentCompounds.All(x => x.Value.IsEmpty)) &&

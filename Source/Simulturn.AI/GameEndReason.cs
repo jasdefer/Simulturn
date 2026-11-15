@@ -3,12 +3,12 @@ namespace Simulturn.AI;
 public enum GameEndReason
 {
     /// <summary>
-    /// A single player has buildings left; every other player lost all buildings.
+    /// A single player is not defeated; every other player has neither a building nor a pending construction.
     /// </summary>
     Victory,
 
     /// <summary>
-    /// No player has any buildings left.
+    /// Every player is defeated.
     /// </summary>
     MutualDestruction,
 

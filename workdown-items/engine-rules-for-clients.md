@@ -1,46 +1,63 @@
 ---
 title: Ein Client muss Regeln der Engine nachbauen
-status: todo
+status: done
 created: 2026-11-14
+updated: 2026-11-15
+completed: 2026-11-15
 ---
 ## Problem
 
-Eine UI soll zeigen, wie sich das Spiel anfühlt. Dafür muss sie dem Spieler vor dem Absenden eines Zugs sagen, was seine Orders kosten, was er einnimmt und wie das Spiel ausgegangen ist. Die Engine kennt all diese Regeln, gibt sie aber nicht heraus: Sie stecken privat in der Zugauflösung oder in der Validierung. Ein Client müsste sie nachbauen, und jede Kopie einer Regel läuft irgendwann auseinander. Die alte UI hat genau das mit der Bewegungsreichweite getan (siehe [[movement-range]]).
+Eine UI soll zeigen, wie sich das Spiel anfühlt. Dafür muss sie dem Spieler vor dem Absenden eines Zugs sagen, was seine Orders kosten, was er einnimmt und wie das Spiel ausgegangen ist. Die Engine kannte all diese Regeln, gab sie aber nicht heraus: Sie steckten privat in der Zugauflösung oder in der Validierung. Ein Client hätte sie nachbauen müssen, und jede Kopie einer Regel läuft irgendwann auseinander. Die alte UI hat genau das mit der Bewegungsreichweite getan (siehe [[movement-range]]).
 
-Für den Kampf ist das gelöst: `Combat.Fight` ist die einzige Stelle der Regel, die Zugauflösung und eine Vorschau rufen dieselbe Methode auf und unterscheiden sich nur in dem, was sie übergeben (siehe [[combat-forecast-core]]). Für die Bewegung gilt dasselbe mit `Movement`. Dieses Item sammelt die Stellen, an denen das noch fehlt, und einige Einstellungen ohne Wirkung, die beim Durchsehen aufgefallen sind.
+Für den Kampf war das gelöst: `Combat.Fight` ist die einzige Stelle der Regel (siehe [[combat-forecast-core]]). Für die Bewegung gilt dasselbe mit `Movement`. Dieses Item hat die Stellen gesammelt, an denen das noch fehlte, und zwei Einstellungen ohne Wirkung.
 
-Die AI-Spieler sind ebenfalls Clients. Was sie heute selbst nachrechnen, steht bei den Funden.
+## Ergebnis
 
-## Funde
+Jede Regel ist eine Funktion in `Engine/`, die nur die Settings und die nötigen Werte bekommt. Zugauflösung, Validierung, AI-Spieler und ein Client rufen dieselbe Stelle auf.
 
-Stand 2026-11-14, jede Stelle ist vor der Umsetzung neu zu prüfen.
+| Frage eines Clients | Stelle |
+|---|---|
+| Wer ist besiegt, wer hat gewonnen? | `Standing.Of`, in jeder Sicht als `PlayerGameState.Standing` |
+| Was kosten meine Orders, was bleibt übrig? | `Costs` (eine Order oder alle Orders eines Zugs, Matter und Platz) |
+| Was kostet die nächste Stufe einer Forschung? | `GameSettings.NextUpgradeLevel`, erledigt mit [[upgrade-concept]] |
+| Was nehme ich mit diesen Orders ein? | `Harvest.Of` für ein Hexagon, `Harvest.Forecast` für eine Sicht |
+| Welche Gebäude reißt diese Armee ab? | `Destruction.Of` |
+| Wie führe ich ein Spiel Zug für Zug? | `Game.Start` und `Game.PlayTurn` |
 
-**Regeln, die nur intern erreichbar sind**
+### Niederlage
 
-- **Wer gewonnen hat.** `GameState.IsGameOver` sagt nur, dass das Spiel vorbei ist. Ob es einen Sieger gibt oder alle Gebäude gleichzeitig gefallen sind, entscheidet `GameRunner.ToResult` im AI-Projekt. `PlayerGameState` kennt ebenfalls nur `IsGameOver`.
-- **Was die Orders eines Zugs kosten.** `CommandValidator` summiert Matter und Platz privat und meldet nur, wenn es nicht reicht. Wie viel nach den bisher eingegebenen Orders übrig ist, erfährt ein Client nicht.
-- **Was die nächste Stufe einer Forschung kostet.** Erledigt mit [[upgrade-concept]] am 2026-11-15: `GameSettings.NextUpgradeLevel` ist die eine Stelle, `CommandValidator`, `TurnResolution`, `RandomPlayer` und `TurnPlan` fragen dort.
-- **Was ein Hexagon einbringt.** Die Regel steht in `TurnResolution.CollectIncome`: Es braucht ein Plane, Dots, die in diesem Zug eine Konstruktion beginnen, ernten nicht, das Hexagon begrenzt die Zahl der Erntenden, und es gibt nie mehr als die restliche Matter. `StateEvaluator` und `TurnPlan` rechnen Teile davon selbst.
-- **Welche Gebäude eine Armee zerstört.** `TurnResolution.GetDestroyedBuildings` ist privat. Eine Vorschau wie beim Kampf gibt es nicht.
-- **Ein Spiel Zug für Zug führen.** `GameRunner.Run` spielt eine Partie zwischen AI-Spielern bis zum Ende durch. Wer einen Menschen mitspielen lässt, schreibt die Schleife aus Sicht holen, validieren und auflösen neu.
+Am 2026-11-15 festgelegt:
 
-**Einstellungen ohne Wirkung**
+- Ein Spieler ohne Gebäude und ohne laufende Konstruktion ist besiegt. Wer noch baut, ist noch im Spiel.
+- Die Niederlage ist endgültig. Ein besiegter Spieler gibt keine Orders mehr (`PlayerDefeated`), also entsteht nie wieder ein Gebäude. Deshalb wird die Niederlage nicht gespeichert, sie folgt aus dem Zustand.
+- Laufende Forschungen eines Besiegten enden, die Matter ist verloren.
+- Die Armeen eines Besiegten bleiben stehen und kämpfen mit seinen Upgrades, wenn jemand ihr Hexagon betritt. Sie zerstören weiter Gebäude, auf denen sie stehen, und der Besiegte sieht weiter, was sie sehen.
+- Jeder Spieler erfährt jede Niederlage: im Report des Zugs (`TurnReport.Defeats`) und in jeder Sicht.
+- Das Spiel läuft, solange mindestens zwei Spieler nicht besiegt sind. Bleibt einer, hat er gewonnen. Bleibt keiner, haben alle verloren.
 
-- **`HexagonSettings.IsBuildable`** wird von `CommandValidator` nicht geprüft. Nur die AI-Spieler halten sich von selbst daran. Keine der Standardkarten setzt den Wert auf `false`, das Loch ist heute also nicht erreichbar.
-- **`HexagonSettings.NeutralArmy`** wird von der Engine nirgends gelesen. Keine der Standardkarten setzt eine neutrale Armee.
+Eine Folge: Zu zweit endete das Spiel früher, sobald das letzte Gebäude fiel. Jetzt läuft es weiter, solange der Verlierer noch eine Konstruktion hat.
 
-## Ideen
+### Neutrale Armeen
 
-Keine Vorgaben. Wer das Item umsetzt, sieht sich die Stellen an und entscheidet.
+`HexagonSettings.NeutralArmy` wurde angenommen und nie gelesen. Am 2026-11-15 festgelegt: Neutrale Armeen sind Wachen und werden bekämpft.
 
-- Das Muster von `Combat`: Eine Regel ist eine Funktion, die nur die Settings und die nötigen Werte bekommt. Die Zugauflösung ruft sie genauso auf wie ein Client. Ob die Zugauflösung dafür umgebaut werden muss oder einzelne Regeln herausgelöst werden, ist offen.
-- Nicht jede Regel braucht eine Vorschau. Die Verwaltung der Warteschlangen, das Abbrechen und das Schreiben der Reports fragt vermutlich kein Client ab.
-- Die AI-Spieler führen ihr Budget schrittweise mit. Ihnen hilft der Preis einer einzelnen Order mehr als die Summe eines ganzen Zugs.
-- Eine Einstellung ohne Wirkung kann wirksam werden oder verschwinden.
-- Nicht alles muss vor der ersten UI fertig sein. Was eine UI zuerst braucht, ergibt sich aus [[ui-concept]].
+- Sie stehen von Spielbeginn an auf ihrem Hexagon (`GameState.NeutralArmies`), bewegen sich nie und haben keine Upgrades.
+- Wer ihr Hexagon betritt, kämpft gegen sie. Der Kampf läuft über `Combat.Fight` wie jeder andere und steht genauso im Report. Die Wache hat dort die feste Kennung `Neutral.Id`; kein Spieler darf sie tragen.
+- Die Startaufstellung steht in den Settings und ist damit jedem Spieler bekannt. Im Spiel sieht ein Spieler die Wachen wie gegnerische Einheiten: nur die Anzahl, nur bei voller Sicht.
+- Wachen zerstören keine Gebäude und zählen nicht für den Spielausgang. Auf einem Start-Hexagon steht keine Wache.
+- `MapGenerator` setzt Wachen auf Wunsch in die Mitte und auf die Expansionen (`CenterGuard`, `ExpansionGuard`). Keine Standardkarte hat welche.
 
-## Woran man es merkt
+### Einstellungen ohne Wirkung
 
-- Ein Client zeigt Kosten, Einkommen und Spielausgang, ohne eine Regel selbst zu rechnen.
-- Jede dieser Regeln steht einmal im Code. Zugauflösung, Validierung und Client kommen zum selben Ergebnis, weil sie dieselbe Stelle fragen.
-- Keine Einstellung der `GameSettings` wird akzeptiert und dann ignoriert.
+- `HexagonSettings.IsBuildable` wird jetzt geprüft: Eine Konstruktion auf einem nicht bebaubaren Hexagon ergibt `HexagonNotBuildable`.
+- `HexagonSettings.NeutralArmy` wirkt, siehe oben.
+
+## Offen bei den AI-Spielern
+
+Die AI-Spieler fragen Kosten, Einkommen und Spielausgang jetzt bei der Engine. Mit Wachen gehen sie nur korrekt um: Sie zählen sie nicht zur gegnerischen Armee und führen sie im geglaubten Zustand mit. Ob sich ein Angriff auf eine Wache lohnt, wägen sie nicht ab. Behandelt in [[ai-opponents-too-weak]].
+
+## Nicht entschieden
+
+- **Wer Orders sammelt.** `Game.PlayTurn` bekommt die Orders aller Spieler auf einmal. Wie ein Client sie einsammelt (Hot-Seat, Netzwerk), ergibt sich aus [[ui-concept]].
+- **Speichern.** Der Zustand folgt aus den Settings und den Orders aller Züge. Was davon gespeichert wird, behandelt [[game-persistence]].
+- **Wirksame Werte pro Spieler.** `Costs` und `Harvest` sind die Stellen, an denen ein Upgrade auf Kosten oder Einkommen ansetzt. Ein solches Upgrade gibt es noch nicht, siehe [[upgrade-variety]].

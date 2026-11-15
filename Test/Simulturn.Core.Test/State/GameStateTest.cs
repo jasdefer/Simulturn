@@ -319,22 +319,6 @@ public sealed class GameStateTest
     }
 
     [Test]
-    public void IncomeIsCappedByMaxNumberOfUnitsGeneratingMatter()
-    {
-        var gameSettings = TestSettings.Create(_gameSettings.HexagonSettings.ToImmutableDictionary()
-            .SetItem(_player1Start, Maps.Start("Player01", matter: 10000, army: new Army() { Dot = 15 }) with
-            {
-                MaxNumberOfUnitsGeneratingMatter = new Army() { Dot = 3 }
-            }));
-
-        var gameState = new GameState(gameSettings);
-        var turn1 = gameState.PlayTurn(_noCommands);
-
-        turn1.PlayerStates["Player01"].Matter.ShouldBe(gameSettings.StartMatter + 30);
-        turn1.RemainingMatter[_player1Start].ShouldBe(10000 - 30);
-    }
-
-    [Test]
     public void ValidateReturnsInsufficientMatterWhenCombinedCostsExceedBudget()
     {
         var gameSettings = _gameSettings with

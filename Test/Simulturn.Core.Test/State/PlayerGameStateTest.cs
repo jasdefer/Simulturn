@@ -53,7 +53,8 @@ public sealed class PlayerGameStateTest
 
         view.PlayerId.ShouldBe("Player01");
         view.Turn.ShouldBe((ushort)0);
-        view.IsGameOver.ShouldBeFalse();
+        view.Standing.IsGameOver.ShouldBeFalse();
+        view.Standing.DefeatedPlayerIds.ShouldBeEmpty();
         view.PlayerIds.ShouldBe(["Player01", "Player02"], ignoreOrder: true);
         view.PlayerState.Matter.ShouldBe(500);
         view.Observations.Count.ShouldBe(7);

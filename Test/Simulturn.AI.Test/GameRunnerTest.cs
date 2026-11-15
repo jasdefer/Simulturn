@@ -1,4 +1,5 @@
 using Simulturn.AI.Players;
+using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.Report;
@@ -58,7 +59,7 @@ public sealed class GameRunnerTest
         result.WinnerId.ShouldBeNull();
         result.Turns.ShouldBe((ushort)10);
         completedTurns.ShouldBe(10);
-        result.FinalState.IsGameOver.ShouldBeFalse();
+        Standing.Of(result.FinalState).IsGameOver.ShouldBeFalse();
     }
 
     [Test]
@@ -139,6 +140,34 @@ public sealed class GameRunnerTest
         player1Views[1].Report.Fights[center].Losses["Player01"].ShouldBe(new Army() { Dot = 3 });
         player1Views[2].Report.Fights.ShouldBeEmpty();
         turns.Select(x => x.Report.Fights.Count).ShouldBe([1, 0, 0]);
+    }
+
+    [Test]
+    public void GameOnAMapWithGuards_RunsWithEveryKindOfPlayer()
+    {
+        var gameSettings = DefaultSettings.Create(MapGeneratorOptions.Expansions with
+        {
+            CenterGuard = new Army() { Triangle = 2, Circle = 2, Square = 2 },
+            ExpansionGuard = new Army() { Dot = 3 }
+        });
+        (IArtificialPlayer, IArtificialPlayer)[] pairings =
+        [
+            (new SimulatorPlayer(), new CommanderPlayer()),
+            (new TacticianPlayer(), new StateMachinePlayer()),
+            (new RandomPlayer(1), new IdlePlayer())
+        ];
+
+        foreach ((IArtificialPlayer player1, IArtificialPlayer player2) in pairings)
+        {
+            var players = new Dictionary<string, IArtificialPlayer>() { { "Player01", player1 }, { "Player02", player2 } };
+            List<string> violations = [];
+
+            var result = GameRunner.Run(gameSettings, players, maxTurns: 80,
+                onTurnCompleted: turn => violations.AddRange(StateInvariants.CheckState(turn.State)));
+
+            violations.ShouldBeEmpty($"{player1.Name} against {player2.Name}.");
+            result.Turns.ShouldBeGreaterThan((ushort)0);
+        }
     }
 
     [Test]

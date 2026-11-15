@@ -3,6 +3,7 @@ using Simulturn.Core.Helper;
 using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
+using Simulturn.Core.Model.Report;
 using Simulturn.Core.Model.State;
 using Simulturn.Core.Setup;
 using System.Collections.Immutable;
@@ -10,21 +11,20 @@ using System.Collections.Immutable;
 Console.WriteLine("Hello, Simulturn World!");
 
 // Two players on opposite sides of a 7 hexagon disc, all matter at home, research in the center.
-GameState gameState = new(DefaultSettings.Create(MapGeneratorOptions.Open with
+GameState gameState = Game.Start(DefaultSettings.Create(MapGeneratorOptions.Open with
 {
     Radius = 1,
     HexagonMatter = 0,
     StartHexagonMatter = 10000
-}));
+})).State;
 string stateString = Printer.PrintState(gameState, Printer.GetFullInfo);
 File.WriteAllText($"Turn{gameState.Turn}.svg", stateString);
 File.WriteAllText($"CurrentTurn.svg", stateString);
-while (!gameState.IsGameOver)
+while (!Standing.Of(gameState).IsGameOver)
 {
     Console.WriteLine($"Turn {gameState.Turn}: Please add commands for the next turn in CSV format and press any key to continue.");
     Console.ReadKey();
     Dictionary<string, Dictionary<Hexagon, Command>> commands = [];
-    bool errorInCommands = false;
     foreach (var player in gameState.PlayerIds)
     {
         if (!File.Exists($"{player}.csv"))
@@ -91,25 +91,23 @@ while (!gameState.IsGameOver)
                     MovementCommands = existingCommand.MovementCommands.AddRange(movementCommands)
                 };
             }
-            else
-            {
-                playerCommands.Add(hexagon, command);
-            }
+            playerCommands[hexagon] = command;
         }
 
-        var errors = CommandValidator.Validate(gameState, player, playerCommands);
-        if (errors.Any())
-        {
-            errorInCommands = true;
-            Console.WriteLine(string.Join(", ", errors));
-        }
         commands.Add(player, playerCommands);
     }
-    if (errorInCommands)
+    switch (Game.PlayTurn(gameState, commands))
     {
-        continue;
+        case RefusedCommands refused:
+            foreach ((string player, var validations) in refused.Validations.OrderBy(x => x.Key))
+            {
+                Console.WriteLine($"{player}: {string.Join(", ", validations)}");
+            }
+            continue;
+        case TurnResult resolved:
+            gameState = resolved.State;
+            break;
     }
-    gameState = TurnResolution.Resolve(gameState, commands).State;
     stateString = Printer.PrintState(gameState, Printer.GetFullInfo);
     File.WriteAllText($"Turn{gameState.Turn}.svg", stateString);
     File.WriteAllText($"CurrentTurn.svg", stateString);

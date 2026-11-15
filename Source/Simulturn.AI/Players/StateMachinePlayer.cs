@@ -81,7 +81,8 @@ public sealed class StateMachinePlayer : IArtificialPlayer
                 .Where(x => x.PlayerInitialization is not null && x.PlayerInitialization.Value.StartingPlayerId != view.PlayerId)
                 .Sum(x => x.PlayerInitialization!.Value.InitialArmy.Total);
         }
-        int observed = view.Observations.Values.Sum(x => x.OpponentUnitCounts.Values.Sum());
+        // The guards are no part of the enemy army.
+        int observed = view.Observations.Values.Sum(x => x.OpponentUnitCounts.Where(y => y.Key != Neutral.Id).Sum(y => y.Value));
         if (observed > 0)
         {
             _estimatedEnemyUnits = observed;
@@ -133,7 +134,7 @@ public sealed class StateMachinePlayer : IArtificialPlayer
         }
         Hexagon target = _expansionTarget.Value;
         GameSettings gameSettings = turn.View.GameSettings;
-        short planeCost = gameSettings.CompoundCost[_analysis!.IncomeBuilding];
+        int planeCost = Costs.Construction(gameSettings, _analysis!.IncomeBuilding).Matter;
 
         // A worker already arrived: build the income building.
         if (turn.IdleWorkers(target) > 0 && turn.Matter >= planeCost &&
@@ -218,7 +219,7 @@ public sealed class StateMachinePlayer : IArtificialPlayer
             Building building = GameSettings.TrainingBuilding(fighter);
             if (turn.CountOwnedOrPendingBuildings(turn.MainBase, building) < _options.TrainingBuildingsPerFighter &&
                 turn.IdleWorkers(turn.MainBase) > 0 &&
-                turn.Matter >= gameSettings.CompoundCost[building])
+                turn.Matter >= Costs.Construction(gameSettings, building).Matter)
             {
                 turn.Construct(turn.MainBase, building);
             }
@@ -242,7 +243,7 @@ public sealed class StateMachinePlayer : IArtificialPlayer
         GameSettings gameSettings = turn.View.GameSettings;
         int spacePerBuilding = gameSettings.ProvidedSpace[_analysis!.SpaceBuilding];
         if (turn.FreeSpace + turn.PendingSpace >= spacePerBuilding / 2 ||
-            turn.Matter < gameSettings.CompoundCost[_analysis.SpaceBuilding] ||
+            turn.Matter < Costs.Construction(gameSettings, _analysis.SpaceBuilding).Matter ||
             turn.IdleWorkers(turn.MainBase) <= 0)
         {
             return;
@@ -315,7 +316,7 @@ public sealed class StateMachinePlayer : IArtificialPlayer
         StaticSighting? sighting = turn.Memories.GetValueOrDefault(hexagon)?.Static;
         int expectedMatter = sighting?.RemainingMatter ?? gameSettings.HexagonSettings[hexagon].Matter;
         return gameSettings.HexagonSettings[hexagon].IsBuildable &&
-            gameSettings.HexagonSettings[hexagon].MaxNumberOfUnitsGeneratingMatter[_analysis!.Worker] > 0 &&
+            Harvest.Capacity(gameSettings, hexagon)[_analysis!.Worker] > 0 &&
             expectedMatter >= _options.MinExpansionMatter &&
             turn.View.PlayerState.Compounds.GetValueOrDefault(hexagon).IsEmpty &&
             (sighting is null || sighting.OpponentCompounds.All(x => x.Value.IsEmpty));

@@ -20,7 +20,17 @@ public sealed class MapGeneratorTest
         yield return ("Open", MapGeneratorOptions.Open);
         yield return ("HomeOnly", MapGeneratorOptions.HomeOnly);
         yield return ("Expansions", MapGeneratorOptions.Expansions);
+        yield return ("Guarded", _guarded);
     }
+
+    /// <summary>
+    /// The expansions map with guards in the center and on every expansion.
+    /// </summary>
+    private static readonly MapGeneratorOptions _guarded = MapGeneratorOptions.Expansions with
+    {
+        CenterGuard = new Army() { Triangle = 2, Circle = 2, Square = 2 },
+        ExpansionGuard = new Army() { Dot = 3 }
+    };
 
     /// <summary>
     /// Everything a hexagon contributes to the game, with the seat instead of the player id.
@@ -188,6 +198,32 @@ public sealed class MapGeneratorTest
         map[Hexagon.Origin].ResearchableUpgrades.ShouldBe([Upgrade.TriangleExponent, Upgrade.CircleExponent, Upgrade.SquareExponent], ignoreOrder: true);
         starts.ShouldAllBe(x => map[x].Matter == 2000);
         map.Values.Sum(x => x.Matter).ShouldBe(3 * 2000 + 6 * 4000 + 6000);
+    }
+
+    [Test]
+    public void Guards_StandInTheCenterAndOnEveryExpansion()
+    {
+        foreach (int playerCount in _playerCounts)
+        {
+            MapGeneratorOptions options = _guarded with { PlayerIds = Maps.PlayerIds(playerCount) };
+
+            var map = MapGenerator.Generate(options);
+
+            map[Hexagon.Origin].NeutralArmy.ShouldBe(options.CenterGuard);
+            var expansions = map.Where(x => x.Value.Matter == options.ExpansionMatter).ToList();
+            expansions.Count.ShouldBe(playerCount * options.ExpansionsPerPlayer);
+            expansions.ShouldAllBe(x => x.Value.NeutralArmy == options.ExpansionGuard);
+            map.Count(x => !x.Value.NeutralArmy.IsEmpty).ShouldBe(1 + expansions.Count, $"{playerCount} players.");
+        }
+    }
+
+    [Test]
+    public void WithoutGuardOptions_TheMapHasNoNeutralArmies()
+    {
+        foreach (MapGeneratorOptions options in new[] { MapGeneratorOptions.Open, MapGeneratorOptions.HomeOnly, MapGeneratorOptions.Expansions })
+        {
+            MapGenerator.Generate(options).Values.ShouldAllBe(x => x.NeutralArmy.IsEmpty);
+        }
     }
 
     [Test]

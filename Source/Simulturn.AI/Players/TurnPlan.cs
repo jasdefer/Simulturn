@@ -1,4 +1,5 @@
 using Simulturn.AI.Analysis;
+using Simulturn.Core.Engine;
 using Simulturn.Core.Extensions;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
@@ -103,7 +104,7 @@ internal sealed class TurnPlan
         WorkerCapacity = IncomeHexagons.Sum(hexagon =>
         {
             int remaining = memories.GetValueOrDefault(hexagon)?.Static.RemainingMatter ?? gameSettings.HexagonSettings[hexagon].Matter;
-            return remaining > 0 ? (int)gameSettings.HexagonSettings[hexagon].MaxNumberOfUnitsGeneratingMatter[analysis.Worker] : 0;
+            return remaining > 0 ? (int)Harvest.Capacity(gameSettings, hexagon)[analysis.Worker] : 0;
         });
         TargetWorkers = Math.Min(WorkerCapacity, options.MaxWorkers);
 
@@ -164,8 +165,10 @@ internal sealed class TurnPlan
 
     public void Construct(Hexagon hexagon, Building building)
     {
-        short cost = View.GameSettings.CompoundCost[building];
-        if (Matter - _reservedMatter < cost || IdleWorkers(hexagon) <= 0)
+        int cost = Costs.Construction(View.GameSettings, building).Matter;
+        if (!View.GameSettings.HexagonSettings[hexagon].IsBuildable ||
+            Matter - _reservedMatter < cost ||
+            IdleWorkers(hexagon) <= 0)
         {
             return;
         }
@@ -186,13 +189,14 @@ internal sealed class TurnPlan
             - pendingOnHexagon[unit]
             - _trainings.GetValueOrDefault(hexagon)[unit];
         int count = Math.Min(wanted, capacity);
-        if (gameSettings.ArmyCost[unit] > 0)
+        OrderCost price = Costs.Training(gameSettings, unit);
+        if (price.Matter > 0)
         {
-            count = Math.Min(count, (Matter - _reservedMatter) / gameSettings.ArmyCost[unit]);
+            count = Math.Min(count, (Matter - _reservedMatter) / price.Matter);
         }
-        if (gameSettings.RequiredSpace[unit] > 0)
+        if (price.Space > 0)
         {
-            count = Math.Min(count, FreeSpace / gameSettings.RequiredSpace[unit]);
+            count = Math.Min(count, FreeSpace / price.Space);
         }
         if (count <= 0)
         {
@@ -200,8 +204,8 @@ internal sealed class TurnPlan
         }
         _trainings[hexagon] = _trainings.GetValueOrDefault(hexagon) + Army.FromUnit(unit, (short)count);
         _pendingUnitTrainings[unit] = _pendingUnitTrainings.GetValueOrDefault(unit) + count;
-        Matter -= count * gameSettings.ArmyCost[unit];
-        FreeSpace -= count * gameSettings.RequiredSpace[unit];
+        Matter -= count * price.Matter;
+        FreeSpace -= count * price.Space;
         return count;
     }
 
@@ -226,7 +230,7 @@ internal sealed class TurnPlan
         }
         byte currentLevel = playerState.UpgradeLevels.GetValueOrDefault(upgrade);
         if (!gameSettings.HexagonSettings[hexagon].ResearchableUpgrades.Contains(upgrade) ||
-            gameSettings.NextUpgradeLevel(upgrade, currentLevel) is not UpgradeLevel nextLevel)
+            gameSettings.NextUpgradeLevel(upgrade, currentLevel) is null)
         {
             return false;
         }
@@ -234,7 +238,7 @@ internal sealed class TurnPlan
         {
             return false;
         }
-        short cost = nextLevel.Cost;
+        int cost = Costs.Research(gameSettings, playerState.UpgradeLevels, upgrade).Matter;
         if (Matter - _reservedMatter < cost)
         {
             return false;

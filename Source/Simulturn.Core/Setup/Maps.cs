@@ -51,6 +51,14 @@ public static class Maps
         {
             return settings with { ResearchableUpgrades = [.. upgrades] };
         }
+
+        /// <summary>
+        /// Puts a neutral army on the hexagon, see <see cref="Neutral"/>.
+        /// </summary>
+        public HexagonSettings WithGuard(Army army)
+        {
+            return settings with { NeutralArmy = army };
+        }
     }
 
     /// <summary>

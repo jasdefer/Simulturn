@@ -22,7 +22,9 @@ Stand 2026-11-14, jede Stelle ist vor der Umsetzung neu zu prüfen.
 - Es gibt sechs Spieler: `IdlePlayer`, `RandomPlayer` (mit vier Varianten), `StateMachinePlayer`, `CommanderPlayer`, `SimulatorPlayer` und `TacticianPlayer`.
 - `CommanderPlayer`, `StateMachinePlayer` und `CompositionOptimizer` lesen `GameSettings.FightExponent` direkt. Sie schätzen Kämpfe ohne Upgrades ein, die eigenen wie die des Gegners.
 - Nur `CommanderPlayer` und `RandomPlayer` forschen. `CommanderPlayer` nimmt die erforschbaren Upgrades der Reihe nach, sobald genug Matter übrig ist, ohne zu fragen, was ein Upgrade bringt.
-- Die Spieler rechnen Kosten und Einkommen selbst (`TurnPlan`, `RandomPlayer`, `StateEvaluator`).
+- Kosten und Einkommen fragen die Spieler seit [[engine-rules-for-clients]] bei der Engine (`Costs`, `Harvest`). Die Auswertung der Settings (`GameSettingsAnalyzer`, `CompositionOptimizer`) liest die Preise weiter direkt.
+- Neutrale Armeen (Wachen) zählen die Spieler nicht zur gegnerischen Armee und führen sie im geglaubten Zustand mit. Ob sich ein Angriff auf eine Wache lohnt, wägen sie nicht ab; `StateMachinePlayer` schickt Dots auch auf bewachte Expansionen.
+- In einem Spiel mit mehr als zwei Spielern rechnen die Spieler nicht damit, dass ein Gegner besiegt ist und seine Armeen stehen bleiben.
 - Die Spieler ziehen nur auf Nachbarfelder (siehe [[movement-range]]). Bei einer größeren Reichweite nutzen sie sie nicht.
 
 ## Offene Fragen

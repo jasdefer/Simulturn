@@ -28,7 +28,8 @@ public sealed class EngineInvariantsTest
     ];
 
     /// <summary>
-    /// A small disc with matter everywhere and upgrades in the center, plus the map types of the generator.
+    /// A small disc with matter everywhere and upgrades in the center, plus the map types of the
+    /// generator and a map with neutral armies in the center and on the expansions.
     /// </summary>
     private static IEnumerable<(string Name, GameSettings Settings)> MapPresets()
     {
@@ -39,6 +40,11 @@ public sealed class EngineInvariantsTest
         yield return ("Open", DefaultSettings.Create(MapGeneratorOptions.Open));
         yield return ("HomeOnly", DefaultSettings.Create(MapGeneratorOptions.HomeOnly));
         yield return ("Expansions", DefaultSettings.Create(MapGeneratorOptions.Expansions));
+        yield return ("Guarded", DefaultSettings.Create(MapGeneratorOptions.Expansions with
+        {
+            CenterGuard = new Army() { Triangle = 2, Circle = 2, Square = 2 },
+            ExpansionGuard = new Army() { Dot = 3 }
+        }));
     }
 
     private static Dictionary<string, IArtificialPlayer> RandomPlayers(int seed, Func<RandomPlayerOptions, RandomPlayerOptions>? adjust = null)
@@ -60,7 +66,7 @@ public sealed class EngineInvariantsTest
         Action<GameState, Dictionary<string, IReadOnlyDictionary<Hexagon, Command>>, TurnResult> onTurnResolved)
     {
         TurnResult turnResult = new(new GameState(gameSettings), TurnReport.Empty);
-        while (!turnResult.State.IsGameOver && turnResult.State.Turn < MaxTurns)
+        while (!Standing.Of(turnResult.State).IsGameOver && turnResult.State.Turn < MaxTurns)
         {
             GameState state = turnResult.State;
             Dictionary<string, IReadOnlyDictionary<Hexagon, Command>> commands = [];
