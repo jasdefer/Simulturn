@@ -281,7 +281,7 @@ public sealed class TurnResolution
                     {
                         continue;
                     }
-                    Compound destroyedCompound = GetDestroyedBuildings(army, compound);
+                    Compound destroyedCompound = Destruction.Of(_settings, army, compound);
                     if (destroyedCompound.IsEmpty)
                     {
                         continue;
@@ -293,27 +293,6 @@ public sealed class TurnResolution
                 }
             }
         }
-    }
-
-    /// <summary>
-    /// The damage of the army is spent on the buildings with the lowest armor first.
-    /// </summary>
-    private Compound GetDestroyedBuildings(Army army, Compound compound)
-    {
-        double damage = _settings.StructureDamage * army;
-        var buildings = EnumValues.Buildings.OrderBy(x => _settings.Armor[x]);
-        var destroyedCompound = Compound.Empty;
-        foreach (var building in buildings)
-        {
-            var destroyedBuildings = (short)Math.Min(compound[building], Math.Floor(damage / (double)_settings.Armor[building]));
-            if (destroyedBuildings <= 0)
-            {
-                continue;
-            }
-            damage -= destroyedBuildings * _settings.Armor[building];
-            destroyedCompound = destroyedCompound + Compound.FromBuilding(building, destroyedBuildings);
-        }
-        return destroyedCompound;
     }
 
     /// <summary>
