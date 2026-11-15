@@ -133,7 +133,7 @@ public sealed class StateMachinePlayer : IArtificialPlayer
         }
         Hexagon target = _expansionTarget.Value;
         GameSettings gameSettings = turn.View.GameSettings;
-        short planeCost = gameSettings.CompoundCost[_analysis!.IncomeBuilding];
+        int planeCost = Costs.Construction(gameSettings, _analysis!.IncomeBuilding).Matter;
 
         // A worker already arrived: build the income building.
         if (turn.IdleWorkers(target) > 0 && turn.Matter >= planeCost &&
@@ -218,7 +218,7 @@ public sealed class StateMachinePlayer : IArtificialPlayer
             Building building = GameSettings.TrainingBuilding(fighter);
             if (turn.CountOwnedOrPendingBuildings(turn.MainBase, building) < _options.TrainingBuildingsPerFighter &&
                 turn.IdleWorkers(turn.MainBase) > 0 &&
-                turn.Matter >= gameSettings.CompoundCost[building])
+                turn.Matter >= Costs.Construction(gameSettings, building).Matter)
             {
                 turn.Construct(turn.MainBase, building);
             }
@@ -242,7 +242,7 @@ public sealed class StateMachinePlayer : IArtificialPlayer
         GameSettings gameSettings = turn.View.GameSettings;
         int spacePerBuilding = gameSettings.ProvidedSpace[_analysis!.SpaceBuilding];
         if (turn.FreeSpace + turn.PendingSpace >= spacePerBuilding / 2 ||
-            turn.Matter < gameSettings.CompoundCost[_analysis.SpaceBuilding] ||
+            turn.Matter < Costs.Construction(gameSettings, _analysis.SpaceBuilding).Matter ||
             turn.IdleWorkers(turn.MainBase) <= 0)
         {
             return;

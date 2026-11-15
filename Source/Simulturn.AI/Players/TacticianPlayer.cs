@@ -1,4 +1,5 @@
 using Simulturn.AI.Analysis;
+using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.State;
 
@@ -41,7 +42,7 @@ public sealed class TacticianPlayer : CommanderPlayer
             int owned = turn.OwnCompoundHexagons.Sum(x => turn.CountOwnedOrPendingBuildings(x, building));
             if (owned < _options.TrainingBuildingsPerFighter &&
                 turn.IdleWorkers(turn.MainBase) > 0 &&
-                turn.Matter >= gameSettings.CompoundCost[building])
+                turn.Matter >= Costs.Construction(gameSettings, building).Matter)
             {
                 turn.Construct(turn.MainBase, building);
             }
@@ -100,8 +101,8 @@ public sealed class TacticianPlayer : CommanderPlayer
     private int MaxTrainableFighters(TurnPlan turn)
     {
         GameSettings gameSettings = turn.View.GameSettings;
-        int cheapestCost = _analysis!.Fighters.Min(x => (int)gameSettings.ArmyCost[x]);
-        int smallestSpace = _analysis.Fighters.Min(x => (int)gameSettings.RequiredSpace[x]);
+        int cheapestCost = _analysis!.Fighters.Min(x => Costs.Training(gameSettings, x).Matter);
+        int smallestSpace = _analysis.Fighters.Min(x => Costs.Training(gameSettings, x).Space);
         int byMatter = cheapestCost > 0 ? turn.Matter / cheapestCost : int.MaxValue;
         int bySpace = smallestSpace > 0 ? turn.FreeSpace / smallestSpace : int.MaxValue;
         int byBuildings = turn.OwnCompoundHexagons

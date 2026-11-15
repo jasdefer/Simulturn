@@ -98,7 +98,7 @@ public sealed class RandomPlayer : IArtificialPlayer
         // One pending research per upgrade and per hexagon, as the engine demands.
         var upgradesInResearch = playerState.UpgradesInResearch();
 
-        List<(Hexagon Hexagon, Upgrade Upgrade, short Cost)> candidates = [];
+        List<(Hexagon Hexagon, Upgrade Upgrade, int Cost)> candidates = [];
         foreach (Hexagon hexagon in armyHexagons)
         {
             if (playerState.Armies[hexagon].Dot <= 0 || playerState.Researches.ContainsKey(hexagon))
@@ -112,11 +112,11 @@ public sealed class RandomPlayer : IArtificialPlayer
                     continue;
                 }
                 byte currentLevel = playerState.UpgradeLevels.GetValueOrDefault(upgrade);
-                if (gameSettings.NextUpgradeLevel(upgrade, currentLevel) is not UpgradeLevel nextLevel)
+                if (gameSettings.NextUpgradeLevel(upgrade, currentLevel) is null)
                 {
                     continue;
                 }
-                short cost = nextLevel.Cost;
+                int cost = Costs.Research(gameSettings, playerState.UpgradeLevels, upgrade).Matter;
                 if (cost <= matter)
                 {
                     candidates.Add((hexagon, upgrade, cost));
@@ -153,7 +153,7 @@ public sealed class RandomPlayer : IArtificialPlayer
                 continue;
             }
             int budget = matter;
-            List<Building> affordable = _buildings.Where(x => gameSettings.CompoundCost[x] <= budget).ToList();
+            List<Building> affordable = _buildings.Where(x => Costs.Construction(gameSettings, x).Matter <= budget).ToList();
             if (affordable.Count == 0)
             {
                 continue;
@@ -161,7 +161,7 @@ public sealed class RandomPlayer : IArtificialPlayer
             Building building = affordable[_random.Next(affordable.Count)];
             constructions[hexagon] = Compound.FromBuilding(building, 1);
             constructionDots[hexagon] = constructionDots.GetValueOrDefault(hexagon) + 1;
-            matter -= gameSettings.CompoundCost[building];
+            matter -= Costs.Construction(gameSettings, building).Matter;
         }
         return constructions;
     }
@@ -190,26 +190,27 @@ public sealed class RandomPlayer : IArtificialPlayer
             int space = freeSpace;
             List<Unit> trainable = _units.Where(x =>
                 compound[GameSettings.TrainingBuilding(x)] - pendingTrainings[x] > 0 &&
-                gameSettings.ArmyCost[x] <= budget &&
-                gameSettings.RequiredSpace[x] <= space).ToList();
+                Costs.Training(gameSettings, x).Matter <= budget &&
+                Costs.Training(gameSettings, x).Space <= space).ToList();
             if (trainable.Count == 0)
             {
                 continue;
             }
             Unit unit = trainable[_random.Next(trainable.Count)];
             int maxCount = compound[GameSettings.TrainingBuilding(unit)] - pendingTrainings[unit];
-            if (gameSettings.ArmyCost[unit] > 0)
+            OrderCost price = Costs.Training(gameSettings, unit);
+            if (price.Matter > 0)
             {
-                maxCount = Math.Min(maxCount, matter / gameSettings.ArmyCost[unit]);
+                maxCount = Math.Min(maxCount, matter / price.Matter);
             }
-            if (gameSettings.RequiredSpace[unit] > 0)
+            if (price.Space > 0)
             {
-                maxCount = Math.Min(maxCount, freeSpace / gameSettings.RequiredSpace[unit]);
+                maxCount = Math.Min(maxCount, freeSpace / price.Space);
             }
             short count = (short)(1 + _random.Next(maxCount));
             trainings[hexagon] = Army.FromUnit(unit, count);
-            matter -= count * gameSettings.ArmyCost[unit];
-            freeSpace -= count * gameSettings.RequiredSpace[unit];
+            matter -= count * price.Matter;
+            freeSpace -= count * price.Space;
         }
         return trainings;
     }

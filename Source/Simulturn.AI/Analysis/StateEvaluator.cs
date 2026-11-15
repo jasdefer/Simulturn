@@ -1,3 +1,4 @@
+using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.State;
 
@@ -30,8 +31,8 @@ internal static class StateEvaluator
     {
         GameSettings gameSettings = gameState.GameSettings;
         PlayerState playerState = gameState.PlayerStates[playerId];
-        double armyValue = playerState.Armies.Values.Sum(x => (double)(x * gameSettings.ArmyCost));
-        double buildingValue = playerState.Compounds.Values.Sum(x => (double)(x * gameSettings.CompoundCost));
+        double armyValue = playerState.Armies.Values.Sum(x => (double)Costs.Training(gameSettings, x).Matter);
+        double buildingValue = playerState.Compounds.Values.Sum(x => (double)Costs.Construction(gameSettings, x).Matter);
 
         // Expected income: workers on own income hexagons with matter left, up to the hexagon cap.
         double incomePerTurn = 0;

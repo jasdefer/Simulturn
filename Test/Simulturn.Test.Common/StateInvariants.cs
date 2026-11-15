@@ -354,21 +354,20 @@ public static class StateInvariants
     }
 
     /// <summary>
-    /// The matter the commands cost according to the rules, mirroring <see cref="CommandValidator.Validate"/>.
+    /// The matter the commands cost according to the rules. Computed here on its own and not
+    /// through <see cref="Costs"/>, so the invariant does not check the engine against itself.
     /// </summary>
     public static int CostOf(GameState state, string playerId, IReadOnlyDictionary<Hexagon, Command> commands)
     {
         GameSettings settings = state.GameSettings;
         PlayerState player = state.PlayerStates[playerId];
         int cost = 0;
-        // Every requested upgrade pays the level after the completed ones. Researches never stack,
-        // so an upgrade requested twice is invalid and counted once, like in Validate.
-        HashSet<Upgrade> requestedUpgrades = [];
+        // Every requested upgrade pays the level after the completed ones.
         foreach (Command command in commands.Values)
         {
             cost += command.Training * settings.ArmyCost;
             cost += command.Construction * settings.CompoundCost;
-            if (command.Research is Upgrade upgrade && requestedUpgrades.Add(upgrade))
+            if (command.Research is Upgrade upgrade)
             {
                 int level = player.UpgradeLevels.GetValueOrDefault(upgrade);
                 ImmutableArray<UpgradeLevel> levels = settings.Upgrades[upgrade].Levels;

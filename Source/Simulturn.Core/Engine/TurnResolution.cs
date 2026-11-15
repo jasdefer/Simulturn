@@ -109,8 +109,9 @@ public sealed class TurnResolution
                 // Subtract 1 to account for the current turn, the turn increments after all game state logic is completed
                 ushort completionTurn = (ushort)(_state.Turn + _settings.TrainingDuration[unit] - 1);
                 player.Trainings.Merge(new TurnHexagon(completionTurn, hexagon), training);
-                player.UsedSpace += training * _settings.RequiredSpace;
-                player.Matter -= training * _settings.ArmyCost;
+                OrderCost cost = Costs.Training(_settings, training);
+                player.UsedSpace += cost.Space;
+                player.Matter -= cost.Matter;
             }
         }
         foreach ((TurnHexagon key, Army training) in player.Trainings.Where(x => x.Key.Turn == _state.Turn).ToList())
@@ -139,7 +140,7 @@ public sealed class TurnResolution
                 // Subtract 1 to account for the current turn, the turn increments after all game state logic is completed
                 ushort completionTurn = (ushort)(_state.Turn + _settings.ConstructionDuration[building] - 1);
                 player.Constructions.Merge(new TurnHexagon(completionTurn, hexagon), construction);
-                player.Matter -= construction * _settings.CompoundCost;
+                player.Matter -= Costs.Construction(_settings, construction).Matter;
             }
         }
         foreach ((TurnHexagon key, Compound construction) in player.Constructions.Where(x => x.Key.Turn == _state.Turn).ToList())
@@ -167,8 +168,8 @@ public sealed class TurnResolution
             UpgradeLevel level = _settings.NextUpgradeLevel(upgrade, completedLevels)
                 ?? throw new InvalidOperationException($"{upgrade} has no level after {completedLevels}; the research command was not validated.");
             // Subtract 1 to account for the current turn, the turn increments after all game state logic is completed
+            player.Matter -= Costs.Research(_settings, player.UpgradeLevels, upgrade).Matter;
             player.Researches.Add(hexagon, new Research(upgrade, (ushort)(_state.Turn + level.Duration - 1)));
-            player.Matter -= level.Cost;
         }
         foreach ((Hexagon hexagon, Research research) in player.Researches.Where(x => x.Value.CompletionTurn == _state.Turn).ToList())
         {
@@ -239,7 +240,7 @@ public sealed class TurnResolution
     private void ApplyLosses(PlayerStateBuilder player, Hexagon hexagon, Army loss)
     {
         player.Armies.Merge(hexagon, -loss);
-        player.UsedSpace -= loss * _settings.RequiredSpace;
+        player.UsedSpace -= Costs.Training(_settings, loss).Space;
         if (loss.Dot > 0)
         {
             CancelConstructions(player, hexagon, loss.Dot);
@@ -354,7 +355,7 @@ public sealed class TurnResolution
                     short canceledCount = (short)Math.Min(training[unit], destroyedCount);
                     destroyedCount -= canceledCount;
                     Army canceled = Army.FromUnit(unit, canceledCount);
-                    player.UsedSpace -= canceled * _settings.RequiredSpace;
+                    player.UsedSpace -= Costs.Training(_settings, canceled).Space;
                     player.Trainings.Merge(key, -canceled);
                     player.Report.CanceledTrainings.Merge(hexagon, canceled);
                 }
