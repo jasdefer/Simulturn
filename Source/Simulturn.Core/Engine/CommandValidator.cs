@@ -128,13 +128,18 @@ public sealed class CommandValidator
     }
 
     /// <summary>
-    /// Every building under construction, pending ones included, needs its own dot (worker).
+    /// Every building under construction, pending ones included, needs its own dot (worker),
+    /// and the hexagon must be buildable.
     /// </summary>
     private IEnumerable<CommandValidation> ValidateConstruction(Hexagon hexagon, Command command)
     {
         if (command.Construction.IsEmpty)
         {
             yield break;
+        }
+        if (!_settings.HexagonSettings.TryGetValue(hexagon, out var hexagonSettings) || !hexagonSettings.IsBuildable)
+        {
+            yield return new HexagonNotBuildable(_playerId, hexagon);
         }
         Compound constructions = _playerState.Constructions.On(hexagon) + command.Construction;
         short dots = _playerState.Armies.GetValueOrDefault(hexagon)[Unit.Dot];

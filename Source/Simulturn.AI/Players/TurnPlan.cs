@@ -166,7 +166,9 @@ internal sealed class TurnPlan
     public void Construct(Hexagon hexagon, Building building)
     {
         int cost = Costs.Construction(View.GameSettings, building).Matter;
-        if (Matter - _reservedMatter < cost || IdleWorkers(hexagon) <= 0)
+        if (!View.GameSettings.HexagonSettings[hexagon].IsBuildable ||
+            Matter - _reservedMatter < cost ||
+            IdleWorkers(hexagon) <= 0)
         {
             return;
         }

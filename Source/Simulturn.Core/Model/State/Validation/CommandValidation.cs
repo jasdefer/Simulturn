@@ -11,6 +11,7 @@ public union CommandValidation(
     InsufficientSpace,
     MissingBuildingForTraining,
     MissingDotsForConstruction,
+    HexagonNotBuildable,
     MissingArmyForMovement,
     MovementExceedsRange,
     MovementDestinationOffMap,
@@ -39,6 +40,11 @@ public sealed record InsufficientSpace(string PlayerId, int Required, int Availa
 public sealed record MissingBuildingForTraining(string PlayerId, Hexagon Hexagon, Unit Unit, short TrainedCount, short BuildingCount);
 
 public sealed record MissingDotsForConstruction(string PlayerId, Hexagon Hexagon, Compound Constructions, short AvailableDots);
+
+/// <summary>
+/// A construction is ordered on a hexagon whose <see cref="HexagonSettings.IsBuildable"/> is false.
+/// </summary>
+public sealed record HexagonNotBuildable(string PlayerId, Hexagon Hexagon);
 
 public sealed record MissingArmyForMovement(string PlayerId, Hexagon Hexagon, Unit Unit, short MovingUnits, short AvailableUnits);
 

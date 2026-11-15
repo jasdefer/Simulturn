@@ -16,6 +16,10 @@ public sealed record HexagonSettings
 
     public int Matter { get; init; } = 0;
     public Army MaxNumberOfUnitsGeneratingMatter { get; init; } = Army.Empty;
+    /// <summary>
+    /// Whether a player may order a construction on this hexagon. The start buildings of the map
+    /// do not depend on it.
+    /// </summary>
     public bool IsBuildable { get; init; } = true;
     /// <summary>
     /// The upgrades a player may research on this hexagon. How many levels an upgrade has is
