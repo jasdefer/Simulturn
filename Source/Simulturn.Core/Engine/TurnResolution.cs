@@ -56,6 +56,7 @@ public sealed class TurnResolution
     private void ResolveOrders(PlayerStateBuilder player, IReadOnlyDictionary<Hexagon, Command> commands)
     {
         CollectIncome(player, commands);
+        PayOrders(player, commands);
         ResolveTrainings(player, commands);
         ResolveConstructions(player, commands);
         ResolveResearches(player, commands);
@@ -82,7 +83,17 @@ public sealed class TurnResolution
     }
 
     /// <summary>
-    /// Pays and queues the new trainings, then completes the ones due this turn.
+    /// Pays all orders of the turn at once: the price the command validation checked, by the same call.
+    /// </summary>
+    private void PayOrders(PlayerStateBuilder player, IReadOnlyDictionary<Hexagon, Command> commands)
+    {
+        OrderCost cost = Costs.Of(_settings, player.UpgradeLevels, commands);
+        player.Matter -= cost.Matter;
+        player.UsedSpace += cost.Space;
+    }
+
+    /// <summary>
+    /// Queues the new trainings, then completes the ones due this turn.
     /// </summary>
     private void ResolveTrainings(PlayerStateBuilder player, IReadOnlyDictionary<Hexagon, Command> commands)
     {
@@ -98,9 +109,6 @@ public sealed class TurnResolution
                 // Subtract 1 to account for the current turn, the turn increments after all game state logic is completed
                 ushort completionTurn = (ushort)(_state.Turn + _settings.TrainingDuration[unit] - 1);
                 player.Trainings.Merge(new TurnHexagon(completionTurn, hexagon), training);
-                OrderCost cost = Costs.Training(_settings, training);
-                player.UsedSpace += cost.Space;
-                player.Matter -= cost.Matter;
             }
         }
         foreach ((TurnHexagon key, Army training) in player.Trainings.Where(x => x.Key.Turn == _state.Turn).ToList())
@@ -113,7 +121,7 @@ public sealed class TurnResolution
     }
 
     /// <summary>
-    /// Pays and queues the new constructions, then completes the ones due this turn.
+    /// Queues the new constructions, then completes the ones due this turn.
     /// </summary>
     private void ResolveConstructions(PlayerStateBuilder player, IReadOnlyDictionary<Hexagon, Command> commands)
     {
@@ -129,7 +137,6 @@ public sealed class TurnResolution
                 // Subtract 1 to account for the current turn, the turn increments after all game state logic is completed
                 ushort completionTurn = (ushort)(_state.Turn + _settings.ConstructionDuration[building] - 1);
                 player.Constructions.Merge(new TurnHexagon(completionTurn, hexagon), construction);
-                player.Matter -= Costs.Construction(_settings, construction).Matter;
             }
         }
         foreach ((TurnHexagon key, Compound construction) in player.Constructions.Where(x => x.Key.Turn == _state.Turn).ToList())
@@ -142,7 +149,7 @@ public sealed class TurnResolution
     }
 
     /// <summary>
-    /// Pays and queues the new researches, then completes the ones due this turn.
+    /// Queues the new researches, then completes the ones due this turn.
     /// Nothing stacks (one pending research per upgrade), so the next level is the one after the completed ones.
     /// </summary>
     private void ResolveResearches(PlayerStateBuilder player, IReadOnlyDictionary<Hexagon, Command> commands)
@@ -157,7 +164,6 @@ public sealed class TurnResolution
             UpgradeLevel level = _settings.NextUpgradeLevel(upgrade, completedLevels)
                 ?? throw new InvalidOperationException($"{upgrade} has no level after {completedLevels}; the research command was not validated.");
             // Subtract 1 to account for the current turn, the turn increments after all game state logic is completed
-            player.Matter -= Costs.Research(_settings, player.UpgradeLevels, upgrade).Matter;
             player.Researches.Add(hexagon, new Research(upgrade, (ushort)(_state.Turn + level.Duration - 1)));
         }
         foreach ((Hexagon hexagon, Research research) in player.Researches.Where(x => x.Value.CompletionTurn == _state.Turn).ToList())
