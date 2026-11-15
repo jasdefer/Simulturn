@@ -25,6 +25,7 @@ public sealed record HexagonObservation
 
     /// <summary>
     /// The total number of units of other players currently on the hexagon, keyed by player id.
+    /// A neutral army is counted under <see cref="Neutral.Id"/>.
     /// Only populated while the hexagon is fully visible. The unit composition remains hidden.
     /// </summary>
     public ImmutableDictionary<string, int> OpponentUnitCounts { get; init; } = ImmutableDictionary<string, int>.Empty;

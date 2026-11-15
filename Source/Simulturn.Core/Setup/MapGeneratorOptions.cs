@@ -101,6 +101,16 @@ public sealed record MapGeneratorOptions
 
     public ResearchLocation ResearchLocation { get; init; } = ResearchLocation.Center;
 
+    /// <summary>
+    /// The neutral army that guards the center, see <see cref="Neutral"/>. Empty by default: no guard.
+    /// </summary>
+    public Army CenterGuard { get; init; } = Army.Empty;
+
+    /// <summary>
+    /// The neutral army that guards every expansion. Empty by default: no guard.
+    /// </summary>
+    public Army ExpansionGuard { get; init; } = Army.Empty;
+
     public Army StartArmy { get; init; } = Maps.StartArmy;
 
     public Compound StartCompound { get; init; } = Maps.StartCompound;

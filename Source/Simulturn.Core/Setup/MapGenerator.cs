@@ -5,7 +5,7 @@ namespace Simulturn.Core.Setup;
 /// <summary>
 /// Generates a fair map from a few parameters. The map is a disc that looks the same from every
 /// seat: the start hexagons and the expansions of all players are rotations of each other around
-/// the center, so every player has the same matter at the same distances.
+/// the center, so every player has the same matter and the same guards at the same distances.
 /// </summary>
 public static class MapGenerator
 {
@@ -43,11 +43,12 @@ public static class MapGenerator
         {
             map[Hexagon.Origin] = Maps.Hexagon(centerMatter);
         }
+        map[Hexagon.Origin] = map[Hexagon.Origin].WithGuard(options.CenterGuard);
         foreach (Hexagon expansion in PickExpansions(options, map.Keys, starts))
         {
             for (int seat = 0; seat < playerCount; seat++)
             {
-                map[expansion.Rotate(seat * sixthsPerSeat)] = Maps.Hexagon(options.ExpansionMatter);
+                map[expansion.Rotate(seat * sixthsPerSeat)] = Maps.Hexagon(options.ExpansionMatter).WithGuard(options.ExpansionGuard);
             }
         }
         for (int seat = 0; seat < playerCount; seat++)

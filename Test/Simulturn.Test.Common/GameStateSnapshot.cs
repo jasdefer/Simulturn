@@ -19,6 +19,7 @@ public static class GameStateSnapshot
         {
             text.Append(CultureInfo.InvariantCulture, $"Matter {hexagon} {matter}\n");
         }
+        AppendPerHexagon(text, "Neutral", state.NeutralArmies);
         foreach ((string playerId, PlayerState player) in state.PlayerStates.OrderBy(x => x.Key, StringComparer.Ordinal))
         {
             text.Append(CultureInfo.InvariantCulture, $"Player {playerId} matter={player.Matter} used={player.UsedSpace} available={player.AvailableSpace}\n");

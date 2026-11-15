@@ -81,7 +81,8 @@ public sealed class StateMachinePlayer : IArtificialPlayer
                 .Where(x => x.PlayerInitialization is not null && x.PlayerInitialization.Value.StartingPlayerId != view.PlayerId)
                 .Sum(x => x.PlayerInitialization!.Value.InitialArmy.Total);
         }
-        int observed = view.Observations.Values.Sum(x => x.OpponentUnitCounts.Values.Sum());
+        // The guards are no part of the enemy army.
+        int observed = view.Observations.Values.Sum(x => x.OpponentUnitCounts.Where(y => y.Key != Neutral.Id).Sum(y => y.Value));
         if (observed > 0)
         {
             _estimatedEnemyUnits = observed;

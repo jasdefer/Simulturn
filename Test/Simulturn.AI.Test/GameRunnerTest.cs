@@ -143,6 +143,34 @@ public sealed class GameRunnerTest
     }
 
     [Test]
+    public void GameOnAMapWithGuards_RunsWithEveryKindOfPlayer()
+    {
+        var gameSettings = DefaultSettings.Create(MapGeneratorOptions.Expansions with
+        {
+            CenterGuard = new Army() { Triangle = 2, Circle = 2, Square = 2 },
+            ExpansionGuard = new Army() { Dot = 3 }
+        });
+        (IArtificialPlayer, IArtificialPlayer)[] pairings =
+        [
+            (new SimulatorPlayer(), new CommanderPlayer()),
+            (new TacticianPlayer(), new StateMachinePlayer()),
+            (new RandomPlayer(1), new IdlePlayer())
+        ];
+
+        foreach ((IArtificialPlayer player1, IArtificialPlayer player2) in pairings)
+        {
+            var players = new Dictionary<string, IArtificialPlayer>() { { "Player01", player1 }, { "Player02", player2 } };
+            List<string> violations = [];
+
+            var result = GameRunner.Run(gameSettings, players, maxTurns: 80,
+                onTurnCompleted: turn => violations.AddRange(StateInvariants.CheckState(turn.State)));
+
+            violations.ShouldBeEmpty($"{player1.Name} against {player2.Name}.");
+            result.Turns.ShouldBeGreaterThan((ushort)0);
+        }
+    }
+
+    [Test]
     public void Run_ThrowsWhenPlayerReturnsInvalidCommands()
     {
         var gameSettings = CreateSettings(new Army() { Dot = 5 }, new Army() { Dot = 5 });

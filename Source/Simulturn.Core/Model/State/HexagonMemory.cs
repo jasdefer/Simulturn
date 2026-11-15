@@ -45,7 +45,8 @@ public sealed record UnitSighting
     public required ushort Turn { get; init; }
 
     /// <summary>
-    /// The total number of units of other players, keyed by player id.
+    /// The total number of units of other players, keyed by player id. A neutral army is
+    /// counted under <see cref="Neutral.Id"/>.
     /// Empty if the hexagon was seen without opponent units.
     /// </summary>
     public required ImmutableDictionary<string, int> OpponentUnitCounts { get; init; }

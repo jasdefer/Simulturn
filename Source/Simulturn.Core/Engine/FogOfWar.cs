@@ -200,6 +200,10 @@ public static class FogOfWar
                         x.Value.Armies.TryGetValue(hexagon, out var army) &&
                         !army.IsEmpty)
                     .ToImmutableDictionary(x => x.Key, x => x.Value.Armies[hexagon].Total);
+                if (gameState.NeutralArmies.TryGetValue(hexagon, out var neutralArmy))
+                {
+                    opponentUnitCounts = opponentUnitCounts.Add(Neutral.Id, neutralArmy.Total);
+                }
             }
             observations[hexagon] = new HexagonObservation()
             {

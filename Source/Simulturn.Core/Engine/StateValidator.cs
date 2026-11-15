@@ -16,6 +16,7 @@ public static class StateValidator
     public static IEnumerable<StateValidation> Validate(GameState state)
     {
         return ValidateRemainingMatter(state)
+            .Concat(ValidateNeutralArmies(state))
             .Concat(state.PlayerStates.SelectMany(x => ValidatePlayer(state, x.Key, x.Value)));
     }
 
@@ -30,6 +31,24 @@ public static class StateValidator
             if (!state.GameSettings.HexagonSettings.ContainsKey(hexagon))
             {
                 yield return new HexagonMissingInSettings(hexagon);
+            }
+        }
+    }
+
+    private static IEnumerable<StateValidation> ValidateNeutralArmies(GameState state)
+    {
+        foreach ((Hexagon hexagon, Army army) in state.NeutralArmies)
+        {
+            if (!state.GameSettings.HexagonSettings.ContainsKey(hexagon))
+            {
+                yield return new HexagonMissingInSettings(hexagon);
+            }
+            foreach (var unit in EnumValues.Units)
+            {
+                if (army[unit] < 0)
+                {
+                    yield return new NegativeUnitCount(Neutral.Id, hexagon, unit, army[unit]);
+                }
             }
         }
     }

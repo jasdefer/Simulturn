@@ -201,6 +201,6 @@ public sealed class PendingQueueTest
     {
         var state = new GameState(_gameSettings).PlayEmptyTurn();
         var playerStates = state.PlayerStates.SetItem("Player01", change(state.PlayerStates["Player01"]));
-        return GameState.FromParts(state.GameSettings, state.Turn, playerStates, state.RemainingMatter);
+        return GameState.FromParts(state.GameSettings, state.Turn, playerStates, state.RemainingMatter, state.NeutralArmies);
     }
 }

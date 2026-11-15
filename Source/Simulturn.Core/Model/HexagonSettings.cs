@@ -26,6 +26,11 @@ public sealed record HexagonSettings
     /// defined once in <see cref="GameSettings.Upgrades"/>, not per hexagon.
     /// </summary>
     public ImmutableHashSet<Upgrade> ResearchableUpgrades { get; init; } = [];
+    /// <summary>
+    /// The neutral army that guards this hexagon from the start of the game, see <see cref="Neutral"/>.
+    /// The settings are part of every player view, so every player knows where the guards
+    /// start and what they consist of. A start hexagon holds no neutral army.
+    /// </summary>
     public Army NeutralArmy { get; init; } = Army.Empty;
     public (string StartingPlayerId, Army InitialArmy, Compound InitialCompound)? PlayerInitialization { get; init; } = null;
 }

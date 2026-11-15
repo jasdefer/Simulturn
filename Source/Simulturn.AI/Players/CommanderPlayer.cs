@@ -141,7 +141,7 @@ public class CommanderPlayer : IArtificialPlayer
     {
         var revealed = view.Report.Fights.Values
             .SelectMany(x => x.Armies)
-            .Where(x => x.Key != view.PlayerId)
+            .Where(x => x.Key != view.PlayerId && x.Key != Neutral.Id)
             .Select(x => x.Value)
             .ToList();
         if (revealed.Count > 0)
@@ -155,7 +155,8 @@ public class CommanderPlayer : IArtificialPlayer
                 .Sum(x => x.PlayerInitialization!.Value.InitialArmy.Total);
             _lastEnemyObservationTurn = 0;
         }
-        int observed = view.Observations.Values.Sum(x => x.OpponentUnitCounts.Values.Sum());
+        // The guards are no part of the enemy army.
+        int observed = view.Observations.Values.Sum(x => x.OpponentUnitCounts.Where(y => y.Key != Neutral.Id).Sum(y => y.Value));
         if (observed > 0)
         {
             _lastObservedEnemyUnits = observed;

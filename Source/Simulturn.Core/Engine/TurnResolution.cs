@@ -17,6 +17,7 @@ public sealed class TurnResolution
     private readonly GameSettings _settings;
     private readonly Dictionary<string, PlayerStateBuilder> _players;
     private readonly ImmutableDictionary<Hexagon, int>.Builder _remainingMatter;
+    private readonly ImmutableDictionary<Hexagon, Army>.Builder _neutralArmies;
     private readonly HashSet<Hexagon> _potentialFightHexagons = [];
     private readonly ImmutableDictionary<Hexagon, FightReport>.Builder _fights = ImmutableDictionary.CreateBuilder<Hexagon, FightReport>();
     private readonly ImmutableArray<DestructionReport>.Builder _destructions = ImmutableArray.CreateBuilder<DestructionReport>();
@@ -29,6 +30,7 @@ public sealed class TurnResolution
         _settings = state.GameSettings;
         _players = state.PlayerStates.ToDictionary(x => x.Key, x => PlayerStateBuilder.FromPlayerState(x.Value));
         _remainingMatter = state.RemainingMatter.ToBuilder();
+        _neutralArmies = state.NeutralArmies.ToBuilder();
     }
 
     /// <summary>
@@ -198,6 +200,11 @@ public sealed class TurnResolution
             _fights.Add(hexagon, fight);
             foreach ((string playerId, Army loss) in fight.Losses)
             {
+                if (playerId == Neutral.Id)
+                {
+                    _neutralArmies.Merge(hexagon, -loss);
+                    continue;
+                }
                 ApplyLosses(_players[playerId], hexagon, loss);
             }
         }
@@ -205,7 +212,8 @@ public sealed class TurnResolution
 
     /// <summary>
     /// The upgrade levels come from the state at the start of the turn: a research completed
-    /// this turn counts from the next turn on.
+    /// this turn counts from the next turn on. A neutral army on the hexagon fights like the
+    /// army of a player without upgrades.
     /// </summary>
     private Dictionary<string, Combatant> GetCombatantsOn(Hexagon hexagon)
     {
@@ -220,6 +228,10 @@ public sealed class TurnResolution
                     UpgradeLevels = _state.PlayerStates[playerId].UpgradeLevels
                 });
             }
+        }
+        if (_neutralArmies.TryGetValue(hexagon, out var neutralArmy))
+        {
+            combatants.Add(Neutral.Id, new Combatant() { Army = neutralArmy });
         }
         return combatants;
     }
@@ -381,7 +393,7 @@ public sealed class TurnResolution
         ushort nextTurn = (ushort)(1 + _state.Turn);
         var remainingMatter = _remainingMatter.ToImmutableDictionary();
         var playerStates = _players.ToImmutableDictionary(x => x.Key, x => x.Value.ToPlayerState());
-        return GameState.FromParts(_settings, nextTurn, playerStates, remainingMatter);
+        return GameState.FromParts(_settings, nextTurn, playerStates, remainingMatter, _neutralArmies.ToImmutable());
     }
 
     private TurnReport BuildReport()

@@ -28,6 +28,18 @@ public static class StateInvariants
             violations.Add($"IsValid: {validation}");
         }
 
+        foreach ((Hexagon hexagon, Army army) in state.NeutralArmies)
+        {
+            if (army.IsEmpty)
+            {
+                violations.Add($"Neutral: the state holds an empty neutral army on {hexagon}.");
+            }
+            if (state.PlayerStates.Any(x => !x.Value.Compounds.GetValueOrDefault(hexagon).IsEmpty))
+            {
+                violations.Add($"Neutral: a neutral army stands on the buildings of a player on {hexagon}.");
+            }
+        }
+
         foreach ((string playerId, PlayerState player) in state.PlayerStates)
         {
             if (player.Matter < 0)
@@ -82,6 +94,10 @@ public static class StateInvariants
                 var expectedCounts = opponents
                     .Where(x => x.Value.Armies.TryGetValue(hexagon, out var army) && !army.IsEmpty)
                     .ToDictionary(x => x.Key, x => x.Value.Armies[hexagon].Total);
+                if (state.NeutralArmies.TryGetValue(hexagon, out Army neutralArmy))
+                {
+                    expectedCounts.Add(Neutral.Id, neutralArmy.Total);
+                }
                 if (!DictionariesEqual(expectedCounts, observation.OpponentUnitCounts))
                 {
                     violations.Add($"{playerId}: the view reports wrong opponent unit counts on visible {hexagon}.");
@@ -191,7 +207,11 @@ public static class StateInvariants
                 x => new Combatant() { Army = x.Value, UpgradeLevels = fight.UpgradeLevels[x.Key] }));
             foreach ((string playerId, Army loss) in fight.Losses)
             {
-                var acting = UpgradeRules.ActingOn(settings, before.PlayerStates[playerId].UpgradeLevels, fight.Armies[playerId]);
+                // A neutral army has no upgrades.
+                IReadOnlyDictionary<Upgrade, byte> upgradeLevels = playerId == Neutral.Id
+                    ? ImmutableDictionary<Upgrade, byte>.Empty
+                    : before.PlayerStates[playerId].UpgradeLevels;
+                var acting = UpgradeRules.ActingOn(settings, upgradeLevels, fight.Armies[playerId]);
                 if (!DictionariesEqual(acting, fight.UpgradeLevels[playerId]))
                 {
                     violations.Add($"Report: the fight on {hexagon} shows the upgrades [{string.Join(", ", fight.UpgradeLevels[playerId].OrderBy(x => x.Key))}] of {playerId}, [{string.Join(", ", acting.OrderBy(x => x.Key))}] act on the army {fight.Armies[playerId]}.");
@@ -204,6 +224,19 @@ public static class StateInvariants
                 {
                     violations.Add($"Report: {playerId} lost {loss} in the fight on {hexagon}, more than the army {fight.Armies[playerId]}.");
                 }
+            }
+        }
+
+        // A neutral army never moves and never grows: it only shrinks by its losses in a fight.
+        foreach (Hexagon hexagon in before.Hexagons)
+        {
+            Army neutralLoss = report.Fights.TryGetValue(hexagon, out FightReport? fight)
+                ? fight.Losses.GetValueOrDefault(Neutral.Id)
+                : Army.Empty;
+            Army expectedNeutral = before.NeutralArmies.GetValueOrDefault(hexagon) - neutralLoss;
+            if (after.NeutralArmies.GetValueOrDefault(hexagon) != expectedNeutral)
+            {
+                violations.Add($"Report: the neutral army on {hexagon} is {after.NeutralArmies.GetValueOrDefault(hexagon)}, the report explains {expectedNeutral}.");
             }
         }
 
