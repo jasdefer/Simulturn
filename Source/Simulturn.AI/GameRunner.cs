@@ -3,6 +3,8 @@ using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.Report;
 using Simulturn.Core.Model.State;
+using Simulturn.Core.Model.State.Validation;
+using System.Collections.Immutable;
 
 namespace Simulturn.AI;
 
@@ -27,14 +29,14 @@ public static class GameRunner
         ushort maxTurns = DefaultMaxTurns,
         Action<TurnResult>? onTurnCompleted = null)
     {
-        GameState gameState = new(gameSettings);
+        TurnResult turnResult = Game.Start(gameSettings);
+        GameState gameState = turnResult.State;
         if (!gameState.PlayerIds.SetEquals(players.Keys))
         {
             throw new ArgumentException($"The players do not match the game settings. " +
                 $"Expected: {string.Join(", ", gameState.PlayerIds)}. Provided: {string.Join(", ", players.Keys)}.", nameof(players));
         }
 
-        TurnResult turnResult = new(gameState, TurnReport.Empty);
         GameStanding standing = Standing.Of(gameState);
         while (!standing.IsGameOver && gameState.Turn < maxTurns)
         {
@@ -42,15 +44,17 @@ public static class GameRunner
             foreach (string playerId in gameState.PlayerIds.Except(standing.DefeatedPlayerIds))
             {
                 PlayerGameState view = FogOfWar.GetPlayerGameState(turnResult, playerId);
-                IReadOnlyDictionary<Hexagon, Command> playerCommands = players[playerId].GetCommands(view);
-                var validations = CommandValidator.Validate(gameState, playerId, playerCommands).ToList();
-                if (validations.Count > 0)
-                {
-                    throw new InvalidCommandsException(playerId, validations);
-                }
-                commands[playerId] = playerCommands;
+                commands[playerId] = players[playerId].GetCommands(view);
             }
-            turnResult = TurnResolution.Resolve(gameState, commands);
+            switch (Game.PlayTurn(gameState, commands))
+            {
+                case RefusedCommands refused:
+                    (string playerId, ImmutableArray<CommandValidation> validations) = refused.Validations.OrderBy(x => x.Key, StringComparer.Ordinal).First();
+                    throw new InvalidCommandsException(playerId, validations);
+                case TurnResult resolved:
+                    turnResult = resolved;
+                    break;
+            }
             gameState = turnResult.State;
             standing = Standing.Of(gameState);
             onTurnCompleted?.Invoke(turnResult);
