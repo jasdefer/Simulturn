@@ -104,7 +104,7 @@ internal sealed class TurnPlan
         WorkerCapacity = IncomeHexagons.Sum(hexagon =>
         {
             int remaining = memories.GetValueOrDefault(hexagon)?.Static.RemainingMatter ?? gameSettings.HexagonSettings[hexagon].Matter;
-            return remaining > 0 ? (int)gameSettings.HexagonSettings[hexagon].MaxNumberOfUnitsGeneratingMatter[analysis.Worker] : 0;
+            return remaining > 0 ? (int)Harvest.Capacity(gameSettings, hexagon)[analysis.Worker] : 0;
         });
         TargetWorkers = Math.Min(WorkerCapacity, options.MaxWorkers);
 

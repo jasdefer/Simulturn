@@ -61,34 +61,21 @@ public sealed class TurnResolution
     }
 
     /// <summary>
-    /// Dots that start a construction this turn do not harvest.
+    /// Every army harvests on its hexagon by the rule of <see cref="Harvest"/>.
     /// </summary>
     private void CollectIncome(PlayerStateBuilder player, IReadOnlyDictionary<Hexagon, Command> commands)
     {
         foreach ((Hexagon hexagon, Army army) in player.Armies)
         {
-            if (!player.Compounds.TryGetValue(hexagon, out var compound) || compound.Plane == 0)
+            Compound startedConstructions = commands.TryGetValue(hexagon, out Command? command) ? command.Construction : Compound.Empty;
+            IncomeReport income = Harvest.Of(_settings, hexagon, army, player.Compounds.GetValueOrDefault(hexagon), startedConstructions, _remainingMatter[hexagon]);
+            if (income.Matter <= 0)
             {
                 continue;
             }
-            int startedConstructions = commands.TryGetValue(hexagon, out Command? command)
-                ? EnumValues.Buildings.Sum(building => Math.Max(0, (int)command.Construction[building]))
-                : 0;
-
-            var idleArmy = army with
-            {
-                Dot = (short)Math.Max(0, army.Dot - startedConstructions)
-            };
-            idleArmy = Army.Min(idleArmy, _settings.HexagonSettings[hexagon].MaxNumberOfUnitsGeneratingMatter);
-            int hexagonIncome = _settings.Income * idleArmy;
-            hexagonIncome = Math.Min(hexagonIncome, _remainingMatter[hexagon]);
-            if (hexagonIncome <= 0)
-            {
-                continue;
-            }
-            _remainingMatter[hexagon] -= hexagonIncome;
-            player.Matter += hexagonIncome;
-            player.Report.Incomes.Add(hexagon, new IncomeReport(idleArmy, hexagonIncome));
+            _remainingMatter[hexagon] -= income.Matter;
+            player.Matter += income.Matter;
+            player.Report.Incomes.Add(hexagon, income);
         }
     }
 

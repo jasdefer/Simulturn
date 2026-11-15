@@ -315,7 +315,7 @@ public sealed class StateMachinePlayer : IArtificialPlayer
         StaticSighting? sighting = turn.Memories.GetValueOrDefault(hexagon)?.Static;
         int expectedMatter = sighting?.RemainingMatter ?? gameSettings.HexagonSettings[hexagon].Matter;
         return gameSettings.HexagonSettings[hexagon].IsBuildable &&
-            gameSettings.HexagonSettings[hexagon].MaxNumberOfUnitsGeneratingMatter[_analysis!.Worker] > 0 &&
+            Harvest.Capacity(gameSettings, hexagon)[_analysis!.Worker] > 0 &&
             expectedMatter >= _options.MinExpansionMatter &&
             turn.View.PlayerState.Compounds.GetValueOrDefault(hexagon).IsEmpty &&
             (sighting is null || sighting.OpponentCompounds.All(x => x.Value.IsEmpty));

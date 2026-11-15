@@ -34,17 +34,12 @@ internal static class StateEvaluator
         double armyValue = playerState.Armies.Values.Sum(x => (double)Costs.Training(gameSettings, x).Matter);
         double buildingValue = playerState.Compounds.Values.Sum(x => (double)Costs.Construction(gameSettings, x).Matter);
 
-        // Expected income: workers on own income hexagons with matter left, up to the hexagon cap.
+        // Expected income: what the armies harvest in a turn without new constructions.
         double incomePerTurn = 0;
-        foreach ((Hexagon hexagon, Compound compound) in playerState.Compounds)
+        foreach ((Hexagon hexagon, Army army) in playerState.Armies)
         {
-            if (compound.Plane <= 0 || gameState.RemainingMatter.GetValueOrDefault(hexagon) <= 0)
-            {
-                continue;
-            }
-            int workers = playerState.Armies.GetValueOrDefault(hexagon).Dot;
-            int cap = gameSettings.HexagonSettings[hexagon].MaxNumberOfUnitsGeneratingMatter.Dot;
-            incomePerTurn += Math.Min(workers, cap) * gameSettings.Income.Dot;
+            Compound compound = playerState.Compounds.GetValueOrDefault(hexagon);
+            incomePerTurn += Harvest.Of(gameSettings, hexagon, army, compound, Compound.Empty, gameState.RemainingMatter.GetValueOrDefault(hexagon)).Matter;
         }
 
         double value = playerState.Matter + armyValue + buildingValue + IncomeHorizon * incomePerTurn;
