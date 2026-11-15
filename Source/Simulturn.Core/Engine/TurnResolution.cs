@@ -21,6 +21,8 @@ public sealed class TurnResolution
     private readonly ImmutableDictionary<Hexagon, FightReport>.Builder _fights = ImmutableDictionary.CreateBuilder<Hexagon, FightReport>();
     private readonly ImmutableArray<DestructionReport>.Builder _destructions = ImmutableArray.CreateBuilder<DestructionReport>();
 
+    private readonly ImmutableHashSet<string>.Builder _defeats = ImmutableHashSet.CreateBuilder<string>();
+
     private TurnResolution(GameState state)
     {
         _state = state;
@@ -45,6 +47,7 @@ public sealed class TurnResolution
         resolution.ResolveFights();
         resolution.DestroyBuildings();
         resolution.CancelResearchesWithoutDot();
+        resolution.DefeatPlayers();
         return new TurnResult(resolution.BuildNextState(), resolution.BuildReport());
     }
 
@@ -378,6 +381,30 @@ public sealed class TurnResolution
         }
     }
 
+    /// <summary>
+    /// A player without a building and without a pending construction is defeated, see <see cref="Standing"/>.
+    /// The pending researches end, the matter is lost. The armies stay where they are.
+    /// </summary>
+    private void DefeatPlayers()
+    {
+        foreach ((string playerId, PlayerStateBuilder player) in _players)
+        {
+            if (!Standing.IsDefeated(player.Compounds, player.Constructions))
+            {
+                continue;
+            }
+            foreach ((Hexagon hexagon, Research research) in player.Researches.ToList())
+            {
+                player.Researches.Remove(hexagon);
+                player.Report.CanceledResearches.Add(hexagon, research.Upgrade);
+            }
+            if (!Standing.IsDefeated(_state.PlayerStates[playerId]))
+            {
+                _defeats.Add(playerId);
+            }
+        }
+    }
+
     private GameState BuildNextState()
     {
         if (_state.Turn == ushort.MaxValue)
@@ -398,7 +425,8 @@ public sealed class TurnResolution
                 x => x.Key,
                 x => x.Value.Report.ToReport(_state.PlayerStates[x.Key].Matter, x.Value.Matter)),
             Fights = _fights.ToImmutable(),
-            Destructions = _destructions.ToImmutable()
+            Destructions = _destructions.ToImmutable(),
+            Defeats = _defeats.ToImmutable()
         };
     }
 }

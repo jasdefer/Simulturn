@@ -101,14 +101,19 @@ public sealed class SimulatorPlayer : CommanderPlayer
                 : enemyModel();
         }
         TurnResult turnResult = new(believed, TurnReport.Empty);
-        for (int i = 0; i < _simulatorOptions.SimulationHorizon && !turnResult.State.IsGameOver; i++)
+        GameStanding standing = Standing.Of(believed);
+        for (int i = 0; i < _simulatorOptions.SimulationHorizon && !standing.IsGameOver; i++)
         {
             Dictionary<string, IReadOnlyDictionary<Hexagon, Command>> commands = [];
             foreach ((string id, IArtificialPlayer policy) in policies)
             {
-                commands[id] = policy.GetCommands(FogOfWar.GetPlayerGameState(turnResult, id));
+                if (!standing.DefeatedPlayerIds.Contains(id))
+                {
+                    commands[id] = policy.GetCommands(FogOfWar.GetPlayerGameState(turnResult, id));
+                }
             }
             turnResult = TurnResolution.Resolve(turnResult.State, commands);
+            standing = Standing.Of(turnResult.State);
         }
         return StateEvaluator.Evaluate(turnResult.State, playerId);
     }

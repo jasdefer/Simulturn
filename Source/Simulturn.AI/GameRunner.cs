@@ -35,10 +35,11 @@ public static class GameRunner
         }
 
         TurnResult turnResult = new(gameState, TurnReport.Empty);
-        while (!gameState.IsGameOver && gameState.Turn < maxTurns)
+        GameStanding standing = Standing.Of(gameState);
+        while (!standing.IsGameOver && gameState.Turn < maxTurns)
         {
             Dictionary<string, IReadOnlyDictionary<Hexagon, Command>> commands = [];
-            foreach (string playerId in gameState.PlayerIds)
+            foreach (string playerId in gameState.PlayerIds.Except(standing.DefeatedPlayerIds))
             {
                 PlayerGameState view = FogOfWar.GetPlayerGameState(turnResult, playerId);
                 IReadOnlyDictionary<Hexagon, Command> playerCommands = players[playerId].GetCommands(view);
@@ -51,37 +52,19 @@ public static class GameRunner
             }
             turnResult = TurnResolution.Resolve(gameState, commands);
             gameState = turnResult.State;
+            standing = Standing.Of(gameState);
             onTurnCompleted?.Invoke(turnResult);
         }
 
-        return ToResult(gameState);
-    }
-
-    private static GameResult ToResult(GameState gameState)
-    {
-        List<string> playersWithCompounds = gameState.PlayerStates
-            .Where(x => x.Value.Compounds.Any(compound => !compound.Value.IsEmpty))
-            .Select(x => x.Key)
-            .ToList();
-        GameEndReason endReason;
-        string? winnerId = null;
-        if (!gameState.IsGameOver)
-        {
-            endReason = GameEndReason.TurnLimit;
-        }
-        else if (playersWithCompounds.Count == 1)
-        {
-            endReason = GameEndReason.Victory;
-            winnerId = playersWithCompounds[0];
-        }
-        else
-        {
-            endReason = GameEndReason.MutualDestruction;
-        }
         return new GameResult()
         {
-            EndReason = endReason,
-            WinnerId = winnerId,
+            EndReason = standing.Outcome switch
+            {
+                GameRunning => GameEndReason.TurnLimit,
+                Victory => GameEndReason.Victory,
+                MutualDefeat => GameEndReason.MutualDestruction
+            },
+            WinnerId = standing.Outcome.Value is Victory victory ? victory.WinnerId : null,
             Turns = gameState.Turn,
             FinalState = gameState
         };

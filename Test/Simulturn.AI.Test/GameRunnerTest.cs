@@ -1,4 +1,5 @@
 using Simulturn.AI.Players;
+using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.Report;
@@ -58,7 +59,7 @@ public sealed class GameRunnerTest
         result.WinnerId.ShouldBeNull();
         result.Turns.ShouldBe((ushort)10);
         completedTurns.ShouldBe(10);
-        result.FinalState.IsGameOver.ShouldBeFalse();
+        Standing.Of(result.FinalState).IsGameOver.ShouldBeFalse();
     }
 
     [Test]

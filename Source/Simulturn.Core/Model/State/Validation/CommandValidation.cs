@@ -6,6 +6,7 @@
 /// </summary>
 public union CommandValidation(
     InvalidPlayerId,
+    PlayerDefeated,
     InsufficientMatter,
     InsufficientSpace,
     MissingBuildingForTraining,
@@ -25,6 +26,11 @@ public union CommandValidation(
 }
 
 public sealed record InvalidPlayerId(string PlayerId);
+
+/// <summary>
+/// The player is defeated (<see cref="Standing.IsDefeated(PlayerState)"/>) and takes no more orders.
+/// </summary>
+public sealed record PlayerDefeated(string PlayerId);
 
 public sealed record InsufficientMatter(string PlayerId, int Required, int Available);
 

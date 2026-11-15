@@ -59,11 +59,27 @@ public sealed class CommandValidator
         return validator.ValidateCommands();
     }
 
+    /// <summary>
+    /// A defeated player takes no more orders. Nothing else is reported then: every other rule
+    /// would only repeat that the player has nothing left to order with.
+    /// </summary>
     private IEnumerable<CommandValidation> ValidateCommands()
     {
+        if (Standing.IsDefeated(_playerState))
+        {
+            return _commands.Values.Any(IsOrder) ? [new PlayerDefeated(_playerId)] : [];
+        }
         return ValidateSpace()
             .Concat(_commands.SelectMany(x => ValidateCommand(x.Key, x.Value)))
             .Concat(ValidateMatter());
+    }
+
+    private static bool IsOrder(Command command)
+    {
+        return !command.Training.IsEmpty ||
+            !command.Construction.IsEmpty ||
+            command.Research is not null ||
+            command.MovementCommands.Any(x => !x.Army.IsEmpty);
     }
 
     private IEnumerable<CommandValidation> ValidateCommand(Hexagon hexagon, Command command)

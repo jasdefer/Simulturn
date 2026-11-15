@@ -60,7 +60,7 @@ public sealed class EngineInvariantsTest
         Action<GameState, Dictionary<string, IReadOnlyDictionary<Hexagon, Command>>, TurnResult> onTurnResolved)
     {
         TurnResult turnResult = new(new GameState(gameSettings), TurnReport.Empty);
-        while (!turnResult.State.IsGameOver && turnResult.State.Turn < MaxTurns)
+        while (!Standing.Of(turnResult.State).IsGameOver && turnResult.State.Turn < MaxTurns)
         {
             GameState state = turnResult.State;
             Dictionary<string, IReadOnlyDictionary<Hexagon, Command>> commands = [];

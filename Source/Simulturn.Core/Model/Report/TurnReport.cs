@@ -24,4 +24,9 @@ public sealed record TurnReport
     /// The destroyed buildings of the turn, one entry per hexagon, attacker and owner.
     /// </summary>
     public ImmutableArray<DestructionReport> Destructions { get; init; } = [];
+
+    /// <summary>
+    /// The players that were defeated in this turn, see <see cref="Engine.Standing"/>.
+    /// </summary>
+    public ImmutableHashSet<string> Defeats { get; init; } = [];
 }

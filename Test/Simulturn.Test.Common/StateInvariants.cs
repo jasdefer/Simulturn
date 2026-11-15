@@ -48,6 +48,11 @@ public static class StateInvariants
                 violations.Add($"{playerId}: available space is {player.AvailableSpace}, but the compounds provide {providedSpace}.");
             }
 
+            if (Standing.IsDefeated(player) && (!player.Trainings.IsEmpty || !player.Researches.IsEmpty))
+            {
+                violations.Add($"{playerId}: is defeated, but has {player.Trainings.Count} pending trainings and {player.Researches.Count} pending researches.");
+            }
+
             CheckPlayerView(state, playerId, violations);
         }
 
@@ -200,6 +205,13 @@ public static class StateInvariants
                     violations.Add($"Report: {playerId} lost {loss} in the fight on {hexagon}, more than the army {fight.Armies[playerId]}.");
                 }
             }
+        }
+
+        // A defeat is reported in the turn it happens, and only then.
+        var defeated = Standing.Of(after).DefeatedPlayerIds.Except(Standing.Of(before).DefeatedPlayerIds);
+        if (!defeated.SetEquals(report.Defeats))
+        {
+            violations.Add($"Report: [{string.Join(", ", defeated.Order())}] were defeated in this turn, reported are [{string.Join(", ", report.Defeats.Order())}].");
         }
 
         foreach (Hexagon hexagon in before.Hexagons)

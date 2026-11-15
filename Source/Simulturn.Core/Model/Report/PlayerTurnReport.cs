@@ -23,4 +23,9 @@ public sealed record PlayerTurnReport
     /// The destroyed buildings the player lost or destroyed.
     /// </summary>
     public ImmutableArray<DestructionReport> Destructions { get; init; } = [];
+
+    /// <summary>
+    /// The players that were defeated in this turn. Every player gets to know every defeat.
+    /// </summary>
+    public ImmutableHashSet<string> Defeats { get; init; } = [];
 }

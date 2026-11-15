@@ -53,7 +53,8 @@ public sealed record PlayerActivityReport
     public ImmutableDictionary<Hexagon, Army> CanceledTrainings { get; init; } = ImmutableDictionary<Hexagon, Army>.Empty;
 
     /// <summary>
-    /// The pending researches that stopped because no dot was left on their hexagon. The matter is lost.
+    /// The pending researches that stopped because no dot was left on their hexagon or because
+    /// the player was defeated. The matter is lost.
     /// </summary>
     public ImmutableDictionary<Hexagon, Upgrade> CanceledResearches { get; init; } = ImmutableDictionary<Hexagon, Upgrade>.Empty;
 }

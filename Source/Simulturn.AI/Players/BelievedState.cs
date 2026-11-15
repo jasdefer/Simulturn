@@ -33,6 +33,18 @@ internal static class BelievedState
                     compounds[hexagon] = compound;
                 }
             }
+            if (compounds.Count == 0 && !view.Standing.DefeatedPlayerIds.Contains(opponentId))
+            {
+                // The standing is known to everyone: an opponent who is not defeated still has a
+                // building or a construction somewhere. Without a sighting the start buildings are the guess.
+                foreach ((Hexagon hexagon, HexagonSettings settings) in gameSettings.HexagonSettings)
+                {
+                    if (settings.PlayerInitialization?.StartingPlayerId == opponentId)
+                    {
+                        compounds[hexagon] = settings.PlayerInitialization.Value.InitialCompound;
+                    }
+                }
+            }
 
             // Place currently visible stacks where they are seen and the unseen remainder
             // at the opponent's home (their biggest known base or their starting hexagon).

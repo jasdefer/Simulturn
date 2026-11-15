@@ -151,7 +151,8 @@ public static class FogOfWar
 
     /// <summary>
     /// The part of the report a single player is allowed to know: the own activity, the fights
-    /// the player took part in and the destroyed buildings the player lost or destroyed.
+    /// the player took part in, the destroyed buildings the player lost or destroyed and the
+    /// defeats of all players.
     /// A fight is handed over complete, with the armies and the losses of every participant.
     /// </summary>
     public static PlayerTurnReport GetPlayerTurnReport(TurnReport report, string playerId)
@@ -164,7 +165,8 @@ public static class FogOfWar
                 : report.Fights.Where(x => x.Value.Armies.ContainsKey(playerId)).ToImmutableDictionary(),
             Destructions = report.Destructions.IsEmpty
                 ? report.Destructions
-                : [.. report.Destructions.Where(x => x.AttackerId == playerId || x.OwnerId == playerId)]
+                : [.. report.Destructions.Where(x => x.AttackerId == playerId || x.OwnerId == playerId)],
+            Defeats = report.Defeats
         };
     }
 
@@ -216,7 +218,7 @@ public static class FogOfWar
             PlayerState = playerState,
             Observations = observations.ToImmutableDictionary(),
             Report = GetPlayerTurnReport(report, playerId),
-            IsGameOver = gameState.IsGameOver
+            Standing = Standing.Of(gameState)
         };
     }
 }

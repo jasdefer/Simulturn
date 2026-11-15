@@ -19,7 +19,7 @@ GameState gameState = new(DefaultSettings.Create(MapGeneratorOptions.Open with
 string stateString = Printer.PrintState(gameState, Printer.GetFullInfo);
 File.WriteAllText($"Turn{gameState.Turn}.svg", stateString);
 File.WriteAllText($"CurrentTurn.svg", stateString);
-while (!gameState.IsGameOver)
+while (!Standing.Of(gameState).IsGameOver)
 {
     Console.WriteLine($"Turn {gameState.Turn}: Please add commands for the next turn in CSV format and press any key to continue.");
     Console.ReadKey();

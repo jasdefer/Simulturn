@@ -9,7 +9,6 @@ public sealed record GameState
     public ImmutableHashSet<string> PlayerIds { get; init; }
     public ImmutableDictionary<string, PlayerState> PlayerStates { get; init; }
     public ImmutableDictionary<Hexagon, int> RemainingMatter { get; init; }
-    public bool IsGameOver => PlayerStates.Where(x => x.Value.Compounds.Any(compound => !compound.Value.IsEmpty)).Count() <= 1;
 
     public ushort Turn { get; init; }
 
