@@ -3,6 +3,7 @@ using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.Report;
 using Simulturn.Core.Model.State;
+using Simulturn.Core.Model.Upgrades;
 
 namespace Simulturn.Core.Engine;
 
@@ -160,7 +161,8 @@ public sealed class TurnResolution
                 continue;
             }
             byte completedLevels = player.UpgradeLevels.GetValueOrDefault(upgrade);
-            var level = _settings.Upgrades[upgrade][completedLevels]; // a level of 1 means the first upgrade, which is at index 0
+            UpgradeLevel level = _settings.NextUpgradeLevel(upgrade, completedLevels)
+                ?? throw new InvalidOperationException($"{upgrade} has no level after {completedLevels}; the research command was not validated.");
             // Subtract 1 to account for the current turn, the turn increments after all game state logic is completed
             player.Researches.Add(hexagon, new Research(upgrade, (ushort)(_state.Turn + level.Duration - 1)));
             player.Matter -= level.Cost;

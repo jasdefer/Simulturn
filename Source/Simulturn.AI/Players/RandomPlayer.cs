@@ -3,6 +3,7 @@ using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
+using Simulturn.Core.Model.Upgrades;
 using System.Collections.Immutable;
 
 namespace Simulturn.AI.Players;
@@ -111,11 +112,11 @@ public sealed class RandomPlayer : IArtificialPlayer
                     continue;
                 }
                 byte currentLevel = playerState.UpgradeLevels.GetValueOrDefault(upgrade);
-                if (currentLevel >= gameSettings.MaxUpgradeLevel(upgrade))
+                if (gameSettings.NextUpgradeLevel(upgrade, currentLevel) is not UpgradeLevel nextLevel)
                 {
                     continue;
                 }
-                short cost = gameSettings.Upgrades[upgrade][currentLevel].Cost;
+                short cost = nextLevel.Cost;
                 if (cost <= matter)
                 {
                     candidates.Add((hexagon, upgrade, cost));

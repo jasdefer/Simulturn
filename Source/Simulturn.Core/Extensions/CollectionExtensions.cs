@@ -1,6 +1,4 @@
 ﻿using Simulturn.Core.Model;
-using Simulturn.Core.Model.Upgrades;
-using System.Collections.Frozen;
 
 namespace Simulturn.Core.Extensions;
 
@@ -30,15 +28,5 @@ public static class CollectionExtensions
         /// The pending constructions on the hexagon, all completion turns added up.
         /// </summary>
         public Compound On(Hexagon hexagon) => constructions.Where(x => x.Key.Hexagon == hexagon).Select(x => x.Value).Sum();
-    }
-
-    extension(IEnumerable<IUpgradeLevel> upgrades)
-    {
-        public FrozenDictionary<Upgrade, ImmutableArray<IUpgradeLevel>> ToDictionary() =>
-            upgrades
-                .GroupBy(u => u.Upgrade)
-                .ToFrozenDictionary(
-                    g => g.Key,
-                    g => g.ToImmutableArray());
     }
 }

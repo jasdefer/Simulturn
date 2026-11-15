@@ -3,6 +3,7 @@ using Simulturn.Core.Extensions;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
+using Simulturn.Core.Model.Upgrades;
 using System.Collections.Immutable;
 
 namespace Simulturn.AI.Players;
@@ -225,7 +226,7 @@ internal sealed class TurnPlan
         }
         byte currentLevel = playerState.UpgradeLevels.GetValueOrDefault(upgrade);
         if (!gameSettings.HexagonSettings[hexagon].ResearchableUpgrades.Contains(upgrade) ||
-            currentLevel >= gameSettings.MaxUpgradeLevel(upgrade))
+            gameSettings.NextUpgradeLevel(upgrade, currentLevel) is not UpgradeLevel nextLevel)
         {
             return false;
         }
@@ -233,7 +234,7 @@ internal sealed class TurnPlan
         {
             return false;
         }
-        short cost = gameSettings.Upgrades[upgrade][currentLevel].Cost;
+        short cost = nextLevel.Cost;
         if (Matter - _reservedMatter < cost)
         {
             return false;

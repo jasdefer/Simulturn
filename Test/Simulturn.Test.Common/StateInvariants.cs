@@ -177,15 +177,20 @@ public static class StateInvariants
         TurnReport report = result.Report;
         GameSettings settings = before.GameSettings;
 
-        // A forecast with the armies of the fight and the upgrade levels from the start of the turn
-        // gives the losses of the fight.
+        // The fight reports the upgrades from the start of the turn that act on the armies. A forecast
+        // with nothing but the armies and the upgrade levels of the report gives the losses of the fight.
         foreach ((Hexagon hexagon, FightReport fight) in report.Fights)
         {
             FightReport forecast = Combat.Fight(settings, fight.Armies.ToDictionary(
                 x => x.Key,
-                x => new Combatant() { Army = x.Value, UpgradeLevels = before.PlayerStates[x.Key].UpgradeLevels }));
+                x => new Combatant() { Army = x.Value, UpgradeLevels = fight.UpgradeLevels[x.Key] }));
             foreach ((string playerId, Army loss) in fight.Losses)
             {
+                var acting = UpgradeRules.ActingOn(settings, before.PlayerStates[playerId].UpgradeLevels, fight.Armies[playerId]);
+                if (!DictionariesEqual(acting, fight.UpgradeLevels[playerId]))
+                {
+                    violations.Add($"Report: the fight on {hexagon} shows the upgrades [{string.Join(", ", fight.UpgradeLevels[playerId].OrderBy(x => x.Key))}] of {playerId}, [{string.Join(", ", acting.OrderBy(x => x.Key))}] act on the army {fight.Armies[playerId]}.");
+                }
                 if (forecast.Losses[playerId] != loss)
                 {
                     violations.Add($"Report: {playerId} lost {loss} in the fight on {hexagon}, Combat.Fight gives {forecast.Losses[playerId]}.");
@@ -354,7 +359,7 @@ public static class StateInvariants
             if (command.Research is Upgrade upgrade && requestedUpgrades.Add(upgrade))
             {
                 int level = player.UpgradeLevels.GetValueOrDefault(upgrade);
-                ImmutableArray<IUpgradeLevel> levels = settings.Upgrades[upgrade];
+                ImmutableArray<UpgradeLevel> levels = settings.Upgrades[upgrade].Levels;
                 if (level < levels.Length)
                 {
                     cost += levels[level].Cost;
@@ -364,7 +369,7 @@ public static class StateInvariants
         return cost;
     }
 
-    private static bool DictionariesEqual<TValue>(IReadOnlyDictionary<string, TValue> expected, IReadOnlyDictionary<string, TValue> actual)
+    private static bool DictionariesEqual<TKey, TValue>(IReadOnlyDictionary<TKey, TValue> expected, IReadOnlyDictionary<TKey, TValue> actual)
         where TValue : notnull
     {
         return expected.Count == actual.Count &&

@@ -97,7 +97,7 @@ public sealed record MapGeneratorOptions
     /// </summary>
     public int MaxExpansionDistance { get; init; } = 2;
 
-    public ImmutableHashSet<Upgrade> ResearchableUpgrades { get; init; } = [Upgrade.DotUpgrade];
+    public ImmutableHashSet<Upgrade> ResearchableUpgrades { get; init; } = [Upgrade.TriangleExponent, Upgrade.CircleExponent, Upgrade.SquareExponent];
 
     public ResearchLocation ResearchLocation { get; init; } = ResearchLocation.Center;
 

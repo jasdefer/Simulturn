@@ -38,22 +38,30 @@ public static class Combat
         return new FightReport()
         {
             Armies = sides.ToImmutableDictionary(x => x.PlayerId, x => x.Army),
-            Losses = sides.ToImmutableDictionary(x => x.PlayerId, x => Army.Min(x.Army, losses[x.PlayerId]))
+            Losses = sides.ToImmutableDictionary(x => x.PlayerId, x => Army.Min(x.Army, losses[x.PlayerId])),
+            UpgradeLevels = combatants.ToImmutableDictionary(x => x.Key, x => UpgradeRules.ActingOn(settings, x.Value.UpgradeLevels, x.Value.Army))
         };
     }
 
     /// <summary>
     /// The fight exponent of an army whose player has the given upgrade levels: the exponent of
-    /// the settings plus the bonus of the upgrades.
+    /// the settings plus the bonus of every upgrade on the unit types it acts on. Only the level
+    /// a player has counts, the levels before it add nothing. Dots have no exponent, see
+    /// <see cref="Army.GetStrengthOver"/>.
     /// </summary>
     public static Army GetExponent(GameSettings settings, IReadOnlyDictionary<Upgrade, byte> upgradeLevels)
     {
-        // TODO: Extend upgrade exponent bonuses to support all unit-specific upgrades.
         Army exponent = settings.FightExponent;
-        if (upgradeLevels.TryGetValue(Upgrade.DotUpgrade, out byte dotUpgradeLevel) && dotUpgradeLevel > 0)
+        foreach ((UpgradeDefinition definition, UpgradeEffect effect) in UpgradeRules.Effects(settings, upgradeLevels))
         {
-            // A level of 1 means the first upgrade, which is at index 0.
-            exponent = exponent.AddUnit(Unit.Dot, ((DotUpgrade)settings.Upgrades[Upgrade.DotUpgrade][dotUpgradeLevel - 1]).ExponentBonus);
+            if (effect.Value is not FightExponentBonus bonus)
+            {
+                continue;
+            }
+            foreach (Unit unit in definition.AffectedUnits)
+            {
+                exponent = exponent.AddUnit(unit, bonus.Bonus);
+            }
         }
         return exponent;
     }

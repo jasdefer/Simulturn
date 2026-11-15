@@ -49,7 +49,7 @@ Transition invariants (`StateInvariants.CheckTransition`, need the previous stat
 - The turn counter advances by one. Players and hexagons do not change.
 - Matter conservation: the matter all players gained equals the matter harvested from the map minus the cost of all training, construction and research commands.
 - The report explains the transition: previous state plus commands plus `TurnReport` gives the armies, compounds, matter, space, pending orders and upgrade levels of the next state, per player and hexagon. The comparison only checks the report; the engine never derives the report from it.
-- Every fight can be forecast: `Combat.Fight` with the armies of a reported fight and the upgrade levels from the start of the turn gives the reported losses, and no army loses more than it has.
+- Every fight can be computed again from its report: `Combat.Fight` with the armies and the upgrade levels of a reported fight gives the reported losses, and no army loses more than it has. The reported upgrade levels are the ones from the start of the turn that act on the army (`UpgradeRules.ActingOn`).
 - Every reported movement stays within the range: `Movement.ReachableArmy` with the distance of the movement gives the whole moved army.
 
 Determinism (own tests):

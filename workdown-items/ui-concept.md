@@ -3,11 +3,20 @@ id: ui-concept
 title: UI-Konzept erarbeiten
 status: todo
 created: 2026-10-14
+updated: 2026-11-14
 parent: ui
 ---
 ## Ziel
 
 Grundsätzliche Planung der neuen UI, bevor Umsetzungs-Items angelegt werden. Der alte Blazor-Ansatz aus `archive/add-web-ui` wird nicht fortgeführt.
+
+## Feststehend
+
+Am 2026-11-14 festgelegt:
+
+- Die erste UI dient dazu, zu testen, wie sich das Spiel anfühlt.
+- Sie hält alles im Speicher. [[game-persistence]] ist keine Voraussetzung.
+- Vor der UI müssen das Spielprinzip und die Grundlagen stehen, auch das, was die UI von der Engine abfragt: [[upgrade-concept]] und [[engine-rules-for-clients]]. Gegner, gegen die sich ein Spiel lohnt, behandelt [[ai-opponents-too-weak]].
 
 ## Zu klären
 

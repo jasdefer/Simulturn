@@ -25,6 +25,7 @@ public sealed record GameSettings
 
     /// <summary>
     /// The values are divided by 100, so 100 means 1.0. It is the exponent for the fight calculation.
+    /// Dots have no exponent: they count one by one, and the value for dots is never read.
     /// </summary>
     public required Army FightExponent { get; init; }
     public required Compound CompoundCost { get; init; }
@@ -33,16 +34,27 @@ public sealed record GameSettings
     public required Compound Armor { get; init; }
     public required FrozenDictionary<Hexagon, HexagonSettings> HexagonSettings { get; init; }
     public required FrozenDictionary<string, ImmutableArray<Upgrade>> StartUpgrades { get; init; }
-    public required FrozenDictionary<Upgrade, ImmutableArray<IUpgradeLevel>> Upgrades { get; init; }
+    public required FrozenDictionary<Upgrade, UpgradeDefinition> Upgrades { get; init; }
     public int Seed { get; init; }
 
     /// <summary>
     /// The number of levels defined for the upgrade in <see cref="Upgrades"/>. An upgrade without
-    /// a table has no levels and can never be researched, no matter which hexagon offers it.
+    /// a definition has no levels and can never be researched, no matter which hexagon offers it.
     /// </summary>
     public int MaxUpgradeLevel(Upgrade upgrade)
     {
-        return Upgrades.TryGetValue(upgrade, out var levels) ? levels.Length : 0;
+        return Upgrades.TryGetValue(upgrade, out var definition) ? definition.Levels.Length : 0;
+    }
+
+    /// <summary>
+    /// The level a research of the upgrade buys for a player with the given number of completed
+    /// levels, or null when the upgrade has no further level. This is the only place that reads
+    /// the level after the completed ones.
+    /// </summary>
+    public UpgradeLevel? NextUpgradeLevel(Upgrade upgrade, int completedLevels)
+    {
+        // A level of 1 means the first level, which is at index 0.
+        return completedLevels < MaxUpgradeLevel(upgrade) ? Upgrades[upgrade].Levels[completedLevels] : null;
     }
 
     public static Building TrainingBuilding(Unit unit) => unit switch
