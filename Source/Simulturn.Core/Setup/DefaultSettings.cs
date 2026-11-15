@@ -40,7 +40,13 @@ public static class DefaultSettings
             {
                 [Upgrade.TriangleExponent] = ExponentUpgrade(Unit.Triangle),
                 [Upgrade.CircleExponent] = ExponentUpgrade(Unit.Circle),
-                [Upgrade.SquareExponent] = ExponentUpgrade(Unit.Square)
+                [Upgrade.SquareExponent] = ExponentUpgrade(Unit.Square),
+                [Upgrade.StartMatter] = new UpgradeDefinition()
+                {
+                    // Only a start upgrade (StartUpgrades) has an effect. No standard map offers it for research.
+                    AffectedUnits = [],
+                    Levels = [new UpgradeLevel(Cost: 100, Duration: 2, new StartMatterBonus(250))]
+                }
             }.ToFrozenDictionary(),
             HexagonSettings = hexagonSettings.ToFrozenDictionary()
         };

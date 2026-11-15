@@ -24,6 +24,7 @@ public sealed record GameState
             .GroupBy(x => x.Value.PlayerInitialization!.Value.StartingPlayerId)
             .ToImmutableDictionary(x => x.Key, x =>
             {
+                ImmutableDictionary<Upgrade, byte> upgradeLevels = UpgradeRules.StartLevels(GameSettings, x.Key);
                 return new PlayerState()
                 {
                     Armies = x.ToImmutableDictionary(y => y.Key, y => y.Value.PlayerInitialization!.Value.InitialArmy),
@@ -32,11 +33,9 @@ public sealed record GameState
                     UsedSpace = x.Sum(y => y.Value.PlayerInitialization!.Value.InitialArmy * GameSettings.RequiredSpace),
                     Constructions = ImmutableDictionary<TurnHexagon, Compound>.Empty,
                     Trainings = ImmutableDictionary<TurnHexagon, Army>.Empty,
-                    Matter = GameSettings.StartMatter,
+                    Matter = UpgradeRules.StartMatter(GameSettings, upgradeLevels),
                     Researches = ImmutableDictionary<Hexagon, Research>.Empty,
-                    UpgradeLevels = GameSettings.StartUpgrades.ContainsKey(x.Key)
-                        ? GameSettings.StartUpgrades[x.Key].GroupBy(x => x).ToImmutableDictionary(x => x.Key, x => Convert.ToByte(x.Count()))
-                        : ImmutableDictionary<Upgrade, byte>.Empty
+                    UpgradeLevels = upgradeLevels
                 };
             });
         PlayerIds = PlayerStates.Keys.ToImmutableHashSet();

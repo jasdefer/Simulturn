@@ -22,6 +22,7 @@ public enum Upgrade
     TriangleExponent,
     CircleExponent,
     SquareExponent,
+    StartMatter,
 }
 
 public enum Visibility

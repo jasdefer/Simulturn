@@ -52,15 +52,9 @@ public static class Combat
     public static Army GetExponent(GameSettings settings, IReadOnlyDictionary<Upgrade, byte> upgradeLevels)
     {
         Army exponent = settings.FightExponent;
-        foreach ((Upgrade upgrade, byte level) in upgradeLevels)
+        foreach ((UpgradeDefinition definition, UpgradeEffect effect) in UpgradeRules.Effects(settings, upgradeLevels))
         {
-            if (level == 0)
-            {
-                continue;
-            }
-            UpgradeDefinition definition = settings.Upgrades[upgrade];
-            // A level of 1 means the first level, which is at index 0.
-            if (definition.Levels[level - 1].Effect.Value is not FightExponentBonus bonus)
+            if (effect.Value is not FightExponentBonus bonus)
             {
                 continue;
             }
