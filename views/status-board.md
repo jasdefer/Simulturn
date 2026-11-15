@@ -4,7 +4,6 @@ Cards grouped into columns by `status`.
 
 ## todo
 - [AI-Gegner spielen zu schwach](../workdown-items/ai-opponents-too-weak.md)
-- [Ein Client muss Regeln der Engine nachbauen](../workdown-items/engine-rules-for-clients.md)
 - [Spielstände speichern und wiederherstellen](../workdown-items/game-persistence.md)
 - [Die Zusammensetzung einer gegnerischen Armee erfährt man nur im Kampf](../workdown-items/reconnaissance.md)
 - [Neue UI](../workdown-items/ui.md)
@@ -18,6 +17,7 @@ _(no cards)_
 ## done
 - [Kampfausgang vorab berechnen können](../workdown-items/combat-forecast-core.md)
 - [Auf die nächste .NET-Version wechseln und neue Sprachfeatures nutzen](../workdown-items/dotnet-upgrade-and-union-types.md)
+- [Ein Client muss Regeln der Engine nachbauen](../workdown-items/engine-rules-for-clients.md)
 - [Warteschlangen für Trainings und Konstruktionen ohne verschachtelte Dictionaries](../workdown-items/flat-pending-queues.md)
 - [Karten erzeugen und Settings nicht sechsfach pflegen](../workdown-items/map-generator-and-default-settings.md)
 - [Bewegungsreichweite pro Einheitentyp](../workdown-items/movement-range.md)

@@ -26,7 +26,8 @@ Not planned: integration tests across process or system boundaries. There is no 
 Goal: every rule of the engine has at least one test that shows it in isolation.
 
 - Every case of the `CommandValidation` union has a test that produces exactly that validation, and a neighbour that shows when it does not appear.
-- Every phase of `TurnResolution.Resolve` (income, training, construction, research, movement, fight, building destruction, cancellation of constructions and trainings) has a test with exactly one turn.
+- Every phase of `TurnResolution.Resolve` (income, training, construction, research, movement, fight, building destruction, cancellation of constructions and trainings, defeat) has a test with exactly one turn.
+- Every rule a client can ask (`Costs`, `Harvest`, `Destruction`, `Standing`, `Game`) has tests of the function itself and one test that shows that `TurnResolution.Resolve` comes to the same result.
 - One class per rule area, for example `ValidatePendingWorkTest`, `NextTurnIncomeTest`, `FightTest`. The existing `GameStateTest` is not split in one go. When an area is touched, its tests move into the matching class.
 
 ### Layer 2: Scenario
@@ -35,13 +36,15 @@ Goal: rules that only show over several turns. The turns are scripted explicitly
 
 ### Layer 3: Invariants
 
-Goal: find what nobody scripted. `RandomPlayer` plays against `RandomPlayer` over many seeds, maps and option presets. After every turn, invariants are checked that must hold in every reachable state.
+Goal: find what nobody scripted. `RandomPlayer` plays against `RandomPlayer` over many seeds, maps (one of them with neutral armies) and option presets. After every turn, invariants are checked that must hold in every reachable state.
 
 State invariants (`StateInvariants.CheckState`, hold for a single state):
 
 - `StateValidator.Validate` yields nothing.
 - Space: `UsedSpace` equals armies plus pending trainings times `RequiredSpace`. `AvailableSpace` equals compounds times `ProvidedSpace`.
 - Matter, used space and available space are never negative.
+- A defeated player has no pending trainings and no pending researches.
+- No neutral army is empty, and none stands on the buildings of a player.
 - Fog of war: the player view matches the visibility that follows from the player's armies. Hidden hexagons carry no data, visible hexagons carry the true data. What a player saw in earlier turns is not part of the view; `FogOfWar.UpdateMemories` and `FogOfWar.GetMemories` have their own unit tests (`MemoryTest`).
 
 Transition invariants (`StateInvariants.CheckTransition`, need the previous state, the commands and the `TurnResult`):
@@ -50,6 +53,8 @@ Transition invariants (`StateInvariants.CheckTransition`, need the previous stat
 - Matter conservation: the matter all players gained equals the matter harvested from the map minus the cost of all training, construction and research commands.
 - The report explains the transition: previous state plus commands plus `TurnReport` gives the armies, compounds, matter, space, pending orders and upgrade levels of the next state, per player and hexagon. The comparison only checks the report; the engine never derives the report from it.
 - Every fight can be computed again from its report: `Combat.Fight` with the armies and the upgrade levels of a reported fight gives the reported losses, and no army loses more than it has. The reported upgrade levels are the ones from the start of the turn that act on the army (`UpgradeRules.ActingOn`).
+- A neutral army only changes by its losses in a reported fight.
+- The reported defeats are the players that are defeated after the turn and were not before.
 - Every reported movement stays within the range: `Movement.ReachableArmy` with the distance of the movement gives the whole moved army.
 
 Determinism (own tests):
