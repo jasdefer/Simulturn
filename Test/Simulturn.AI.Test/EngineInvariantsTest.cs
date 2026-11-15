@@ -35,7 +35,7 @@ public sealed class EngineInvariantsTest
         yield return ("SmallDisc", TestSettings.Create(Maps.Disc(2, matter: 1000)
             .SetItem(new Hexagon(-2, 0), Maps.Start("Player01"))
             .SetItem(new Hexagon(2, 0), Maps.Start("Player02"))
-            .SetItem(new Hexagon(0, 0), Maps.Hexagon(1000).WithResearch(Upgrade.DotUpgrade, Upgrade.DotUpgrade))));
+            .SetItem(new Hexagon(0, 0), Maps.Hexagon(1000).WithResearch(Upgrade.TriangleExponent, Upgrade.CircleExponent, Upgrade.SquareExponent))));
         yield return ("Open", DefaultSettings.Create(MapGeneratorOptions.Open));
         yield return ("HomeOnly", DefaultSettings.Create(MapGeneratorOptions.HomeOnly));
         yield return ("Expansions", DefaultSettings.Create(MapGeneratorOptions.Expansions));

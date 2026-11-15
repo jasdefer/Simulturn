@@ -20,10 +20,10 @@ public sealed class PendingQueueTest
     private static readonly Hexagon _opponentStart = new(1, 0);
 
     /// <summary>
-    /// A line of three hexagons. Player01 starts with a plane and a dome and can research the dot upgrade at home.
+    /// A line of three hexagons. Player01 starts with a plane and a dome and can research the triangle upgrade at home.
     /// </summary>
     private static readonly GameSettings _gameSettings = TestSettings.Create(Maps.Line(-1, 1)
-            .SetItem(_start, Maps.Start("Player01", compound: new Compound() { Plane = 1, Dome = 1 }).WithResearch(Upgrade.DotUpgrade))
+            .SetItem(_start, Maps.Start("Player01", compound: new Compound() { Plane = 1, Dome = 1 }).WithResearch(Upgrade.TriangleExponent))
             .SetItem(_opponentStart, Maps.Start("Player02")),
         startMatter: 5000);
 
@@ -80,11 +80,11 @@ public sealed class PendingQueueTest
     [Test]
     public void Research_IsRemovedFromQueueWhenItCompletes()
     {
-        // Arrange: the first dot upgrade takes three turns.
+        // Arrange: the first level of the triangle upgrade takes three turns.
         var state = new GameState(_gameSettings);
 
         // Act
-        var turn1 = state.PlayTurn(Player1(new Command() { Research = Upgrade.DotUpgrade }));
+        var turn1 = state.PlayTurn(Player1(new Command() { Research = Upgrade.TriangleExponent }));
         var turn2 = turn1.PlayEmptyTurn();
         var turn3 = turn2.PlayEmptyTurn();
 
@@ -93,7 +93,7 @@ public sealed class PendingQueueTest
         turn2.PlayerStates["Player01"].Researches.ShouldHaveSingleItem().Value.CompletionTurn.ShouldBe((ushort)2);
         turn2.PlayerStates["Player01"].UpgradeLevels.ShouldBeEmpty();
         turn3.PlayerStates["Player01"].Researches.ShouldBeEmpty();
-        turn3.PlayerStates["Player01"].UpgradeLevels[Upgrade.DotUpgrade].ShouldBe((byte)1);
+        turn3.PlayerStates["Player01"].UpgradeLevels[Upgrade.TriangleExponent].ShouldBe((byte)1);
     }
 
     [Test]
@@ -131,7 +131,7 @@ public sealed class PendingQueueTest
     {
         var state = WithPlayer1(player => player with
         {
-            Researches = ImmutableDictionary<Hexagon, Research>.Empty.Add(_start, new Research(Upgrade.DotUpgrade, 0))
+            Researches = ImmutableDictionary<Hexagon, Research>.Empty.Add(_start, new Research(Upgrade.TriangleExponent, 0))
         });
 
         var validation = StateValidator.Validate(state).ShouldHaveSingleItem().Value.ShouldBeOfType<ExpiredResearch>();

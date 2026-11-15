@@ -14,6 +14,7 @@ flowchart TD
     movement-range["Bewegungsreichweite pro Einheitentyp"]
     pending-only-queues["Warteschlangen enthalten nur offene Aufträge"]
     player-knowledge-in-state["Wissen der Spieler liegt im Regelzustand"]
+    reconnaissance["Die Zusammensetzung einer gegnerischen Armee erfährt man nur im Kampf"]
     research-cost-and-duration["Forschung kostet nichts und nutzt die falsche Stufe"]
     research-level-validation["Forschung kann über die Upgrade-Tabelle hinaus gestartet werden"]
     split-game-state["GameState vereint Zustand, Zugauflösung und Validierung in einer Datei"]
@@ -24,6 +25,8 @@ flowchart TD
         ui-concept["UI-Konzept erarbeiten"]
     end
     upgrade-concept["Upgrade-Konzept erarbeiten"]
+    upgrade-draft["Spieler starten alle mit denselben Voraussetzungen"]
+    upgrade-variety["Es gibt nur drei gleichartige Upgrades"]
     validate-regression-tests["Regressionstests für Validate mit Warteschlangen auf anderen Hexagons"]
     ai-opponents-too-weak --> engine-rules-for-clients
     ai-opponents-too-weak --> upgrade-concept

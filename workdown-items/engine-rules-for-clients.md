@@ -19,7 +19,7 @@ Stand 2026-11-14, jede Stelle ist vor der Umsetzung neu zu prüfen.
 
 - **Wer gewonnen hat.** `GameState.IsGameOver` sagt nur, dass das Spiel vorbei ist. Ob es einen Sieger gibt oder alle Gebäude gleichzeitig gefallen sind, entscheidet `GameRunner.ToResult` im AI-Projekt. `PlayerGameState` kennt ebenfalls nur `IsGameOver`.
 - **Was die Orders eines Zugs kosten.** `CommandValidator` summiert Matter und Platz privat und meldet nur, wenn es nicht reicht. Wie viel nach den bisher eingegebenen Orders übrig ist, erfährt ein Client nicht.
-- **Was die nächste Stufe einer Forschung kostet.** Der Zugriff auf die Stufentabelle mit der Stufe nach den abgeschlossenen steht viermal im Code: in `CommandValidator`, in `TurnResolution`, in `RandomPlayer` und in `TurnPlan`.
+- **Was die nächste Stufe einer Forschung kostet.** Erledigt mit [[upgrade-concept]] am 2026-11-15: `GameSettings.NextUpgradeLevel` ist die eine Stelle, `CommandValidator`, `TurnResolution`, `RandomPlayer` und `TurnPlan` fragen dort.
 - **Was ein Hexagon einbringt.** Die Regel steht in `TurnResolution.CollectIncome`: Es braucht ein Plane, Dots, die in diesem Zug eine Konstruktion beginnen, ernten nicht, das Hexagon begrenzt die Zahl der Erntenden, und es gibt nie mehr als die restliche Matter. `StateEvaluator` und `TurnPlan` rechnen Teile davon selbst.
 - **Welche Gebäude eine Armee zerstört.** `TurnResolution.GetDestroyedBuildings` ist privat. Eine Vorschau wie beim Kampf gibt es nicht.
 - **Ein Spiel Zug für Zug führen.** `GameRunner.Run` spielt eine Partie zwischen AI-Spielern bis zum Ende durch. Wer einen Menschen mitspielen lässt, schreibt die Schleife aus Sicht holen, validieren und auflösen neu.

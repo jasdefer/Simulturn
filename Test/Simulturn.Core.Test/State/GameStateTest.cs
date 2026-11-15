@@ -19,12 +19,12 @@ public sealed class GameStateTest
 
     /// <summary>
     /// A disc of 7 hexagons. The players start on opposite sides of the center with 5 dots and a plane each.
-    /// Only the start hexagons hold matter; the center offers the dot upgrade.
+    /// Only the start hexagons hold matter; the center offers the triangle upgrade.
     /// </summary>
     private static readonly GameSettings _gameSettings = TestSettings.Create(Maps.Disc(1)
         .SetItem(_player1Start, Maps.Start("Player01", matter: 10000))
         .SetItem(_player2Start, Maps.Start("Player02", matter: 10000))
-        .SetItem(_center, Maps.Hexagon().WithResearch(Upgrade.DotUpgrade)));
+        .SetItem(_center, Maps.Hexagon().WithResearch(Upgrade.TriangleExponent)));
 
     /// <summary>
     /// The standard map with different start armies and compounds.
@@ -211,19 +211,19 @@ public sealed class GameStateTest
         ]);
         var turn1 = gameState.PlayTurn(commands);
         commands = DictionaryExtensions.CommandsToDictionary([
-            ("Player01", new Hexagon(0,0),new Command(){ Research = Upgrade.DotUpgrade})
+            ("Player01", new Hexagon(0,0),new Command(){ Research = Upgrade.TriangleExponent})
         ]);
         var turn2 = turn1.PlayTurn(commands);
         turn2.PlayerStates["Player01"]
-            .Researches.ShouldHaveSingleItem().Value.Upgrade.ShouldBe(Upgrade.DotUpgrade);
+            .Researches.ShouldHaveSingleItem().Value.Upgrade.ShouldBe(Upgrade.TriangleExponent);
         turn2.PlayerStates["Player01"].UpgradeLevels.ShouldBeEmpty();
         var turn3 = turn2.PlayTurn(_noCommands);
         turn3.PlayerStates["Player01"]
-            .Researches.ShouldHaveSingleItem().Value.Upgrade.ShouldBe(Upgrade.DotUpgrade);
+            .Researches.ShouldHaveSingleItem().Value.Upgrade.ShouldBe(Upgrade.TriangleExponent);
         turn3.PlayerStates["Player01"].UpgradeLevels.ShouldBeEmpty();
         var turn4 = turn3.PlayTurn(_noCommands);
         turn4.PlayerStates["Player01"].Researches.ShouldBeEmpty();
-        turn4.PlayerStates["Player01"].UpgradeLevels.ShouldHaveSingleItem().Key.ShouldBe(Upgrade.DotUpgrade);
+        turn4.PlayerStates["Player01"].UpgradeLevels.ShouldHaveSingleItem().Key.ShouldBe(Upgrade.TriangleExponent);
         turn4.PlayerStates["Player01"].UpgradeLevels.ShouldHaveSingleItem().Value.ShouldBe((byte)1);
     }
 

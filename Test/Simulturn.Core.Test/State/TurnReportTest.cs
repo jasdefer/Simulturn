@@ -19,17 +19,17 @@ public sealed class TurnReportTest
 
     /// <summary>
     /// A map of 3 hexagons in a line. The players start on the opposite ends with 5 dots and a plane each
-    /// and 1000 matter on their start hexagon. Player01 can research the dot upgrade at home.
+    /// and 1000 matter on their start hexagon. Player01 can research the triangle upgrade at home.
     /// </summary>
     private static readonly GameSettings _gameSettings = TestSettings.Create(Maps.Line(-1, 1)
-        .SetItem(_player1Start, Maps.Start("Player01").WithResearch(Upgrade.DotUpgrade))
+        .SetItem(_player1Start, Maps.Start("Player01").WithResearch(Upgrade.TriangleExponent))
         .SetItem(_player2Start, Maps.Start("Player02")));
 
     /// <summary>
     /// The same map for a raid: Player01 also owns a cube, Player02 starts with 10 squares.
     /// </summary>
     private static readonly GameSettings _raidSettings = TestSettings.Create(Maps.Line(-1, 1)
-        .SetItem(_player1Start, Maps.Start("Player01", compound: new Compound() { Plane = 1, Cube = 1 }).WithResearch(Upgrade.DotUpgrade))
+        .SetItem(_player1Start, Maps.Start("Player01", compound: new Compound() { Plane = 1, Cube = 1 }).WithResearch(Upgrade.TriangleExponent))
         .SetItem(_player2Start, Maps.Start("Player02", army: new Army() { Square = 10 })));
 
     private static Dictionary<string, Dictionary<Hexagon, Command>> Player1Orders(Command command)
@@ -48,7 +48,7 @@ public sealed class TurnReportTest
 
     /// <summary>
     /// Player02 marches 10 squares into the home of Player01, who in the same turn orders a square,
-    /// an axis and the dot upgrade there. The 5 dots die, the 6 surviving squares destroy the cube.
+    /// an axis and the triangle upgrade there. The 5 dots die, the 6 surviving squares destroy the cube.
     /// </summary>
     private static TurnResult Raid()
     {
@@ -60,7 +60,7 @@ public sealed class TurnReportTest
             {
                 Training = new Army() { Square = 1 },
                 Construction = new Compound() { Axis = 1 },
-                Research = Upgrade.DotUpgrade
+                Research = Upgrade.TriangleExponent
             }),
             ("Player02", _center, new Command()
             {
@@ -117,14 +117,14 @@ public sealed class TurnReportTest
     [Test]
     public void Research_IsReportedWithTheReachedLevelInTheTurnItCompletes()
     {
-        TurnResult ordered = new GameState(_gameSettings).ResolveTurn(Player1Orders(new Command() { Research = Upgrade.DotUpgrade }));
+        TurnResult ordered = new GameState(_gameSettings).ResolveTurn(Player1Orders(new Command() { Research = Upgrade.TriangleExponent }));
         TurnResult waiting = ordered.State.ResolveTurn(_noCommands);
         TurnResult completed = waiting.State.ResolveTurn(_noCommands);
 
         ordered.Report.Activities["Player01"].CompletedResearches.ShouldBeEmpty();
         waiting.Report.Activities["Player01"].CompletedResearches.ShouldBeEmpty();
         completed.Report.Activities["Player01"].CompletedResearches.ShouldHaveSingleItem()
-            .ShouldBe(new KeyValuePair<Hexagon, ResearchReport>(_player1Start, new ResearchReport(Upgrade.DotUpgrade, 1)));
+            .ShouldBe(new KeyValuePair<Hexagon, ResearchReport>(_player1Start, new ResearchReport(Upgrade.TriangleExponent, 1)));
     }
 
     [Test]
@@ -200,7 +200,7 @@ public sealed class TurnReportTest
         activity.CanceledTrainings.ShouldHaveSingleItem()
             .ShouldBe(new KeyValuePair<Hexagon, Army>(_player1Start, new Army() { Square = 1 }));
         activity.CanceledResearches.ShouldHaveSingleItem()
-            .ShouldBe(new KeyValuePair<Hexagon, Upgrade>(_player1Start, Upgrade.DotUpgrade));
+            .ShouldBe(new KeyValuePair<Hexagon, Upgrade>(_player1Start, Upgrade.TriangleExponent));
         PlayerState player = result.State.PlayerStates["Player01"];
         player.Constructions.ShouldBeEmpty();
         player.Researches.ShouldBeEmpty();
@@ -298,7 +298,8 @@ public sealed class TurnReportTest
         return new FightReport()
         {
             Armies = players.ToImmutableDictionary(x => x.PlayerId, x => x.Army),
-            Losses = players.ToImmutableDictionary(x => x.PlayerId, x => x.Loss)
+            Losses = players.ToImmutableDictionary(x => x.PlayerId, x => x.Loss),
+            UpgradeLevels = players.ToImmutableDictionary(x => x.PlayerId, _ => ImmutableDictionary<Upgrade, byte>.Empty)
         };
     }
 }

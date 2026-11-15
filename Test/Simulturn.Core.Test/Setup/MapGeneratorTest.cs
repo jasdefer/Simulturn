@@ -185,7 +185,7 @@ public sealed class MapGeneratorTest
             expansions.Count(x => x.DistanceTo(start) <= options.MaxExpansionDistance).ShouldBe(2, $"Start {start}.");
         }
         map[Hexagon.Origin].Matter.ShouldBe(6000);
-        map[Hexagon.Origin].ResearchableUpgrades.ShouldBe([Upgrade.DotUpgrade]);
+        map[Hexagon.Origin].ResearchableUpgrades.ShouldBe([Upgrade.TriangleExponent, Upgrade.CircleExponent, Upgrade.SquareExponent], ignoreOrder: true);
         starts.ShouldAllBe(x => map[x].Matter == 2000);
         map.Values.Sum(x => x.Matter).ShouldBe(3 * 2000 + 6 * 4000 + 6000);
     }

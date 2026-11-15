@@ -6,9 +6,11 @@ Cards grouped into columns by `status`.
 - [AI-Gegner spielen zu schwach](../workdown-items/ai-opponents-too-weak.md)
 - [Ein Client muss Regeln der Engine nachbauen](../workdown-items/engine-rules-for-clients.md)
 - [Spielstände speichern und wiederherstellen](../workdown-items/game-persistence.md)
+- [Die Zusammensetzung einer gegnerischen Armee erfährt man nur im Kampf](../workdown-items/reconnaissance.md)
 - [Neue UI](../workdown-items/ui.md)
 - [UI-Konzept erarbeiten](../workdown-items/ui-concept.md)
-- [Upgrade-Konzept erarbeiten](../workdown-items/upgrade-concept.md)
+- [Spieler starten alle mit denselben Voraussetzungen](../workdown-items/upgrade-draft.md)
+- [Es gibt nur drei gleichartige Upgrades](../workdown-items/upgrade-variety.md)
 
 ## in_progress
 _(no cards)_
@@ -27,6 +29,7 @@ _(no cards)_
 - [Zerstörte Gebäude brechen bereits fertige Trainings ab](../workdown-items/training-cancellation-after-completion.md)
 - [Nachvollziehbarkeit der Zugauflösung](../workdown-items/turn-report.md)
 - [NextTurn liefert Zustand und Ereignisse getrennt](../workdown-items/turn-result.md)
+- [Upgrade-Konzept erarbeiten](../workdown-items/upgrade-concept.md)
 - [Regressionstests für Validate mit Warteschlangen auf anderen Hexagons](../workdown-items/validate-regression-tests.md)
 
 ## No status

@@ -6,6 +6,7 @@ using Simulturn.Core.Model.Report;
 using Simulturn.Core.Model.State;
 using Simulturn.Core.Setup;
 using Simulturn.Test.Common;
+using System.Collections.Frozen;
 using System.Collections.Immutable;
 
 namespace Simulturn.Core.Test.State;
@@ -23,12 +24,12 @@ public sealed class FightTest
 
     /// <summary>
     /// A disc of 7 hexagons. The players start on opposite sides of the center with 5 dots and a plane each.
-    /// Only the start hexagons hold matter; the center offers the dot upgrade.
+    /// Only the start hexagons hold matter; the center offers the triangle upgrade.
     /// </summary>
     private static readonly GameSettings _gameSettings = TestSettings.Create(Maps.Disc(1)
         .SetItem(_player1Start, Maps.Start("Player01", matter: 10000))
         .SetItem(_player2Start, Maps.Start("Player02", matter: 10000))
-        .SetItem(_center, Maps.Hexagon().WithResearch(Upgrade.DotUpgrade)));
+        .SetItem(_center, Maps.Hexagon().WithResearch(Upgrade.TriangleExponent)));
 
     /// <summary>
     /// The standard map with different start armies and compounds.
@@ -316,18 +317,167 @@ public sealed class FightTest
     }
 
     [Test]
-    public void GetExponent_AddsTheBonusOfTheResearchedLevels()
+    public void GetExponent_AddsTheBonusOfTheLevelThePlayerHas()
     {
         Combat.GetExponent(_gameSettings, ImmutableDictionary<Upgrade, byte>.Empty)
             .ShouldBe(_gameSettings.FightExponent);
 
-        var levelOne = ImmutableDictionary<Upgrade, byte>.Empty.Add(Upgrade.DotUpgrade, 1);
-        Combat.GetExponent(_gameSettings, levelOne)
-            .ShouldBe(_gameSettings.FightExponent + new Army() { Dot = 20 });
+        Combat.GetExponent(_gameSettings, Levels((Upgrade.TriangleExponent, 1)))
+            .ShouldBe(_gameSettings.FightExponent + new Army() { Triangle = 10 });
 
-        // The maximum level must use the last defined upgrade instead of indexing past the array.
-        var maxLevel = ImmutableDictionary<Upgrade, byte>.Empty.Add(Upgrade.DotUpgrade, 2);
-        Combat.GetExponent(_gameSettings, maxLevel)
-            .ShouldBe(_gameSettings.FightExponent + new Army() { Dot = 20 });
+        // The bonus of a level is absolute: level 2 gives 20, not 10 + 20.
+        Combat.GetExponent(_gameSettings, Levels((Upgrade.TriangleExponent, 2)))
+            .ShouldBe(_gameSettings.FightExponent + new Army() { Triangle = 20 });
+
+        Combat.GetExponent(_gameSettings, Levels((Upgrade.TriangleExponent, 2), (Upgrade.CircleExponent, 1), (Upgrade.SquareExponent, 0)))
+            .ShouldBe(_gameSettings.FightExponent + new Army() { Triangle = 20, Circle = 10 });
+    }
+
+    [Test]
+    [Arguments(Upgrade.TriangleExponent, Unit.Triangle)]
+    [Arguments(Upgrade.CircleExponent, Unit.Circle)]
+    [Arguments(Upgrade.SquareExponent, Unit.Square)]
+    public void Fight_ExponentUpgrade_DecidesTheFightOfTwoEqualArmies(Upgrade upgrade, Unit unit)
+    {
+        // Arrange: ten units against ten units of the same type destroy each other without an upgrade.
+        Army army = Army.Empty.AddUnit(unit, 10);
+        Combat.Fight(_gameSettings, Combatants(("Player01", army), ("Player02", army))).Losses["Player01"].ShouldBe(army);
+
+        // Act
+        FightReport levelOne = Combat.Fight(_gameSettings, new Dictionary<string, Combatant>()
+        {
+            ["Player01"] = new Combatant() { Army = army, UpgradeLevels = Levels((upgrade, 1)) },
+            ["Player02"] = new Combatant() { Army = army }
+        });
+        FightReport levelTwo = Combat.Fight(_gameSettings, new Dictionary<string, Combatant>()
+        {
+            ["Player01"] = new Combatant() { Army = army, UpgradeLevels = Levels((upgrade, 2)) },
+            ["Player02"] = new Combatant() { Army = army }
+        });
+
+        // Assert: 10^1.2 / 10^1.3 = 0.79 and 10^1.2 / 10^1.4 = 0.63 of the upgraded army die, rounded up.
+        levelOne.Losses["Player01"].ShouldBe(Army.Empty.AddUnit(unit, 8));
+        levelOne.Losses["Player02"].ShouldBe(army);
+        levelTwo.Losses["Player01"].ShouldBe(Army.Empty.AddUnit(unit, 7));
+        levelTwo.Losses["Player02"].ShouldBe(army);
+    }
+
+    [Test]
+    public void Fight_ReportsTheUpgradesThatActOnTheArmies()
+    {
+        // Arrange: Player01 has the triangle and the circle upgrade but brings no circles.
+        var combatants = new Dictionary<string, Combatant>()
+        {
+            ["Player01"] = new Combatant()
+            {
+                Army = new Army() { Triangle = 4, Dot = 2 },
+                UpgradeLevels = Levels((Upgrade.TriangleExponent, 2), (Upgrade.CircleExponent, 1))
+            },
+            ["Player02"] = new Combatant() { Army = new Army() { Square = 3 }, UpgradeLevels = Levels((Upgrade.SquareExponent, 0)) }
+        };
+
+        // Act
+        FightReport fight = Combat.Fight(_gameSettings, combatants);
+
+        // Assert
+        fight.UpgradeLevels["Player01"].ShouldHaveSingleItem().ShouldBe(new KeyValuePair<Upgrade, byte>(Upgrade.TriangleExponent, 2));
+        fight.UpgradeLevels["Player02"].ShouldBeEmpty();
+    }
+
+    [Test]
+    public void Fight_FromTheArmiesAndUpgradesOfAReport_GivesTheLossesOfTheReport()
+    {
+        // Arrange
+        var combatants = new Dictionary<string, Combatant>()
+        {
+            ["Player01"] = new Combatant()
+            {
+                Army = new Army() { Triangle = 6, Circle = 3 },
+                UpgradeLevels = Levels((Upgrade.TriangleExponent, 2), (Upgrade.SquareExponent, 2))
+            },
+            ["Player02"] = new Combatant() { Army = new Army() { Circle = 7, Dot = 4 }, UpgradeLevels = Levels((Upgrade.CircleExponent, 1)) }
+        };
+        FightReport fight = Combat.Fight(_gameSettings, combatants);
+
+        // Act
+        FightReport recomputed = Combat.Fight(_gameSettings, fight.Armies.ToDictionary(
+            x => x.Key,
+            x => new Combatant() { Army = x.Value, UpgradeLevels = fight.UpgradeLevels[x.Key] }));
+
+        // Assert
+        recomputed.Losses["Player01"].ShouldBe(fight.Losses["Player01"]);
+        recomputed.Losses["Player02"].ShouldBe(fight.Losses["Player02"]);
+    }
+
+    [Test]
+    public void Fight_UpgradeWithoutItsUnitsInTheArmy_ChangesNothing()
+    {
+        // Every upgrade of the rules names the unit types it acts on. On an army without these
+        // types it must not change a fight, whatever its effect is.
+        Army[] armies =
+        [
+            new Army() { Triangle = 7, Circle = 5, Square = 6, Dot = 4 },
+            new Army() { Triangle = 12, Circle = 1, Square = 3, Dot = 9 },
+            new Army() { Triangle = 2, Circle = 9, Square = 9, Dot = 1 }
+        ];
+        Army opponent = new Army() { Triangle = 5, Circle = 6, Square = 7, Dot = 3 };
+
+        foreach ((Upgrade upgrade, var definition) in _gameSettings.Upgrades)
+        {
+            for (byte level = 1; level <= definition.Levels.Length; level++)
+            {
+                foreach (Army army in armies)
+                {
+                    Army unaffected = army;
+                    foreach (Unit unit in definition.AffectedUnits)
+                    {
+                        unaffected = unaffected.AddUnit(unit, (short)-army[unit]);
+                    }
+
+                    FightReport without = Combat.Fight(_gameSettings, Combatants(("Player01", unaffected), ("Player02", opponent)));
+                    FightReport with = Combat.Fight(_gameSettings, new Dictionary<string, Combatant>()
+                    {
+                        ["Player01"] = new Combatant() { Army = unaffected, UpgradeLevels = Levels((upgrade, level)) },
+                        ["Player02"] = new Combatant() { Army = opponent }
+                    });
+
+                    with.Losses["Player01"].ShouldBe(without.Losses["Player01"], $"{upgrade} level {level}, {unaffected}");
+                    with.Losses["Player02"].ShouldBe(without.Losses["Player02"], $"{upgrade} level {level}, {unaffected}");
+                    with.UpgradeLevels["Player01"].ShouldBeEmpty($"{upgrade} level {level}, {unaffected}");
+                }
+            }
+        }
+    }
+
+    [Test]
+    public void Fight_InATurn_UsesTheUpgradesAndShowsThemToTheOpponent()
+    {
+        // Arrange: both players bring ten triangles to the center, Player01 starts with the triangle upgrade.
+        Army triangles = new Army() { Triangle = 10 };
+        var gameSettings = WithStarts((triangles, new Compound() { Plane = 1 }), (triangles, new Compound() { Plane = 1 })) with
+        {
+            StartUpgrades = new Dictionary<string, ImmutableArray<Upgrade>>() { ["Player01"] = [Upgrade.TriangleExponent] }.ToFrozenDictionary()
+        };
+        var gameState = new GameState(gameSettings);
+        var commands = DictionaryExtensions.MovementsToDictionary([
+            ("Player01", _player1Start, _center, triangles),
+            ("Player02", _player2Start, _center, triangles)
+        ]);
+
+        // Act
+        TurnResult result = gameState.ResolveTurn(commands, validateCommands: false);
+        PlayerGameState opponentView = FogOfWar.GetPlayerGameState(result, "Player02");
+
+        // Assert
+        result.State.PlayerStates["Player01"].Armies[_center].ShouldBe(new Army() { Triangle = 2 });
+        result.State.PlayerStates["Player02"].Armies.ShouldNotContainKey(_center);
+        FightReport seen = opponentView.Report.Fights[_center];
+        seen.UpgradeLevels["Player01"].ShouldHaveSingleItem().ShouldBe(new KeyValuePair<Upgrade, byte>(Upgrade.TriangleExponent, 1));
+        seen.UpgradeLevels["Player02"].ShouldBeEmpty();
+    }
+
+    private static ImmutableDictionary<Upgrade, byte> Levels(params (Upgrade Upgrade, byte Level)[] levels)
+    {
+        return levels.ToImmutableDictionary(x => x.Upgrade, x => x.Level);
     }
 }

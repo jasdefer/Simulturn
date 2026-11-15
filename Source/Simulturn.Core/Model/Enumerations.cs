@@ -19,8 +19,9 @@ public enum Building
 
 public enum Upgrade
 {
-    UpgradeStartMatter,
-    DotUpgrade,
+    TriangleExponent,
+    CircleExponent,
+    SquareExponent,
 }
 
 public enum Visibility

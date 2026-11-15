@@ -24,7 +24,7 @@ public static class DefaultSettings
             ArmyCost = new Army() { Triangle = 200, Circle = 200, Square = 200, Dot = 75 },
             CompoundCost = new Compound() { Axis = 150, Dome = 100, Cube = 150, Plane = 350, Pyramid = 150 },
             ConstructionDuration = new Compound() { Axis = 2, Dome = 3, Cube = 3, Plane = 4, Pyramid = 3 },
-            FightExponent = new Army() { Triangle = 120, Circle = 120, Square = 120, Dot = 1 },
+            FightExponent = new Army() { Triangle = 120, Circle = 120, Square = 120, Dot = 0 },
             Income = new Army() { Triangle = 0, Circle = 0, Square = 0, Dot = 10 },
             MovementRange = new Army() { Triangle = 1, Circle = 1, Square = 1, Dot = 1 },
             ProvidedSpace = new Compound() { Axis = 10, Dome = 0, Cube = 0, Plane = 10, Pyramid = 0 },
@@ -36,13 +36,30 @@ public static class DefaultSettings
             StructureDamage = new Army() { Triangle = 5, Circle = 5, Square = 5, Dot = 1 },
             TrainingDuration = new Army() { Triangle = 2, Circle = 2, Square = 2, Dot = 1 },
             StartUpgrades = FrozenDictionary<string, ImmutableArray<Upgrade>>.Empty,
-            Upgrades = new IUpgradeLevel[]
-                {
-                    new DotUpgrade() { Cost = 150, Duration = 3, ExponentBonus = 20 },
-                    new DotUpgrade() { Cost = 175, Duration = 4, ExponentBonus = 20 },
-                    new UpgradeStartMatter() { Cost = 100, Duration = 2, Matter = 0 }
-                }.ToDictionary(),
+            Upgrades = new Dictionary<Upgrade, UpgradeDefinition>()
+            {
+                [Upgrade.TriangleExponent] = ExponentUpgrade(Unit.Triangle),
+                [Upgrade.CircleExponent] = ExponentUpgrade(Unit.Circle),
+                [Upgrade.SquareExponent] = ExponentUpgrade(Unit.Square)
+            }.ToFrozenDictionary(),
             HexagonSettings = hexagonSettings.ToFrozenDictionary()
+        };
+    }
+
+    /// <summary>
+    /// Two levels that raise the fight exponent of one fighting unit from 1.2 to 1.3 and 1.4.
+    /// Dots have no fight exponent and get no such upgrade.
+    /// </summary>
+    private static UpgradeDefinition ExponentUpgrade(Unit unit)
+    {
+        return new UpgradeDefinition()
+        {
+            AffectedUnits = [unit],
+            Levels =
+            [
+                new UpgradeLevel(Cost: 150, Duration: 3, new FightExponentBonus(10)),
+                new UpgradeLevel(Cost: 175, Duration: 4, new FightExponentBonus(20))
+            ]
         };
     }
 

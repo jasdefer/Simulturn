@@ -23,20 +23,20 @@ public sealed class ResearchValidationTest
     private static readonly Hexagon _opponentStart = new(1, 0);
 
     /// <summary>
-    /// A line of three hexagons. The dot upgrade (two levels in <see cref="TestSettings"/>) is researchable
-    /// on Player01's start and on the center, the start matter upgrade only on Player01's start. Player02's
+    /// A line of three hexagons. The triangle upgrade (two levels in <see cref="TestSettings"/>) is researchable
+    /// on Player01's start and on the center, the circle upgrade only on Player01's start. Player02's
     /// start offers nothing. The start hexagons hold no matter, so the players' matter never changes through income.
     /// </summary>
     private static readonly ImmutableDictionary<Hexagon, HexagonSettings> _map = Maps.Line(-1, 1)
-        .SetItem(_start, Maps.Start("Player01", matter: 0).WithResearch(Upgrade.DotUpgrade, Upgrade.UpgradeStartMatter))
-        .SetItem(_center, Maps.Hexagon().WithResearch(Upgrade.DotUpgrade))
+        .SetItem(_start, Maps.Start("Player01", matter: 0).WithResearch(Upgrade.TriangleExponent, Upgrade.CircleExponent))
+        .SetItem(_center, Maps.Hexagon().WithResearch(Upgrade.TriangleExponent))
         .SetItem(_opponentStart, Maps.Start("Player02", matter: 0));
 
     private static readonly GameSettings _richSettings = TestSettings.Create(_map, startMatter: 5000);
 
     private static Dictionary<string, Dictionary<Hexagon, Command>> Research(string playerId, params Hexagon[] hexagons)
     {
-        return Research(playerId, Upgrade.DotUpgrade, hexagons);
+        return Research(playerId, Upgrade.TriangleExponent, hexagons);
     }
 
     private static Dictionary<string, Dictionary<Hexagon, Command>> Research(string playerId, Upgrade upgrade, params Hexagon[] hexagons)
@@ -73,7 +73,7 @@ public sealed class ResearchValidationTest
             .PlayUntilResearchesComplete("Player01")
             .PlayTurn(Research("Player01", _start))
             .PlayUntilResearchesComplete("Player01");
-        state.PlayerStates["Player01"].UpgradeLevels[Upgrade.DotUpgrade].ShouldBe((byte)2);
+        state.PlayerStates["Player01"].UpgradeLevels[Upgrade.TriangleExponent].ShouldBe((byte)2);
 
         // Act
         var validations = Validate(state, Research("Player01", _start));
@@ -81,7 +81,7 @@ public sealed class ResearchValidationTest
         // Assert
         var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<UpgradeExceedsAvailableLevel>();
         validation.Hexagon.ShouldBe(_start);
-        validation.Upgrade.ShouldBe(Upgrade.DotUpgrade);
+        validation.Upgrade.ShouldBe(Upgrade.TriangleExponent);
         validation.CompletedLevels.ShouldBe((byte)2);
         validation.MaxLevel.ShouldBe(2);
     }
@@ -89,7 +89,7 @@ public sealed class ResearchValidationTest
     [Test]
     public void SameUpgradeOnAnotherHexagonWhileItIsPending_YieldsUpgradeAlreadyInResearch()
     {
-        // Arrange: a dot on the center, the dot upgrade pending at the start.
+        // Arrange: a dot on the center, the triangle upgrade pending at the start.
         var state = new GameState(_richSettings)
             .PlayTurn(MoveDotsToCenter(1))
             .PlayTurn(Research("Player01", _start));
@@ -100,13 +100,13 @@ public sealed class ResearchValidationTest
         // Assert
         var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<UpgradeAlreadyInResearch>();
         validation.Hexagon.ShouldBe(_center);
-        validation.Upgrade.ShouldBe(Upgrade.DotUpgrade);
+        validation.Upgrade.ShouldBe(Upgrade.TriangleExponent);
     }
 
     [Test]
     public void SameUpgradeOnTheSameHexagonWhileItIsPending_YieldsUpgradeAlreadyInResearchAndHexagonAlreadyResearching()
     {
-        // Arrange: the dot upgrade pending at the start.
+        // Arrange: the triangle upgrade pending at the start.
         var state = new GameState(_richSettings)
             .PlayTurn(Research("Player01", _start));
 
@@ -134,37 +134,37 @@ public sealed class ResearchValidationTest
         validationsStartFirst.Count.ShouldBe(2);
         validationsStartFirst.ShouldAllBe(x => x.Value is UpgradeRequestedOnMultipleHexagons);
         validationsStartFirst.Select(x => x.Value).Cast<UpgradeRequestedOnMultipleHexagons>().Select(x => x.Hexagon).ShouldBe([_start, _center], ignoreOrder: true);
-        validationsStartFirst.Select(x => x.Value).Cast<UpgradeRequestedOnMultipleHexagons>().ShouldAllBe(x => x.Upgrade == Upgrade.DotUpgrade && x.RequestedCount == 2);
+        validationsStartFirst.Select(x => x.Value).Cast<UpgradeRequestedOnMultipleHexagons>().ShouldAllBe(x => x.Upgrade == Upgrade.TriangleExponent && x.RequestedCount == 2);
         validationsCenterFirst.ShouldBe(validationsStartFirst, ignoreOrder: true);
     }
 
     [Test]
     public void OtherUpgradeOnAHexagonWithAPendingResearch_YieldsHexagonAlreadyResearching()
     {
-        // Arrange: the dot upgrade pending at the start.
+        // Arrange: the triangle upgrade pending at the start.
         var state = new GameState(_richSettings)
             .PlayTurn(Research("Player01", _start));
 
         // Act
-        var validations = Validate(state, Research("Player01", Upgrade.UpgradeStartMatter, _start));
+        var validations = Validate(state, Research("Player01", Upgrade.CircleExponent, _start));
 
         // Assert
         var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<HexagonAlreadyResearching>();
         validation.Hexagon.ShouldBe(_start);
-        validation.Upgrade.ShouldBe(Upgrade.UpgradeStartMatter);
-        validation.UpgradeInResearch.ShouldBe(Upgrade.DotUpgrade);
+        validation.Upgrade.ShouldBe(Upgrade.CircleExponent);
+        validation.UpgradeInResearch.ShouldBe(Upgrade.TriangleExponent);
     }
 
     [Test]
     public void DifferentUpgradesOnDifferentHexagons_AreAccepted()
     {
-        // Arrange: a dot on the center, the dot upgrade pending there.
+        // Arrange: a dot on the center, the triangle upgrade pending there.
         var state = new GameState(_richSettings)
             .PlayTurn(MoveDotsToCenter(1))
             .PlayTurn(Research("Player01", _center));
 
         // Act
-        var validations = Validate(state, Research("Player01", Upgrade.UpgradeStartMatter, _start));
+        var validations = Validate(state, Research("Player01", Upgrade.CircleExponent, _start));
 
         // Assert
         validations.ShouldBeEmpty();
@@ -180,7 +180,7 @@ public sealed class ResearchValidationTest
         var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<UpgradeNotResearchableOnHexagon>();
         validation.PlayerId.ShouldBe("Player02");
         validation.Hexagon.ShouldBe(_opponentStart);
-        validation.Upgrade.ShouldBe(Upgrade.DotUpgrade);
+        validation.Upgrade.ShouldBe(Upgrade.TriangleExponent);
     }
 
     [Test]
@@ -192,7 +192,7 @@ public sealed class ResearchValidationTest
 
         var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<ResearchRequiresDot>();
         validation.Hexagon.ShouldBe(_center);
-        validation.Upgrade.ShouldBe(Upgrade.DotUpgrade);
+        validation.Upgrade.ShouldBe(Upgrade.TriangleExponent);
     }
 
     [Test]
@@ -228,7 +228,7 @@ public sealed class ResearchValidationTest
     [Test]
     public void MovingTheLastDotOffAPendingResearch_YieldsMovementLeavesResearchWithoutDot()
     {
-        // Arrange: the dot upgrade pending at the start, five dots there.
+        // Arrange: the triangle upgrade pending at the start, five dots there.
         var state = new GameState(_richSettings)
             .PlayTurn(Research("Player01", _start));
 
@@ -238,7 +238,7 @@ public sealed class ResearchValidationTest
         // Assert
         var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<MovementLeavesResearchWithoutDot>();
         validation.Hexagon.ShouldBe(_start);
-        validation.Upgrade.ShouldBe(Upgrade.DotUpgrade);
+        validation.Upgrade.ShouldBe(Upgrade.TriangleExponent);
     }
 
     [Test]
@@ -256,7 +256,7 @@ public sealed class ResearchValidationTest
         // Arrange: a research and a movement of all dots in the same command.
         var state = new GameState(_richSettings);
         var commands = MoveDotsToCenter(5);
-        commands["Player01"][_start] = commands["Player01"][_start] with { Research = Upgrade.DotUpgrade };
+        commands["Player01"][_start] = commands["Player01"][_start] with { Research = Upgrade.TriangleExponent };
 
         // Act
         var validations = Validate(state, commands);
@@ -264,7 +264,7 @@ public sealed class ResearchValidationTest
         // Assert
         var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<MovementLeavesResearchWithoutDot>();
         validation.Hexagon.ShouldBe(_start);
-        validation.Upgrade.ShouldBe(Upgrade.DotUpgrade);
+        validation.Upgrade.ShouldBe(Upgrade.TriangleExponent);
     }
 
     [Test]
@@ -293,7 +293,7 @@ public sealed class ResearchValidationTest
             .PlayTurn(Research("Player01", _start));
         var player = state.PlayerStates["Player01"] with
         {
-            UpgradeLevels = ImmutableDictionary<Upgrade, byte>.Empty.Add(Upgrade.DotUpgrade, 2)
+            UpgradeLevels = ImmutableDictionary<Upgrade, byte>.Empty.Add(Upgrade.TriangleExponent, 2)
         };
         state = state with { PlayerStates = state.PlayerStates.SetItem("Player01", player) };
 
@@ -303,7 +303,7 @@ public sealed class ResearchValidationTest
         // Assert
         var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<UpgradeLevelsExceedTable>();
         validation.PlayerId.ShouldBe("Player01");
-        validation.Upgrade.ShouldBe(Upgrade.DotUpgrade);
+        validation.Upgrade.ShouldBe(Upgrade.TriangleExponent);
         validation.CompletedLevels.ShouldBe((byte)2);
         validation.PendingLevels.ShouldBe((byte)1);
         validation.MaxLevel.ShouldBe(2);
@@ -318,8 +318,8 @@ public sealed class ResearchValidationTest
         var player = state.PlayerStates["Player01"] with
         {
             Researches = ImmutableDictionary<Hexagon, Research>.Empty
-                .Add(_start, new Research(Upgrade.DotUpgrade, 5))
-                .Add(_center, new Research(Upgrade.DotUpgrade, 5))
+                .Add(_start, new Research(Upgrade.TriangleExponent, 5))
+                .Add(_center, new Research(Upgrade.TriangleExponent, 5))
         };
         state = state with { PlayerStates = state.PlayerStates.SetItem("Player01", player) };
 
@@ -329,7 +329,7 @@ public sealed class ResearchValidationTest
         // Assert
         var validation = validations.ShouldHaveSingleItem().Value.ShouldBeOfType<UpgradeInResearchOnMultipleHexagons>();
         validation.PlayerId.ShouldBe("Player01");
-        validation.Upgrade.ShouldBe(Upgrade.DotUpgrade);
+        validation.Upgrade.ShouldBe(Upgrade.TriangleExponent);
         validation.PendingCount.ShouldBe((byte)2);
     }
 
@@ -340,7 +340,7 @@ public sealed class ResearchValidationTest
         var state = new GameState(_richSettings);
         var player = state.PlayerStates["Player02"] with
         {
-            Researches = ImmutableDictionary<Hexagon, Research>.Empty.Add(_opponentStart, new Research(Upgrade.DotUpgrade, 2))
+            Researches = ImmutableDictionary<Hexagon, Research>.Empty.Add(_opponentStart, new Research(Upgrade.TriangleExponent, 2))
         };
         state = state with { PlayerStates = state.PlayerStates.SetItem("Player02", player) };
 
@@ -360,7 +360,7 @@ public sealed class ResearchValidationTest
         var state = new GameState(_richSettings);
         var player = state.PlayerStates["Player01"] with
         {
-            Researches = ImmutableDictionary<Hexagon, Research>.Empty.Add(_center, new Research(Upgrade.DotUpgrade, 2))
+            Researches = ImmutableDictionary<Hexagon, Research>.Empty.Add(_center, new Research(Upgrade.TriangleExponent, 2))
         };
         state = state with { PlayerStates = state.PlayerStates.SetItem("Player01", player) };
 

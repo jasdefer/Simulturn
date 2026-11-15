@@ -19,19 +19,19 @@ public sealed class ResearchResolutionTest
     private static readonly Hexagon _opponentStart = new(1, 0);
 
     /// <summary>
-    /// A line of three hexagons. The dot upgrade (level 1: 150 matter, 3 turns; level 2: 175 matter, 4 turns)
+    /// A line of three hexagons. The triangle upgrade (level 1: 150 matter, 3 turns; level 2: 175 matter, 4 turns)
     /// is researchable on Player01's start and on the center. No hexagon holds matter, so the players'
     /// matter only changes through research.
     /// </summary>
     private static readonly GameSettings _gameSettings = TestSettings.Create(Maps.Line(-1, 1)
-            .SetItem(_start, Maps.Start("Player01", matter: 0).WithResearch(Upgrade.DotUpgrade))
-            .SetItem(_center, Maps.Hexagon().WithResearch(Upgrade.DotUpgrade))
+            .SetItem(_start, Maps.Start("Player01", matter: 0).WithResearch(Upgrade.TriangleExponent))
+            .SetItem(_center, Maps.Hexagon().WithResearch(Upgrade.TriangleExponent))
             .SetItem(_opponentStart, Maps.Start("Player02", matter: 0)),
         startMatter: 1000);
 
     private static Dictionary<string, Dictionary<Hexagon, Command>> Research(Hexagon hexagon)
     {
-        return DictionaryExtensions.CommandsToDictionary([("Player01", hexagon, new Command() { Research = Upgrade.DotUpgrade })]);
+        return DictionaryExtensions.CommandsToDictionary([("Player01", hexagon, new Command() { Research = Upgrade.TriangleExponent })]);
     }
 
     private static Dictionary<string, Dictionary<Hexagon, Command>> MoveOneDotToCenter()
@@ -55,7 +55,7 @@ public sealed class ResearchResolutionTest
         var turn1 = state.PlayTurn(Research(_start));
 
         turn1.PlayerStates["Player01"].Matter.ShouldBe(850);
-        turn1.PlayerStates["Player01"].Researches[_start].ShouldBe(new Research(Upgrade.DotUpgrade, 2));
+        turn1.PlayerStates["Player01"].Researches[_start].ShouldBe(new Research(Upgrade.TriangleExponent, 2));
         turn1.PlayerStates["Player01"].UpgradeLevels.ShouldBeEmpty();
     }
 
@@ -72,11 +72,11 @@ public sealed class ResearchResolutionTest
         // Assert
         turn3.Turn.ShouldBe((ushort)3);
         turn3.PlayerStates["Player01"].Researches.ShouldBeEmpty();
-        turn3.PlayerStates["Player01"].UpgradeLevels[Upgrade.DotUpgrade].ShouldBe((byte)1);
+        turn3.PlayerStates["Player01"].UpgradeLevels[Upgrade.TriangleExponent].ShouldBe((byte)1);
         turn3.PlayerStates["Player01"].Matter.ShouldBe(850);
         turn7.Turn.ShouldBe((ushort)7);
         turn7.PlayerStates["Player01"].Researches.ShouldBeEmpty();
-        turn7.PlayerStates["Player01"].UpgradeLevels[Upgrade.DotUpgrade].ShouldBe((byte)2);
+        turn7.PlayerStates["Player01"].UpgradeLevels[Upgrade.TriangleExponent].ShouldBe((byte)2);
         turn7.PlayerStates["Player01"].Matter.ShouldBe(675);
     }
 
@@ -115,7 +115,7 @@ public sealed class ResearchResolutionTest
         // Assert
         afterFight.PlayerStates["Player01"].Armies.ShouldNotContainKey(_center);
         afterFight.PlayerStates["Player01"].Researches.ShouldBeEmpty();
-        afterFight.PlayerStates["Player01"].UpgradeLevels[Upgrade.DotUpgrade].ShouldBe((byte)1);
+        afterFight.PlayerStates["Player01"].UpgradeLevels[Upgrade.TriangleExponent].ShouldBe((byte)1);
         afterFight.PlayerStates["Player01"].Matter.ShouldBe(850);
     }
 
@@ -154,7 +154,7 @@ public sealed class ResearchResolutionTest
 
         // Assert
         afterSwap.PlayerStates["Player01"].Armies[_center].ShouldBe(new Army() { Dot = 1 });
-        afterSwap.PlayerStates["Player01"].Researches[_center].ShouldBe(new Research(Upgrade.DotUpgrade, 3));
+        afterSwap.PlayerStates["Player01"].Researches[_center].ShouldBe(new Research(Upgrade.TriangleExponent, 3));
         afterSwap.PlayerStates["Player01"].Matter.ShouldBe(850);
     }
 }

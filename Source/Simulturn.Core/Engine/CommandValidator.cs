@@ -237,11 +237,7 @@ public sealed class CommandValidator
         int researchCost = 0;
         foreach (Upgrade upgrade in _requestedUpgradeCounts.Keys)
         {
-            int level = _playerState.UpgradeLevels.GetValueOrDefault(upgrade);
-            if (level < _settings.MaxUpgradeLevel(upgrade))
-            {
-                researchCost += _settings.Upgrades[upgrade][level].Cost; // a level of 1 means the first upgrade, which is at index 0
-            }
+            researchCost += _settings.NextUpgradeLevel(upgrade, _playerState.UpgradeLevels.GetValueOrDefault(upgrade))?.Cost ?? 0;
         }
         return researchCost;
     }

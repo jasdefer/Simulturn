@@ -18,7 +18,7 @@ public sealed class RandomPlayerTest
         return TestSettings.Create(Maps.Disc(2, matter: 1000)
             .SetItem(new Hexagon(-2, 0), Maps.Start("Player01"))
             .SetItem(new Hexagon(2, 0), Maps.Start("Player02"))
-            .SetItem(new Hexagon(0, 0), Maps.Hexagon(1000).WithResearch(Upgrade.DotUpgrade, Upgrade.DotUpgrade)));
+            .SetItem(new Hexagon(0, 0), Maps.Hexagon(1000).WithResearch(Upgrade.TriangleExponent, Upgrade.CircleExponent, Upgrade.SquareExponent)));
     }
 
     [Test]
