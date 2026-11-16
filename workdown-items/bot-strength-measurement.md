@@ -1,8 +1,9 @@
 ---
 id: bot-strength-measurement
 title: Die Stärke eines Bots lässt sich nicht verlässlich messen
-status: todo
+status: in_progress
 created: 2026-11-16
+updated: 2026-11-16
 ---
 ## Problem
 
@@ -63,3 +64,24 @@ Keine Vorgaben, nur Stoff zum Nachdenken bei der Umsetzung.
 - Viele tausend Spiele laufen in einer Zeit, in der man auf das Ergebnis warten mag.
 - Das Ergebnis sagt für jede Paarung, wer gewinnt und wie sicher das ist, getrennt nach Karte und Sitz.
 - Zwei Läufe von verschiedenen Tagen lassen sich vergleichen.
+
+## Umsetzung
+
+Stand 2026-11-16, auf dem Branch `feature/bot-foundation`.
+
+- **Abriss.** `Simulturn.AI`, `Simulturn.Runner` und `Simulturn.AI.Test` sind entfernt. Der Zufallsgenerator für gültige Befehle liegt als Testwerkzeug in `Simulturn.Test.Common` (`RandomCommands`), `EngineInvariantsTest` in `Simulturn.Core.Test`.
+- **`Source/Simulturn.Bots`** (Lib): der Vertrag `IBot` (Sicht rein, Befehle raus), der `BotCatalog` (Name und Fabrik aus einem Seed) und `Match.Play`, das ein Spiel zu Ende spielt. Am ersten Tag gibt es nur den `IdleBot`.
+- **`Source/Simulturn.Lab`** (Console-App): alles, was kein Test ist. Die erste Studie ist die Arena (`arena`), ihre Profile stehen in `appsettings.json`, Werte lassen sich auf der Kommandozeile ersetzen. Weitere Studien, etwa zum Balancing, bekommen einen eigenen Ordner.
+- **`Test/Simulturn.Bots.Test`**: Ebene 4 der Teststrategie, mit geskripteten Bots.
+
+Entschieden:
+
+- **Zuglimit:** Ein Spiel endet als Unentschieden nach 1000 Zügen in Folge, in denen nichts passiert ist (`Stall`), und spätestens nach 5000 Zügen (`TurnLimit`). Kein Maß für den Stand am Limit.
+- **Ungültige Befehle:** Sie sind ein Fehler des Bots. Der Lauf bricht ab und nennt Paarung, Karte, Seed und Sitz.
+- **Karten:** Die Typen `Open`, `HomeOnly`, `Expansions` und `Guarded` des Generators, je Typ die Seeds 1 bis n. Die Engine und die Karten würfeln nicht; die Streuung eines Laufs kommt aus den Karten-Seeds und aus Bots, die würfeln.
+- **Ergebnis:** Eine Zeile pro Paarung, Kartentyp und Sitz mit Siegen, Niederlagen, Unentschieden und der Siegquote samt 95-%-Spanne (Wilson). Der Lauf schreibt es mit seinen Angaben und der Version der Engine (samt Commit) als JSON nach `measurements/`; der Ordner liegt nicht in Git.
+- **Durchsatz:** Auf 20 Kernen rund 50.000 bis 75.000 Züge pro Sekunde mit Zufallsbefehlen, 160.000 bis 230.000 leere Züge. Ein entschiedenes Spiel kostet wenige Millisekunden.
+
+Bewusst nicht gebaut: ein Rechenbudget pro Zug, ein Pool eingefrorener Bots, das Fortsetzen und Zusammenführen von Läufen. Sie kommen, wenn ein Bot oder ein Lauf sie braucht.
+
+Der erste echte Bot ist ein Zufallsbot, der aus den möglichen Befehlen wählt. Er wartet auf [[client-possible-orders]] und ist dann die erste Probe für die Arena.

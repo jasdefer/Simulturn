@@ -5,7 +5,6 @@ Cards grouped into columns by `status`.
 ## todo
 - [AI-Gegner spielen zu schwach](../workdown-items/ai-opponents-too-weak.md)
 - [Man sieht nicht, warum ein Bot verliert](../workdown-items/bot-game-diagnosis.md)
-- [Die Stärke eines Bots lässt sich nicht verlässlich messen](../workdown-items/bot-strength-measurement.md)
 - [Ein Client kann nicht fragen, was möglich ist](../workdown-items/client-possible-orders.md)
 - [Ein Client kann nicht fragen, was passieren würde](../workdown-items/client-what-if.md)
 - [Spielstände speichern und wiederherstellen](../workdown-items/game-persistence.md)
@@ -18,7 +17,7 @@ Cards grouped into columns by `status`.
 - [Es gibt nur drei gleichartige Upgrades](../workdown-items/upgrade-variety.md)
 
 ## in_progress
-_(no cards)_
+- [Die Stärke eines Bots lässt sich nicht verlässlich messen](../workdown-items/bot-strength-measurement.md)
 
 ## done
 - [Kampfausgang vorab berechnen können](../workdown-items/combat-forecast-core.md)

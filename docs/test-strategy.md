@@ -17,6 +17,7 @@ The engine (`Simulturn.Core`) is deterministic and pure: `TurnResolution.Resolve
 | 1 Unit | One rule, one turn: a single validation type of `CommandValidator.Validate`, a single phase of `TurnResolution.Resolve`, the value objects `Army`, `Compound`, `Hexagon`, fog of war | Exact values | `Simulturn.Core.Test` |
 | 2 Scenario | Several scripted turns whose interplay has rules (a fight while a training is pending, a research completing and then a fight) | Exact values | `Simulturn.Core.Test` |
 | 3 Invariants | Random games over many seeds, maps and option presets | Invariants after every turn, no exact values | `Simulturn.Core.Test` |
+| 4 Bots | `Match`, the arena of the lab, later the bots themselves | Exact outcome of scripted bots (winner, turn count, rows of a run) | `Simulturn.Bots.Test` |
 
 Not planned: integration tests across process or system boundaries. There is no API, no database, no UI. When they arrive, they get their own tests there.
 
@@ -64,9 +65,11 @@ The invariants are test code, not part of `StateValidator.Validate`. `StateValid
 
 Scale: the number of seeds and turns is a constant in the test. The whole suite runs in a few seconds. If a test ever takes more than a few seconds, it gets a TUnit category so it can be excluded from the default run. Whoever wants more raises the constant locally.
 
-### Not a layer yet: bots
+### Layer 4: Bots
 
-There are no bots and no arena at the moment; the old ones were removed (work item `bot-strength-measurement`). The tests of the new measurement get their own layer and their own test project when it is built.
+Goal: `Match` and the arena keep their contract. The tests use scripted bots (`ScriptedBot`) on small hand-built maps, so every outcome is exact: who wins, after how many turns, which rows a run has. One test plays the bots of the catalog on the maps of the arena, with small limits.
+
+A test of a bot shows a behaviour of that bot on a scripted situation. How strong a bot is against another one is not a test: that is a run of the lab (`Source/Simulturn.Lab`), read by a human.
 
 ## Known bugs
 
@@ -78,13 +81,14 @@ Example: until `research-cost-and-duration` was fixed, matter conservation faile
 
 ```
 Test/
-  Simulturn.Test.Common/    class library, referenced by the test project
+  Simulturn.Test.Common/    class library, referenced by the test projects
     TestSettings.cs         the standard rules for tests, delegates to DefaultSettings in Simulturn.Core
     StateInvariants.cs      the invariants of layer 3, also usable in scenario tests
     GameStateSnapshot.cs    canonical string of a state for determinism checks
     RandomCommands.cs       valid random commands for one player, the command source of layer 3
     GameStateExtensions.cs  PlayTurn: validate the commands, resolve the turn, check the state invariants; ResolveTurn does the same and also returns the report
   Simulturn.Core.Test/      layers 1, 2 and 3
+  Simulturn.Bots.Test/      layer 4, tests Simulturn.Bots and Simulturn.Lab
   Simulturn.Core.Console/   not a test, manual play
 ```
 
@@ -101,5 +105,6 @@ Test/
 
 ```bash
 dotnet test Simulturn.sln
+dotnet test Test/Simulturn.Bots.Test/Simulturn.Bots.Test.csproj
 dotnet test Test/Simulturn.Core.Test/Simulturn.Core.Test.csproj -- --treenode-filter "/*/*/*/ValidatePendingWorkTest"
 ```

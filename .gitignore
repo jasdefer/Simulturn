@@ -416,3 +416,6 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Results of the lab (Source/Simulturn.Lab)
+measurements/

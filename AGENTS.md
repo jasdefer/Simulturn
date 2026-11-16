@@ -6,7 +6,9 @@ Use it as the default workflow and style baseline for this repository.
 - Solution: `Simulturn.sln`
 - Runtime: .NET 11 (`net11.0`, C# 15), SDK pinned in `global.json`
 - Core project: `Source/Simulturn.Core/Simulturn.Core.csproj`
-- Test projects: `Test/Simulturn.Core.Test` (engine, including the random games against the invariants), `Test/Simulturn.Test.Common` (shared fixtures)
+- Bots: `Source/Simulturn.Bots` (library: bot contract, catalog, one match)
+- Lab: `Source/Simulturn.Lab` (console app for studies that are not tests; the first one is the arena)
+- Test projects: `Test/Simulturn.Core.Test` (engine, including the random games against the invariants), `Test/Simulturn.Bots.Test` (match, arena), `Test/Simulturn.Test.Common` (shared fixtures)
 - Test strategy: `docs/test-strategy.md` (read before adding tests)
 - Console project: `Test/Simulturn.Core.Console/Simulturn.Core.Console.csproj`
 - Test stack: TUnit + Shouldly
@@ -69,9 +71,16 @@ dotnet format Simulturn.sln --verify-no-changes
 dotnet run --project Test/Simulturn.Core.Console/Simulturn.Core.Console.csproj
 ```
 
+### Run the lab
+The first argument is the study, `--profile` picks a profile of `Source/Simulturn.Lab/appsettings.json` (default `quick`), any other `--Key value` replaces a value of the profile. The result goes to `measurements/` (not in git).
+```bash
+dotnet run --project Source/Simulturn.Lab -c Release -- arena
+dotnet run --project Source/Simulturn.Lab -c Release -- arena --profile full --MapSeeds 500
+```
+
 ## Current Build Health
 At generation time, `dotnet build Simulturn.sln` and
-`dotnet test Test/Simulturn.Core.Test/Simulturn.Core.Test.csproj` passed.
+`dotnet test Simulturn.sln` passed.
 
 ## Project Structure Expectations
 - Core game model types live in `Source/Simulturn.Core/Model/`
@@ -103,6 +112,11 @@ At generation time, `dotnet build Simulturn.sln` and
 - Mutable transition helpers use builders in `PlayerStateBuilder` (internal working state of `TurnResolution`)
 - Cross-cutting helpers are in `Source/Simulturn.Core/Extensions/`
 - Global aliases/usings are in `Source/Simulturn.Core/GlobalUsings.cs`
+- A bot is a client: `IBot.GetCommands(PlayerGameState)` in `Source/Simulturn.Bots` gets the view of its player and nothing else, and asks every rule from the engine. One instance plays one game on one seat and holds its memories itself
+- `Match.Play(settings, bots, limits)` is the only place that plays a game between bots. It ends with `Victory`, `MutualDefeat`, `Stall` (nothing happened for `MatchLimits.StallTurns` turns, `Match.IsStill`) or `TurnLimit`; invalid commands of a bot are a bug and throw `InvalidBotCommandsException`. The engine knows no turn limit
+- The engine and the maps do not roll dice. A match follows from the settings and the bots; the spread of a run comes from the map seeds and from bots that roll dice with the seed they are created with
+- `BotCatalog.All` lists the bots by name. A new bot is a class in `Source/Simulturn.Bots/Catalog/` and a line there; nothing in the lab changes
+- `Source/Simulturn.Lab` holds what only serves to examine the game, one folder per study. `Source/Simulturn.Bots` holds what a UI needs too. `ArenaStudy.Run(options, bots, maps)` plays every pairing on every map type with both seat orders and gives an `ArenaResult` with one `ArenaRow` per pairing, map type and seat; the options name bots and maps, the lists passed in provide them
 
 ## Code Style Guidelines
 Follow local conventions in touched files first.
