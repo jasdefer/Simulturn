@@ -4,8 +4,14 @@ Cards grouped into columns by `status`.
 
 ## todo
 - [AI-Gegner spielen zu schwach](../workdown-items/ai-opponents-too-weak.md)
+- [Man sieht nicht, warum ein Bot verliert](../workdown-items/bot-game-diagnosis.md)
+- [Die Stärke eines Bots lässt sich nicht verlässlich messen](../workdown-items/bot-strength-measurement.md)
+- [Ein Client kann nicht fragen, was möglich ist](../workdown-items/client-possible-orders.md)
+- [Ein Client kann nicht fragen, was passieren würde](../workdown-items/client-what-if.md)
 - [Spielstände speichern und wiederherstellen](../workdown-items/game-persistence.md)
+- [Ein Bot weiß nicht, womit er beim Gegner rechnen muss](../workdown-items/opponent-estimate.md)
 - [Die Zusammensetzung einer gegnerischen Armee erfährt man nur im Kampf](../workdown-items/reconnaissance.md)
+- [Niemand kann sagen, wer in einem Zustand vorne liegt](../workdown-items/state-evaluation.md)
 - [Neue UI](../workdown-items/ui.md)
 - [UI-Konzept erarbeiten](../workdown-items/ui-concept.md)
 - [Spieler starten alle mit denselben Voraussetzungen](../workdown-items/upgrade-draft.md)
