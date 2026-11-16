@@ -4,16 +4,17 @@ using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
 using Simulturn.Core.Model.Upgrades;
-using System.Collections.Immutable;
 
-namespace Simulturn.AI.Players;
+namespace Simulturn.Test.Common;
 
 /// <summary>
-/// Issues a random sequence of legal atomic actions per turn.
-/// Armies move as stacks towards randomly weighted destinations (see <see cref="RandomPlayerOptions"/>)
+/// The command source of the random games of layer 3: issues a random sequence of legal atomic
+/// actions per turn for one player of one game. It only gets the view of its player.
+/// Armies move as stacks towards randomly weighted destinations (see <see cref="RandomCommandsOptions"/>)
 /// instead of scattering unit by unit. All produced commands pass validation by construction.
+/// A test tool for the engine, not a bot: it is not meant to play well.
 /// </summary>
-public sealed class RandomPlayer : IArtificialPlayer
+public sealed class RandomCommands
 {
     private static readonly (short X, short Y)[] _directions = [(1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1)];
     private static readonly double[] _movementFractions = [0.25, 0.5, 1.0];
@@ -21,16 +22,13 @@ public sealed class RandomPlayer : IArtificialPlayer
     private static readonly ImmutableArray<Building> _buildings = [.. Enum.GetValues<Building>()];
 
     private readonly Random _random;
-    private readonly RandomPlayerOptions _options;
+    private readonly RandomCommandsOptions _options;
     private ImmutableDictionary<Hexagon, HexagonMemory> _memories = ImmutableDictionary<Hexagon, HexagonMemory>.Empty;
 
-    public string Name { get; }
-
-    public RandomPlayer(int seed, RandomPlayerOptions? options = null, string? name = null)
+    public RandomCommands(int seed, RandomCommandsOptions? options = null)
     {
         _random = new Random(seed);
-        _options = options ?? new RandomPlayerOptions();
-        Name = name ?? $"Random {seed}";
+        _options = options ?? new RandomCommandsOptions();
     }
 
     public IReadOnlyDictionary<Hexagon, Command> GetCommands(PlayerGameState playerGameState)

@@ -7,7 +7,7 @@ namespace Simulturn.Core.Setup;
 
 /// <summary>
 /// The standard rules of the game: costs, durations, armor, income and upgrades. This is the only
-/// copy; tests, console, arena and a UI all start from here and differ only in their map.
+/// copy; tests, console, bots and a UI all start from here and differ only in their map.
 /// </summary>
 public static class DefaultSettings
 {

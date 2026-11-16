@@ -1,10 +1,10 @@
-namespace Simulturn.AI.Players;
+namespace Simulturn.Test.Common;
 
 /// <summary>
-/// Controls how often the <see cref="RandomPlayer"/> acts and where its armies tend to move.
-/// The movement weights bias the random destination choice; they do not make the player smart.
+/// Controls how often the <see cref="RandomCommands"/> acts and where its armies tend to move.
+/// The movement weights bias the random destination choice; they do not make the commands smart.
 /// </summary>
-public sealed record RandomPlayerOptions
+public sealed record RandomCommandsOptions
 {
     /// <summary>
     /// The probability per own hexagon with idle dots to start a construction.
@@ -44,14 +44,14 @@ public sealed record RandomPlayerOptions
     /// <summary>
     /// No movement bias at all: every destination is equally likely. The pure chaos baseline.
     /// </summary>
-    public static RandomPlayerOptions Uniform => new()
+    public static RandomCommandsOptions Uniform => new()
     {
         AttackWeight = 0,
         DefendWeight = 0,
         ExpandWeight = 0
     };
 
-    public static RandomPlayerOptions Aggressive => new()
+    public static RandomCommandsOptions Aggressive => new()
     {
         MovementProbability = 0.5,
         AttackWeight = 5,
@@ -59,14 +59,14 @@ public sealed record RandomPlayerOptions
         ExpandWeight = 1
     };
 
-    public static RandomPlayerOptions Defensive => new()
+    public static RandomCommandsOptions Defensive => new()
     {
         AttackWeight = 0,
         DefendWeight = 5,
         ExpandWeight = 0.5
     };
 
-    public static RandomPlayerOptions Expansive => new()
+    public static RandomCommandsOptions Expansive => new()
     {
         MovementProbability = 0.4,
         AttackWeight = 0.5,

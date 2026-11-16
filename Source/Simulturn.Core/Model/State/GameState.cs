@@ -62,7 +62,7 @@ public sealed record GameState
 
     /// <summary>
     /// Creates a game state from explicit parts. Intended for client side what-if simulation
-    /// of believed states (e.g. by AI players); real games only ever evolve through
+    /// of believed states (e.g. by bots); real games only ever evolve through
     /// <see cref="TurnResolution.Resolve"/>. The caller is responsible for the consistency of the parts.
     /// </summary>
     public static GameState FromParts(GameSettings gameSettings,

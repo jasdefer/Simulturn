@@ -16,8 +16,7 @@ The engine (`Simulturn.Core`) is deterministic and pure: `TurnResolution.Resolve
 |---|---|---|---|
 | 1 Unit | One rule, one turn: a single validation type of `CommandValidator.Validate`, a single phase of `TurnResolution.Resolve`, the value objects `Army`, `Compound`, `Hexagon`, fog of war | Exact values | `Simulturn.Core.Test` |
 | 2 Scenario | Several scripted turns whose interplay has rules (a fight while a training is pending, a research completing and then a fight) | Exact values | `Simulturn.Core.Test` |
-| 3 Invariants | Random games over many seeds, maps and player options | Invariants after every turn, no exact values | `Simulturn.AI.Test` |
-| 4 Game flow | `GameRunner`, `Arena`, and the strength of the AI players | Plausible outcome (winner, turn count, win rate) | `Simulturn.AI.Test` |
+| 3 Invariants | Random games over many seeds, maps and option presets | Invariants after every turn, no exact values | `Simulturn.Core.Test` |
 
 Not planned: integration tests across process or system boundaries. There is no API, no database, no UI. When they arrive, they get their own tests there.
 
@@ -36,7 +35,7 @@ Goal: rules that only show over several turns. The turns are scripted explicitly
 
 ### Layer 3: Invariants
 
-Goal: find what nobody scripted. `RandomPlayer` plays against `RandomPlayer` over many seeds, maps (one of them with neutral armies) and option presets. After every turn, invariants are checked that must hold in every reachable state.
+Goal: find what nobody scripted. `RandomCommands` gives the commands of both players over many seeds, maps (one of them with neutral armies) and option presets. After every turn, invariants are checked that must hold in every reachable state. `RandomCommands` only gets the view of its player and only produces valid commands, so every failure is an engine bug. It is a test tool, not a bot.
 
 State invariants (`StateInvariants.CheckState`, hold for a single state):
 
@@ -63,11 +62,11 @@ Determinism (own tests):
 
 The invariants are test code, not part of `StateValidator.Validate`. `StateValidator.Validate` checks what a client must be able to check on a single state. The invariants may know the previous state and the commands, and they may be expensive.
 
-Scale: the number of seeds and turns is a constant in the test. The whole test run stays well under a minute. Whoever wants more raises the constant locally.
+Scale: the number of seeds and turns is a constant in the test. The whole suite runs in a few seconds. If a test ever takes more than a few seconds, it gets a TUnit category so it can be excluded from the default run. Whoever wants more raises the constant locally.
 
-### Layer 4: Game flow
+### Not a layer yet: bots
 
-Goal: `GameRunner` and `Arena` keep their contract, and the AI players have the strength their documentation claims. These tests are probabilistic in outcome but deterministic in execution (fixed seeds). Today the whole suite runs in about 25 seconds, most of it in the random games of layer 3. If a test ever takes more than a few seconds, it gets a TUnit category so it can be excluded from the default run.
+There are no bots and no arena at the moment; the old ones were removed (work item `bot-strength-measurement`). The tests of the new measurement get their own layer and their own test project when it is built.
 
 ## Known bugs
 
@@ -79,23 +78,23 @@ Example: until `research-cost-and-duration` was fixed, matter conservation faile
 
 ```
 Test/
-  Simulturn.Test.Common/    class library, referenced by both test projects
+  Simulturn.Test.Common/    class library, referenced by the test project
     TestSettings.cs         the standard rules for tests, delegates to DefaultSettings in Simulturn.Core
     StateInvariants.cs      the invariants of layer 3, also usable in scenario tests
     GameStateSnapshot.cs    canonical string of a state for determinism checks
+    RandomCommands.cs       valid random commands for one player, the command source of layer 3
     GameStateExtensions.cs  PlayTurn: validate the commands, resolve the turn, check the state invariants; ResolveTurn does the same and also returns the report
-  Simulturn.Core.Test/      layers 1 and 2
-  Simulturn.AI.Test/        layers 3 and 4, plus ScriptedPlayer and IdlePlayer based helpers
+  Simulturn.Core.Test/      layers 1, 2 and 3
   Simulturn.Core.Console/   not a test, manual play
 ```
 
-`Simulturn.Test.Common` references `Simulturn.Core` and Shouldly, never `Simulturn.AI`. Production code gets no test dependency. The standard rules and the maps live in production code, in `Simulturn.Core/Setup`: `DefaultSettings` is the only copy of the rules, `Maps` builds fixed maps by hand, `MapGenerator` builds fair maps from `MapGeneratorOptions` (types `Open`, `HomeOnly`, `Expansions`). `TestSettings` delegates to `DefaultSettings`; console, arena and tests share that source.
+`Simulturn.Test.Common` references `Simulturn.Core` and Shouldly, never a bot project. Production code gets no test dependency. The standard rules and the maps live in production code, in `Simulturn.Core/Setup`: `DefaultSettings` is the only copy of the rules, `Maps` builds fixed maps by hand, `MapGenerator` builds fair maps from `MapGeneratorOptions` (types `Open`, `HomeOnly`, `Expansions`). `TestSettings` delegates to `DefaultSettings`; console and tests share that source.
 
 ## Conventions
 
 - TUnit and Shouldly. No `Retry`.
 - Test names: `Scenario_Expectation`, for example `TrainingWithoutBuilding_YieldsMissingBuildingForTraining`.
-- A test builds its state with `TestSettings` and `Maps` (a small hand-built map for layers 1 and 2) or with `DefaultSettings.Create(MapGeneratorOptions)` (a generated map for layers 3 and 4), changes it only through `TurnResolution.Resolve` (via `PlayTurn`), and validates commands before resolving them, unless the test checks the opposite.
+- A test builds its state with `TestSettings` and `Maps` (a small hand-built map for layers 1 and 2) or with `DefaultSettings.Create(MapGeneratorOptions)` (a generated map for layer 3), changes it only through `TurnResolution.Resolve` (via `PlayTurn`), and validates commands before resolving them, unless the test checks the opposite.
 - A test asserts validation types exactly (`ShouldBeOfType<...>`), not just "not empty".
 
 ## Commands

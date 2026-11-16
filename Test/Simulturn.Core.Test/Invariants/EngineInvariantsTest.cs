@@ -1,4 +1,3 @@
-using Simulturn.AI.Players;
 using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
@@ -7,24 +6,29 @@ using Simulturn.Core.Model.State;
 using Simulturn.Core.Setup;
 using Simulturn.Test.Common;
 
-namespace Simulturn.AI.Test;
+namespace Simulturn.Core.Test.Invariants;
 
 /// <summary>
 /// Layer 3 of the test strategy: random games must satisfy the engine invariants on every turn.
-/// The random players only produce valid commands, so every failure here is an engine bug.
+/// <see cref="RandomCommands"/> only produces valid commands, so every failure here is an engine bug.
 /// </summary>
 public sealed class EngineInvariantsTest
 {
     private const int Seeds = 8;
     private const ushort MaxTurns = 100;
 
-    private static readonly RandomPlayerOptions[] _presets =
+    /// <summary>
+    /// What gives the commands of one player for a turn, from the view of that player.
+    /// </summary>
+    private delegate IReadOnlyDictionary<Hexagon, Command> CommandSource(PlayerGameState view);
+
+    private static readonly RandomCommandsOptions[] _presets =
     [
-        new RandomPlayerOptions(),
-        RandomPlayerOptions.Uniform,
-        RandomPlayerOptions.Aggressive,
-        RandomPlayerOptions.Defensive,
-        RandomPlayerOptions.Expansive
+        new RandomCommandsOptions(),
+        RandomCommandsOptions.Uniform,
+        RandomCommandsOptions.Aggressive,
+        RandomCommandsOptions.Defensive,
+        RandomCommandsOptions.Expansive
     ];
 
     /// <summary>
@@ -47,22 +51,25 @@ public sealed class EngineInvariantsTest
         }));
     }
 
-    private static Dictionary<string, IArtificialPlayer> RandomPlayers(int seed, Func<RandomPlayerOptions, RandomPlayerOptions>? adjust = null)
+    /// <summary>
+    /// Fresh command sources for one game: the same seed only gives the same game with new instances.
+    /// </summary>
+    private static Dictionary<string, CommandSource> RandomPlayers(int seed, Func<RandomCommandsOptions, RandomCommandsOptions>? adjust = null)
     {
         adjust ??= options => options;
-        return new Dictionary<string, IArtificialPlayer>()
+        return new Dictionary<string, CommandSource>()
         {
-            { "Player01", new RandomPlayer(seed, adjust(_presets[seed % _presets.Length])) },
-            { "Player02", new RandomPlayer(seed + 1000, adjust(_presets[(seed + 1) % _presets.Length])) }
+            { "Player01", new RandomCommands(seed, adjust(_presets[seed % _presets.Length])).GetCommands },
+            { "Player02", new RandomCommands(seed + 1000, adjust(_presets[(seed + 1) % _presets.Length])).GetCommands }
         };
     }
 
     /// <summary>
-    /// Plays a game like <see cref="GameRunner"/>, but hands every resolved turn together with
+    /// Plays a game up to the turn limit and hands every resolved turn together with
     /// its commands and its predecessor to the callback.
     /// </summary>
     private static GameState PlayGame(GameSettings gameSettings,
-        IReadOnlyDictionary<string, IArtificialPlayer> players,
+        IReadOnlyDictionary<string, CommandSource> players,
         Action<GameState, Dictionary<string, IReadOnlyDictionary<Hexagon, Command>>, TurnResult> onTurnResolved)
     {
         TurnResult turnResult = new(new GameState(gameSettings), TurnReport.Empty);
@@ -72,7 +79,7 @@ public sealed class EngineInvariantsTest
             Dictionary<string, IReadOnlyDictionary<Hexagon, Command>> commands = [];
             foreach (string playerId in state.PlayerIds)
             {
-                commands[playerId] = players[playerId].GetCommands(FogOfWar.GetPlayerGameState(turnResult, playerId));
+                commands[playerId] = players[playerId](FogOfWar.GetPlayerGameState(turnResult, playerId));
                 CommandValidator.Validate(state, playerId, commands[playerId]).ShouldBeEmpty($"{playerId} issued invalid commands on turn {state.Turn}.");
             }
             turnResult = TurnResolution.Resolve(state, commands);
@@ -151,25 +158,23 @@ public sealed class EngineInvariantsTest
             List<string> reversed = [];
             PlayGame(gameSettings, RandomPlayers(seed: 5), (_, _, next) => plain.Add(GameStateSnapshot.Of(next.State)));
             var reversedPlayers = RandomPlayers(seed: 5)
-                .ToDictionary(x => x.Key, x => (IArtificialPlayer)new ReversedCommandsPlayer(x.Value));
+                .ToDictionary(x => x.Key, x => Reversed(x.Value));
             PlayGame(gameSettings, reversedPlayers, (_, _, next) => reversed.Add(GameStateSnapshot.Of(next.State)));
 
             reversed.ShouldBe(plain, $"Map {map}.");
         }
     }
 
-    private sealed class ReversedCommandsPlayer(IArtificialPlayer inner) : IArtificialPlayer
+    private static CommandSource Reversed(CommandSource inner)
     {
-        public string Name => inner.Name;
-
-        public IReadOnlyDictionary<Hexagon, Command> GetCommands(PlayerGameState playerGameState)
+        return view =>
         {
             Dictionary<Hexagon, Command> reversed = [];
-            foreach ((Hexagon hexagon, Command command) in inner.GetCommands(playerGameState).Reverse())
+            foreach ((Hexagon hexagon, Command command) in inner(view).Reverse())
             {
                 reversed[hexagon] = command;
             }
             return reversed;
-        }
+        };
     }
 }
