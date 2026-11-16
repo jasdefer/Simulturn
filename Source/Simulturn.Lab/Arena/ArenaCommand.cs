@@ -54,8 +54,8 @@ public static class ArenaCommand
             MapSeeds = ReadNumber(configuration, profile, "MapSeeds", 1),
             Limits = new MatchLimits()
             {
-                MaxTurns = (ushort)ReadNumber(configuration, profile, "MaxTurns", defaults.MaxTurns),
-                StallTurns = (ushort)ReadNumber(configuration, profile, "StallTurns", defaults.StallTurns)
+                MaxTurns = ReadTurns(configuration, profile, "MaxTurns", defaults.MaxTurns),
+                StallTurns = ReadTurns(configuration, profile, "StallTurns", defaults.StallTurns)
             }
         };
     }
@@ -67,6 +67,16 @@ public static class ArenaCommand
             return [.. overridden.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)];
         }
         return [.. profile.GetSection(key).GetChildren().Select(x => x.Value).OfType<string>()];
+    }
+
+    private static ushort ReadTurns(IConfiguration configuration, IConfigurationSection profile, string key, ushort fallback)
+    {
+        int turns = ReadNumber(configuration, profile, key, fallback);
+        if (turns is < 0 or > ushort.MaxValue)
+        {
+            throw new ArgumentOutOfRangeException(key, turns, $"{key} must lie between 0 and {ushort.MaxValue}.");
+        }
+        return (ushort)turns;
     }
 
     private static int ReadNumber(IConfiguration configuration, IConfigurationSection profile, string key, int fallback)

@@ -44,4 +44,13 @@ public sealed class ArenaCommandTest
         options.Bots.ShouldBe(["a", "b", "c"]);
         options.Maps.ShouldBe(["Open"]);
     }
+
+    [Test]
+    [Arguments("MaxTurns", "70000")]
+    [Arguments("MaxTurns", "-1")]
+    [Arguments("StallTurns", "70000")]
+    public void TurnsOutsideTheRangeOfAMatch_Throw(string key, string value)
+    {
+        Should.Throw<ArgumentOutOfRangeException>(() => Read((key, value))).ParamName.ShouldBe(key);
+    }
 }
