@@ -85,3 +85,18 @@ Entschieden:
 Bewusst nicht gebaut: ein Rechenbudget pro Zug, ein Pool eingefrorener Bots, das Fortsetzen und Zusammenführen von Läufen. Sie kommen, wenn ein Bot oder ein Lauf sie braucht.
 
 Der erste echte Bot ist ein Zufallsbot, der aus den möglichen Befehlen wählt. Er wartet auf [[client-possible-orders]] und ist dann die erste Probe für die Arena.
+
+### Ideen für den Zufallsbot
+
+Stand 2026-11-17, aus dem Gespräch zu [[client-possible-orders]]. Keine Vorgaben.
+
+Ein Bot, der gleichverteilt aus allem wählt, was möglich ist, sagt nichts aus: Er zerstreut seine Armeen und verliert gegen jeden. Als Maßstab für spätere Bots taugt nur ein Zufall, der offensichtlich Unsinniges auslässt und unter dem Rest würfelt.
+
+- Kampfeinheiten eines Hexagons ziehen gemeinsam und werden nicht aufgeteilt. Dots sind Arbeiter und folgen einer eigenen Logik.
+- Kein weiteres Trainingsgebäude, solange das Einkommen pro Zug nicht übersteigt, was die vorhandenen Gebäude ausgeben können.
+- Nicht mehr Dots, als abbauen können. Zum Bedarf zählen auch die Dots, die eine Konstruktion oder eine Forschung binden.
+- Ein Dot darüber hinaus, solange es auf der Karte lohnende Ziele ohne eigenen Dot gibt: Hexagone mit Matter, Hexagone mit erforschbaren Upgrades.
+- Jede dieser Regeln einzeln abschaltbar, damit sich in der Arena messen lässt, was sie bringt.
+- Ob daneben ein zweiter, ganz dummer Zufallsbot als Untergrenze einen Wert hat, ist offen; vermutlich reicht der eine.
+
+Wohin die Armee zieht und ob sie angreift, bleibt bei diesem Bot gewürfelt.
