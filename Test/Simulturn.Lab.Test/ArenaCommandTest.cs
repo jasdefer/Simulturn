@@ -1,7 +1,8 @@
 using Microsoft.Extensions.Configuration;
+using Simulturn.Bots;
 using Simulturn.Lab.Arena;
 
-namespace Simulturn.Bots.Test;
+namespace Simulturn.Lab.Test;
 
 public sealed class ArenaCommandTest
 {

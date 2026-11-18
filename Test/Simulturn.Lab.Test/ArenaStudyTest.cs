@@ -1,5 +1,7 @@
 using System.Text.Json;
+using Simulturn.Bots;
 using Simulturn.Bots.Catalog;
+using Simulturn.Bots.Test;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
@@ -7,7 +9,7 @@ using Simulturn.Core.Setup;
 using Simulturn.Lab.Arena;
 using Simulturn.Test.Common;
 
-namespace Simulturn.Bots.Test;
+namespace Simulturn.Lab.Test;
 
 public sealed class ArenaStudyTest
 {

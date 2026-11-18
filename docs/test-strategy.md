@@ -17,7 +17,7 @@ The engine (`Simulturn.Core`) is deterministic and pure: `TurnResolution.Resolve
 | 1 Unit | One rule, one turn: a single validation type of `CommandValidator.Validate`, a single phase of `TurnResolution.Resolve`, the value objects `Army`, `Compound`, `Hexagon`, fog of war | Exact values | `Simulturn.Core.Test` |
 | 2 Scenario | Several scripted turns whose interplay has rules (a fight while a training is pending, a research completing and then a fight) | Exact values | `Simulturn.Core.Test` |
 | 3 Invariants | Random games over many seeds, maps and option presets | Invariants after every turn, no exact values | `Simulturn.Core.Test` |
-| 4 Bots | `Match`, the arena of the lab, later the bots themselves | Exact outcome of scripted bots (winner, turn count, rows of a run) | `Simulturn.Bots.Test` |
+| 4 Bots | `Match`, the arena of the lab, later the bots themselves | Exact outcome of scripted bots (winner, turn count, rows of a run) | `Simulturn.Bots.Test` (`Match`), `Simulturn.Lab.Test` (arena) |
 
 Not planned: integration tests across process or system boundaries. There is no API, no database, no UI. When they arrive, they get their own tests there.
 
@@ -93,7 +93,8 @@ Test/
     RandomCommands.cs       valid random commands for one player, the command source of layer 3
     GameStateExtensions.cs  PlayTurn: validate the commands, resolve the turn, check the state invariants; ResolveTurn does the same and also returns the report
   Simulturn.Core.Test/      layers 1, 2 and 3
-  Simulturn.Bots.Test/      layer 4, tests Simulturn.Bots and Simulturn.Lab
+  Simulturn.Bots.Test/      layer 4, tests Simulturn.Bots; holds ScriptedBot
+  Simulturn.Lab.Test/       layer 4, tests Simulturn.Lab; compiles ScriptedBot as a linked file
   Simulturn.Core.Console/   not a test, manual play
 ```
 

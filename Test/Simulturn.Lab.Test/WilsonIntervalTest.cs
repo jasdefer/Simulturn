@@ -1,6 +1,6 @@
 using Simulturn.Lab.Arena;
 
-namespace Simulturn.Bots.Test;
+namespace Simulturn.Lab.Test;
 
 public sealed class WilsonIntervalTest
 {

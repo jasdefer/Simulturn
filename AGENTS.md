@@ -8,7 +8,7 @@ Use it as the default workflow and style baseline for this repository.
 - Core project: `Source/Simulturn.Core/Simulturn.Core.csproj`
 - Bots: `Source/Simulturn.Bots` (library: bot contract, catalog, one match)
 - Lab: `Source/Simulturn.Lab` (console app for studies that are not tests; the first one is the arena)
-- Test projects: `Test/Simulturn.Core.Test` (engine, including the random games against the invariants), `Test/Simulturn.Bots.Test` (match, arena), `Test/Simulturn.Test.Common` (shared fixtures)
+- Test projects: `Test/Simulturn.Core.Test` (engine, including the random games against the invariants), `Test/Simulturn.Bots.Test` (match), `Test/Simulturn.Lab.Test` (arena), `Test/Simulturn.Test.Common` (shared fixtures)
 - Test strategy: `docs/test-strategy.md` (read before adding tests)
 - Console project: `Test/Simulturn.Core.Console/Simulturn.Core.Console.csproj`
 - Test stack: TUnit + Shouldly
