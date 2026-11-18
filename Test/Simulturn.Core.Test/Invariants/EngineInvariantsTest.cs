@@ -74,7 +74,7 @@ public sealed class EngineInvariantsTest
         IReadOnlyDictionary<string, CommandSource> players,
         Action<GameState, Dictionary<string, IReadOnlyDictionary<Hexagon, Command>>, TurnResult> onTurnResolved)
     {
-        TurnResult turnResult = new(new GameState(gameSettings), TurnReport.Empty);
+        TurnResult turnResult = Game.Start(gameSettings);
         while (!Standing.Of(turnResult.State).IsGameOver && turnResult.State.Turn < MaxTurns)
         {
             GameState state = turnResult.State;
@@ -82,9 +82,9 @@ public sealed class EngineInvariantsTest
             foreach (string playerId in state.PlayerIds)
             {
                 commands[playerId] = players[playerId](FogOfWar.GetPlayerGameState(turnResult, playerId));
-                CommandValidator.Validate(state, playerId, commands[playerId]).ShouldBeEmpty($"{playerId} issued invalid commands on turn {state.Turn}.");
             }
-            turnResult = TurnResolution.Resolve(state, commands);
+            TurnAttempt attempt = Game.PlayTurn(state, commands);
+            turnResult = attempt.Value.ShouldBeOfType<TurnResult>($"The random commands of turn {state.Turn} were refused: {attempt}");
             onTurnResolved(state, commands, turnResult);
         }
         return turnResult.State;
