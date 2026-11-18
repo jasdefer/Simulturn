@@ -89,6 +89,7 @@ public sealed class CommandValidator
         return ValidateTraining(hexagon, command)
             .Concat(ValidateConstruction(hexagon, command))
             .Concat(ValidateMovement(hexagon, command))
+            .Concat(ValidateConstructionKeepsDots(hexagon, command))
             .Concat(ValidateResearch(hexagon, command))
             .Concat(ValidateResearchKeepsDot(hexagon, command));
     }
@@ -180,6 +181,29 @@ public sealed class CommandValidator
                     yield return new MovementExceedsRange(_playerId, hexagon, movement.Destination, unit, distance, Movement.Range(_settings)[unit]);
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Movements leave one dot per pending or requested construction on the hexagon. A dot arriving
+    /// this turn does not stand in for a dot that builds.
+    /// </summary>
+    private IEnumerable<CommandValidation> ValidateConstructionKeepsDots(Hexagon hexagon, Command command)
+    {
+        short departingDots = command.MovementCommands.Select(x => x.Army).Sum().Dot;
+        if (departingDots <= 0)
+        {
+            yield break;
+        }
+        Compound constructions = _playerState.Constructions.On(hexagon) + command.Construction;
+        if (constructions.IsEmpty)
+        {
+            yield break;
+        }
+        int remainingDots = _playerState.Armies.GetValueOrDefault(hexagon).Dot - departingDots;
+        if (constructions.Sum() > remainingDots)
+        {
+            yield return new MovementLeavesConstructionWithoutDot(_playerId, hexagon, constructions, (short)Math.Max(0, remainingDots));
         }
     }
 

@@ -21,7 +21,8 @@ public union CommandValidation(
     HexagonAlreadyResearching,
     UpgradeNotResearchableOnHexagon,
     ResearchRequiresDot,
-    MovementLeavesResearchWithoutDot)
+    MovementLeavesResearchWithoutDot,
+    MovementLeavesConstructionWithoutDot)
 {
     public override string ToString() => Value?.ToString() ?? nameof(CommandValidation);
 }
@@ -91,3 +92,10 @@ public sealed record ResearchRequiresDot(string PlayerId, Hexagon Hexagon, Upgra
 /// so leaving voluntarily is refused.
 /// </summary>
 public sealed record MovementLeavesResearchWithoutDot(string PlayerId, Hexagon Hexagon, Upgrade Upgrade);
+
+/// <summary>
+/// The movements take a dot off a hexagon that a pending or requested construction needs. Every
+/// building under construction keeps its own dot on the hexagon until it completes. A dot arriving
+/// in the same turn does not stand in: the dot that builds stays.
+/// </summary>
+public sealed record MovementLeavesConstructionWithoutDot(string PlayerId, Hexagon Hexagon, Compound Constructions, short RemainingDots);
