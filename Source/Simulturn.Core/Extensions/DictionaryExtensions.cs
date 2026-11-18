@@ -51,7 +51,7 @@ internal static class DictionaryExtensions
                         x => x.Origin,
                         x => new Command
                         {
-                            MovementCommands = [new MovementCommand()
+                            Movements = [new MovementOrder()
                             {
                                 Destination = x.Destination,
                                 Army = x.Army

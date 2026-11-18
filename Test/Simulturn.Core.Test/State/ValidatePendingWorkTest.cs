@@ -94,7 +94,7 @@ public sealed class ValidatePendingWorkTest
             .PlayTurn(Player1(_start, new Command()
             {
                 Construction = new Compound() { Pyramid = 1 },
-                MovementCommands = [new MovementCommand() { Army = new Army() { Dot = 1 }, Destination = _center }]
+                Movements = [new MovementOrder() { Army = new Army() { Dot = 1 }, Destination = _center }]
             }));
 
         // Act: the dot can construct on the center, but nothing can be trained there.

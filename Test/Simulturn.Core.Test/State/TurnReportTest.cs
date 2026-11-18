@@ -64,7 +64,7 @@ public sealed class TurnReportTest
             }),
             ("Player02", _center, new Command()
             {
-                MovementCommands = [new MovementCommand() { Destination = _player1Start, Army = new Army() { Square = 10 } }]
+                Movements = [new MovementOrder() { Destination = _player1Start, Army = new Army() { Square = 10 } }]
             })
         ]);
         return turn1.ResolveTurn(commands);

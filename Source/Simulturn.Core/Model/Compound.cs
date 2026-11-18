@@ -118,4 +118,19 @@ public readonly struct Compound : IEquatable<Compound>, IAdditionOperators<Compo
             _ => throw new ArgumentOutOfRangeException(nameof(building), building, null)
         };
     }
+
+    /// <summary>
+    /// The compound with the count the function gives for every building type.
+    /// </summary>
+    public static Compound PerBuilding(Func<Building, int> count)
+    {
+        return new Compound()
+        {
+            Plane = (short)count(Building.Plane),
+            Axis = (short)count(Building.Axis),
+            Dome = (short)count(Building.Dome),
+            Pyramid = (short)count(Building.Pyramid),
+            Cube = (short)count(Building.Cube)
+        };
+    }
 }

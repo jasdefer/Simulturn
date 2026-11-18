@@ -20,17 +20,8 @@ public sealed class MapGeneratorTest
         yield return ("Open", MapGeneratorOptions.Open);
         yield return ("HomeOnly", MapGeneratorOptions.HomeOnly);
         yield return ("Expansions", MapGeneratorOptions.Expansions);
-        yield return ("Guarded", _guarded);
+        yield return ("Guarded", MapGeneratorOptions.Guarded);
     }
-
-    /// <summary>
-    /// The expansions map with guards in the center and on every expansion.
-    /// </summary>
-    private static readonly MapGeneratorOptions _guarded = MapGeneratorOptions.Expansions with
-    {
-        CenterGuard = new Army() { Triangle = 2, Circle = 2, Square = 2 },
-        ExpansionGuard = new Army() { Dot = 3 }
-    };
 
     /// <summary>
     /// Everything a hexagon contributes to the game, with the seat instead of the player id.
@@ -205,7 +196,7 @@ public sealed class MapGeneratorTest
     {
         foreach (int playerCount in _playerCounts)
         {
-            MapGeneratorOptions options = _guarded with { PlayerIds = Maps.PlayerIds(playerCount) };
+            MapGeneratorOptions options = MapGeneratorOptions.Guarded with { PlayerIds = Maps.PlayerIds(playerCount) };
 
             var map = MapGenerator.Generate(options);
 

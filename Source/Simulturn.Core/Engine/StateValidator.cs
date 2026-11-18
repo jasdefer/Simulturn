@@ -134,11 +134,13 @@ public static class StateValidator
         {
             Army trainings = playerState.Trainings.On(hexagon);
             Compound compound = playerState.Compounds.GetValueOrDefault(hexagon, Compound.Empty);
+            Army slots = Occupancy.TrainingSlots(compound);
+            Army freeSlots = Occupancy.FreeTrainingSlots(compound, trainings);
             foreach (var unit in EnumValues.Units)
             {
-                if (trainings[unit] > compound[GameSettings.TrainingBuilding(unit)])
+                if (freeSlots[unit] < 0)
                 {
-                    yield return new MissingBuildingForTraining(playerId, hexagon, unit, trainings[unit], compound[GameSettings.TrainingBuilding(unit)]);
+                    yield return new MissingBuildingForTraining(playerId, hexagon, unit, trainings[unit], slots[unit]);
                 }
             }
         }
@@ -168,10 +170,10 @@ public static class StateValidator
         foreach (Hexagon hexagon in playerState.Constructions.Keys.Select(x => x.Hexagon).Distinct())
         {
             Compound constructions = playerState.Constructions.On(hexagon);
-            short dotCount = playerState.Armies.GetValueOrDefault(hexagon, Army.Empty).Dot;
-            if (constructions.Sum() > dotCount)
+            Army army = playerState.Armies.GetValueOrDefault(hexagon, Army.Empty);
+            if (Occupancy.FreeDots(army, constructions) < 0)
             {
-                yield return new MissingDotsForConstruction(playerId, hexagon, constructions, dotCount);
+                yield return new MissingDotsForConstruction(playerId, hexagon, constructions, army.Dot);
             }
         }
     }
@@ -192,7 +194,7 @@ public static class StateValidator
             {
                 yield return new UpgradeNotResearchableOnHexagon(playerId, hexagon, research.Upgrade);
             }
-            if (!playerState.Armies.TryGetValue(hexagon, out var army) || army.Dot <= 0)
+            if (!Occupancy.HoldsResearch(playerState.Armies.GetValueOrDefault(hexagon)))
             {
                 yield return new ResearchRequiresDot(playerId, hexagon, research.Upgrade);
             }

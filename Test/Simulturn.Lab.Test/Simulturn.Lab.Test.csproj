@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="TUnit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Simulturn.Bots.Test\ScriptedBot.cs" Link="ScriptedBot.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Source\Simulturn.Lab\Simulturn.Lab.csproj" />
+    <ProjectReference Include="..\Simulturn.Test.Common\Simulturn.Test.Common.csproj" />
+  </ItemGroup>
+
+</Project>

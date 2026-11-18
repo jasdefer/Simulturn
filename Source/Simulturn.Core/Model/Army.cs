@@ -112,6 +112,20 @@ public readonly struct Army : IEquatable<Army>, IAdditionOperators<Army, Army, A
         };
     }
 
+    /// <summary>
+    /// The army with the count the function gives for every unit type.
+    /// </summary>
+    public static Army PerUnit(Func<Unit, int> count)
+    {
+        return new Army()
+        {
+            Triangle = (short)count(Unit.Triangle),
+            Circle = (short)count(Unit.Circle),
+            Square = (short)count(Unit.Square),
+            Dot = (short)count(Unit.Dot)
+        };
+    }
+
     public double GetStrengthOver(Army opponent, Army exponent)
     {
         var strength =

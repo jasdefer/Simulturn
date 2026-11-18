@@ -16,7 +16,7 @@ public enum ResearchLocation
 
 /// <summary>
 /// The parameters of <see cref="MapGenerator"/>. The same options always produce the same map.
-/// The presets <see cref="Open"/>, <see cref="HomeOnly"/> and <see cref="Expansions"/> are the
+/// The presets <see cref="Open"/>, <see cref="HomeOnly"/>, <see cref="Expansions"/> and <see cref="Guarded"/> are the
 /// map types; adjust them with a <c>with</c> expression.
 /// </summary>
 public sealed record MapGeneratorOptions
@@ -51,6 +51,16 @@ public sealed record MapGeneratorOptions
         ExpansionsPerPlayer = 1,
         ExpansionMatter = 4000,
         CenterMatter = 6000
+    };
+
+    /// <summary>
+    /// <see cref="Expansions"/> with neutral armies in the center and on every expansion:
+    /// whoever expands or takes the middle has to fight for it first.
+    /// </summary>
+    public static MapGeneratorOptions Guarded { get; } = Expansions with
+    {
+        CenterGuard = new Army() { Triangle = 2, Circle = 2, Square = 2 },
+        ExpansionGuard = new Army() { Dot = 3 }
     };
 
     /// <summary>

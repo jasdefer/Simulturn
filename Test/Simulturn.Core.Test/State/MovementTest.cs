@@ -34,7 +34,7 @@ public sealed class MovementTest
 
     private static Dictionary<Hexagon, Command> Move(Hexagon origin, Hexagon destination, Army army)
     {
-        return new() { [origin] = new Command() { MovementCommands = [new MovementCommand() { Army = army, Destination = destination }] } };
+        return new() { [origin] = new Command() { Movements = [new MovementOrder() { Army = army, Destination = destination }] } };
     }
 
     [Test]

@@ -29,7 +29,7 @@ public sealed class DefeatTest
 
     private static Command Move(Hexagon destination, Army army)
     {
-        return new Command() { MovementCommands = [new MovementCommand() { Destination = destination, Army = army }] };
+        return new Command() { Movements = [new MovementOrder() { Destination = destination, Army = army }] };
     }
 
     /// <summary>
@@ -104,6 +104,27 @@ public sealed class DefeatTest
         standing.DefeatedPlayerIds.ShouldBeEmpty();
         standing.Outcome.Value.ShouldBeOfType<GameRunning>();
         standing.IsGameOver.ShouldBeFalse();
+    }
+
+    [Test]
+    public void SimultaneousBaseTrade_DefeatsBothPlayersWithoutAWinner()
+    {
+        // A line of 3 hexagons; the squares cross it in one turn and pass each other on the way.
+        GameSettings line = TestSettings.Create(Maps.Line(-1, 1)
+            .SetItem(_player1Start, Maps.Start("Player01", army: new Army() { Square = 20 }))
+            .SetItem(_player2Start, Maps.Start("Player02", army: new Army() { Square = 20 })));
+        GameSettings gameSettings = line with { MovementRange = new Army() { Triangle = 1, Circle = 1, Square = 2, Dot = 1 } };
+
+        TurnResult result = new GameState(gameSettings).ResolveTurn(DictionaryExtensions.MovementsToDictionary([
+            ("Player01", _player1Start, _player2Start, new Army() { Square = 20 }),
+            ("Player02", _player2Start, _player1Start, new Army() { Square = 20 })
+        ]));
+
+        result.Report.Defeats.ShouldBe(["Player01", "Player02"], ignoreOrder: true);
+        GameStanding standing = Standing.Of(result.State);
+        standing.DefeatedPlayerIds.ShouldBe(["Player01", "Player02"], ignoreOrder: true);
+        standing.Outcome.Value.ShouldBeOfType<MutualDefeat>();
+        standing.IsGameOver.ShouldBeTrue();
     }
 
     [Test]

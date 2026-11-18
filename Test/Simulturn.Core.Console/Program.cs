@@ -60,11 +60,11 @@ while (!Standing.Of(gameState).IsGameOver)
             };
 
             Army training = Army.Empty;
-            MovementCommand[] movementCommands = [];
+            MovementOrder[] movements = [];
             if (short.TryParse(commandArgs[2], out short destinationX) && short.TryParse(commandArgs[3], out short destinationY))
             {
                 Hexagon destination = new Hexagon(destinationX, destinationY);
-                movementCommands = [new MovementCommand()
+                movements = [new MovementOrder()
                 {
                     Destination = destination,
                     Army = army
@@ -79,7 +79,7 @@ while (!Standing.Of(gameState).IsGameOver)
             {
                 Training = training,
                 Construction = construction,
-                MovementCommands = movementCommands.ToImmutableArray(),
+                Movements = movements.ToImmutableArray(),
             };
 
             if (playerCommands.TryGetValue(hexagon, out var existingCommand))
@@ -88,7 +88,7 @@ while (!Standing.Of(gameState).IsGameOver)
                 {
                     Training = existingCommand.Training + training,
                     Construction = existingCommand.Construction + construction,
-                    MovementCommands = existingCommand.MovementCommands.AddRange(movementCommands)
+                    Movements = existingCommand.Movements.AddRange(movements)
                 };
             }
             playerCommands[hexagon] = command;

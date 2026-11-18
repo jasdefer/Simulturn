@@ -8,7 +8,7 @@ namespace Simulturn.Core.Engine;
 
 /// <summary>
 /// The steps of running a game, for whoever holds the full state: a server, a hot seat client,
-/// a runner of AI players. Nothing is kept here. The state of a turn follows from the settings
+/// a runner of bots. Nothing is kept here. The state of a turn follows from the settings
 /// and the commands of all turns before it, so a game is stored by storing its commands.
 /// </summary>
 public static class Game

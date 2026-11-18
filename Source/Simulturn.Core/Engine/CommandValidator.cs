@@ -19,6 +19,7 @@ public sealed class CommandValidator
     private readonly Dictionary<Upgrade, byte> _requestedUpgradeCounts;
     private readonly Dictionary<Hexagon, int> _arrivingDots;
     private readonly OrderCost _cost;
+    private readonly OrderCost _budget;
 
     private CommandValidator(GameSettings settings, string playerId, PlayerState playerState, IReadOnlyDictionary<Hexagon, Command> commands)
     {
@@ -28,8 +29,9 @@ public sealed class CommandValidator
         _commands = commands;
         _upgradesInResearch = _playerState.UpgradesInResearch();
         _requestedUpgradeCounts = GetRequestedUpgradeCounts(commands);
-        _arrivingDots = GetArrivingDots(commands);
+        _arrivingDots = Occupancy.ArrivingDots(commands);
         _cost = Costs.Of(settings, playerState.UpgradeLevels, commands);
+        _budget = Costs.Budget(settings, playerState, commands);
     }
 
     /// <summary>
@@ -62,6 +64,21 @@ public sealed class CommandValidator
     }
 
     /// <summary>
+    /// Whether the research the commands request on the hexagon breaks no rule: the research rules,
+    /// the dot it needs and its price. For commands that were valid without that research this
+    /// is the whole validation, so <see cref="Orders.Possible"/> asks here instead of repeating the rules.
+    /// </summary>
+    internal static bool AcceptsResearch(PlayerGameState view, IReadOnlyDictionary<Hexagon, Command> commands, Hexagon hexagon)
+    {
+        CommandValidator validator = new(view.GameSettings, view.PlayerId, view.PlayerState, commands);
+        Command command = commands[hexagon];
+        return !validator.ValidateResearch(hexagon, command)
+            .Concat(validator.ValidateResearchKeepsDot(hexagon, command))
+            .Concat(validator.ValidateMatter())
+            .Any();
+    }
+
+    /// <summary>
     /// A defeated player takes no more orders. Nothing else is reported then: every other rule
     /// would only repeat that the player has nothing left to order with.
     /// </summary>
@@ -69,19 +86,19 @@ public sealed class CommandValidator
     {
         if (Standing.IsDefeated(_playerState))
         {
-            return _commands.Values.Any(IsOrder) ? [new PlayerDefeated(_playerId)] : [];
+            return _commands.Values.Any(HasOrders) ? [new PlayerDefeated(_playerId)] : [];
         }
         return ValidateSpace()
             .Concat(_commands.SelectMany(x => ValidateCommand(x.Key, x.Value)))
             .Concat(ValidateMatter());
     }
 
-    private static bool IsOrder(Command command)
+    private static bool HasOrders(Command command)
     {
         return !command.Training.IsEmpty ||
             !command.Construction.IsEmpty ||
             command.Research is not null ||
-            command.MovementCommands.Any(x => !x.Army.IsEmpty);
+            command.Movements.Any(x => !x.Army.IsEmpty);
     }
 
     private IEnumerable<CommandValidation> ValidateCommand(Hexagon hexagon, Command command)
@@ -89,6 +106,7 @@ public sealed class CommandValidator
         return ValidateTraining(hexagon, command)
             .Concat(ValidateConstruction(hexagon, command))
             .Concat(ValidateMovement(hexagon, command))
+            .Concat(ValidateConstructionKeepsDots(hexagon, command))
             .Concat(ValidateResearch(hexagon, command))
             .Concat(ValidateResearchKeepsDot(hexagon, command));
     }
@@ -99,7 +117,7 @@ public sealed class CommandValidator
     private IEnumerable<CommandValidation> ValidateSpace()
     {
         if (_commands.Any(x => x.Value.Training.Total > 0) &&
-            _playerState.UsedSpace + _cost.Space > _playerState.AvailableSpace)
+            _budget.Space < 0)
         {
             yield return new InsufficientSpace(_playerId, _playerState.UsedSpace + _cost.Space, _playerState.AvailableSpace);
         }
@@ -116,13 +134,13 @@ public sealed class CommandValidator
         }
         Compound compound = _playerState.Compounds.GetValueOrDefault(hexagon, Compound.Empty);
         Army trainings = _playerState.Trainings.On(hexagon) + command.Training;
+        Army slots = Occupancy.TrainingSlots(compound);
+        Army freeSlots = Occupancy.FreeTrainingSlots(compound, trainings);
         foreach (var unit in EnumValues.Units)
         {
-            short trainedUnits = trainings[unit];
-            short availableBuildings = compound[GameSettings.TrainingBuilding(unit)];
-            if (trainedUnits > availableBuildings)
+            if (freeSlots[unit] < 0)
             {
-                yield return new MissingBuildingForTraining(_playerId, hexagon, unit, trainedUnits, availableBuildings);
+                yield return new MissingBuildingForTraining(_playerId, hexagon, unit, trainings[unit], slots[unit]);
             }
         }
     }
@@ -142,16 +160,16 @@ public sealed class CommandValidator
             yield return new HexagonNotBuildable(_playerId, hexagon);
         }
         Compound constructions = _playerState.Constructions.On(hexagon) + command.Construction;
-        short dots = _playerState.Armies.GetValueOrDefault(hexagon)[Unit.Dot];
-        if (constructions.Sum() > dots)
+        Army army = _playerState.Armies.GetValueOrDefault(hexagon);
+        if (Occupancy.FreeDots(army, constructions) < 0)
         {
-            yield return new MissingDotsForConstruction(_playerId, hexagon, constructions, dots);
+            yield return new MissingDotsForConstruction(_playerId, hexagon, constructions, army.Dot);
         }
     }
 
     private IEnumerable<CommandValidation> ValidateMovement(Hexagon hexagon, Command command)
     {
-        Army departingArmy = command.MovementCommands.Select(x => x.Army).Sum();
+        Army departingArmy = command.Movements.Select(x => x.Army).Sum();
         Army availableArmy = _playerState.Armies.GetValueOrDefault(hexagon);
         foreach (var unit in EnumValues.Units)
         {
@@ -160,7 +178,7 @@ public sealed class CommandValidator
                 yield return new MissingArmyForMovement(_playerId, hexagon, unit, departingArmy[unit], availableArmy[unit]);
             }
         }
-        foreach (MovementCommand movement in command.MovementCommands)
+        foreach (MovementOrder movement in command.Movements)
         {
             // The turn resolution skips a movement without units.
             if (movement.Army.IsEmpty)
@@ -180,6 +198,29 @@ public sealed class CommandValidator
                     yield return new MovementExceedsRange(_playerId, hexagon, movement.Destination, unit, distance, Movement.Range(_settings)[unit]);
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Movements leave one dot per pending or requested construction on the hexagon. A dot arriving
+    /// this turn does not stand in for a dot that builds.
+    /// </summary>
+    private IEnumerable<CommandValidation> ValidateConstructionKeepsDots(Hexagon hexagon, Command command)
+    {
+        Army departingArmy = command.Movements.Select(x => x.Army).Sum();
+        if (departingArmy.Dot <= 0)
+        {
+            yield break;
+        }
+        Compound constructions = _playerState.Constructions.On(hexagon) + command.Construction;
+        if (constructions.IsEmpty)
+        {
+            yield break;
+        }
+        Army remainingArmy = _playerState.Armies.GetValueOrDefault(hexagon) - departingArmy;
+        if (Occupancy.FreeDots(remainingArmy, constructions) < 0)
+        {
+            yield return new MovementLeavesConstructionWithoutDot(_playerId, hexagon, constructions, (short)Math.Max(0, (int)remainingArmy.Dot));
         }
     }
 
@@ -216,7 +257,7 @@ public sealed class CommandValidator
         {
             yield return new HexagonAlreadyResearching(_playerId, hexagon, upgrade, pendingResearch.Upgrade);
         }
-        if (!_playerState.Armies.TryGetValue(hexagon, out var army) || army.Dot <= 0)
+        if (!Occupancy.HoldsResearch(_playerState.Armies.GetValueOrDefault(hexagon)))
         {
             yield return new ResearchRequiresDot(_playerId, hexagon, upgrade);
         }
@@ -228,10 +269,11 @@ public sealed class CommandValidator
     /// </summary>
     private IEnumerable<CommandValidation> ValidateResearchKeepsDot(Hexagon hexagon, Command command)
     {
-        Army departingArmy = command.MovementCommands.Select(x => x.Army).Sum();
+        Army departingArmy = command.Movements.Select(x => x.Army).Sum();
         Army availableArmy = _playerState.Armies.GetValueOrDefault(hexagon);
-        if (availableArmy.Dot > 0 &&
-            availableArmy.Dot - departingArmy.Dot + _arrivingDots.GetValueOrDefault(hexagon) <= 0 &&
+        Army remainingArmy = availableArmy - departingArmy + new Army() { Dot = (short)_arrivingDots.GetValueOrDefault(hexagon) };
+        if (Occupancy.HoldsResearch(availableArmy) &&
+            !Occupancy.HoldsResearch(remainingArmy) &&
             (command.Research is not null || _playerState.Researches.ContainsKey(hexagon)))
         {
             Upgrade researched = command.Research ?? _playerState.Researches[hexagon].Upgrade;
@@ -241,7 +283,7 @@ public sealed class CommandValidator
 
     private IEnumerable<CommandValidation> ValidateMatter()
     {
-        if (_cost.Matter > _playerState.Matter)
+        if (_budget.Matter < 0)
         {
             yield return new InsufficientMatter(_playerId, _cost.Matter, _playerState.Matter);
         }
@@ -256,15 +298,5 @@ public sealed class CommandValidator
             .Where(command => command.Research is not null)
             .GroupBy(command => command.Research!.Value)
             .ToDictionary(group => group.Key, group => (byte)group.Count());
-    }
-
-    private static Dictionary<Hexagon, int> GetArrivingDots(IReadOnlyDictionary<Hexagon, Command> commands)
-    {
-        Dictionary<Hexagon, int> arrivingDots = [];
-        foreach (MovementCommand movement in commands.Values.SelectMany(command => command.MovementCommands))
-        {
-            arrivingDots[movement.Destination] = arrivingDots.GetValueOrDefault(movement.Destination) + movement.Army.Dot;
-        }
-        return arrivingDots;
     }
 }

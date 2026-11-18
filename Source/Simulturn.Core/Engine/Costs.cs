@@ -1,5 +1,6 @@
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
+using Simulturn.Core.Model.State;
 
 namespace Simulturn.Core.Engine;
 
@@ -74,5 +75,17 @@ public static class Costs
             cost += Of(settings, upgradeLevels, command);
         }
         return cost;
+    }
+
+    /// <summary>
+    /// What the orders of a turn leave a player to order with: the matter after paying them and
+    /// the space after the units in them. Negative matter means the orders cost more than the
+    /// player has. Negative space only breaks a rule when the orders train a unit: a player may
+    /// hold more units than the buildings give space for, but trains none then.
+    /// </summary>
+    public static OrderCost Budget(GameSettings settings, PlayerState playerState, IReadOnlyDictionary<Hexagon, Command> commands)
+    {
+        OrderCost cost = Of(settings, playerState.UpgradeLevels, commands);
+        return new OrderCost(playerState.Matter - cost.Matter, playerState.AvailableSpace - playerState.UsedSpace - cost.Space);
     }
 }
