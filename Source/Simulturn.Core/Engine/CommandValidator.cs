@@ -69,19 +69,19 @@ public sealed class CommandValidator
     {
         if (Standing.IsDefeated(_playerState))
         {
-            return _commands.Values.Any(IsOrder) ? [new PlayerDefeated(_playerId)] : [];
+            return _commands.Values.Any(HasOrders) ? [new PlayerDefeated(_playerId)] : [];
         }
         return ValidateSpace()
             .Concat(_commands.SelectMany(x => ValidateCommand(x.Key, x.Value)))
             .Concat(ValidateMatter());
     }
 
-    private static bool IsOrder(Command command)
+    private static bool HasOrders(Command command)
     {
         return !command.Training.IsEmpty ||
             !command.Construction.IsEmpty ||
             command.Research is not null ||
-            command.MovementCommands.Any(x => !x.Army.IsEmpty);
+            command.Movements.Any(x => !x.Army.IsEmpty);
     }
 
     private IEnumerable<CommandValidation> ValidateCommand(Hexagon hexagon, Command command)
@@ -152,7 +152,7 @@ public sealed class CommandValidator
 
     private IEnumerable<CommandValidation> ValidateMovement(Hexagon hexagon, Command command)
     {
-        Army departingArmy = command.MovementCommands.Select(x => x.Army).Sum();
+        Army departingArmy = command.Movements.Select(x => x.Army).Sum();
         Army availableArmy = _playerState.Armies.GetValueOrDefault(hexagon);
         foreach (var unit in EnumValues.Units)
         {
@@ -161,7 +161,7 @@ public sealed class CommandValidator
                 yield return new MissingArmyForMovement(_playerId, hexagon, unit, departingArmy[unit], availableArmy[unit]);
             }
         }
-        foreach (MovementCommand movement in command.MovementCommands)
+        foreach (MovementOrder movement in command.Movements)
         {
             // The turn resolution skips a movement without units.
             if (movement.Army.IsEmpty)
@@ -190,7 +190,7 @@ public sealed class CommandValidator
     /// </summary>
     private IEnumerable<CommandValidation> ValidateConstructionKeepsDots(Hexagon hexagon, Command command)
     {
-        short departingDots = command.MovementCommands.Select(x => x.Army).Sum().Dot;
+        short departingDots = command.Movements.Select(x => x.Army).Sum().Dot;
         if (departingDots <= 0)
         {
             yield break;
@@ -252,7 +252,7 @@ public sealed class CommandValidator
     /// </summary>
     private IEnumerable<CommandValidation> ValidateResearchKeepsDot(Hexagon hexagon, Command command)
     {
-        Army departingArmy = command.MovementCommands.Select(x => x.Army).Sum();
+        Army departingArmy = command.Movements.Select(x => x.Army).Sum();
         Army availableArmy = _playerState.Armies.GetValueOrDefault(hexagon);
         if (availableArmy.Dot > 0 &&
             availableArmy.Dot - departingArmy.Dot + _arrivingDots.GetValueOrDefault(hexagon) <= 0 &&
@@ -285,7 +285,7 @@ public sealed class CommandValidator
     private static Dictionary<Hexagon, int> GetArrivingDots(IReadOnlyDictionary<Hexagon, Command> commands)
     {
         Dictionary<Hexagon, int> arrivingDots = [];
-        foreach (MovementCommand movement in commands.Values.SelectMany(command => command.MovementCommands))
+        foreach (MovementOrder movement in commands.Values.SelectMany(command => command.Movements))
         {
             arrivingDots[movement.Destination] = arrivingDots.GetValueOrDefault(movement.Destination) + movement.Army.Dot;
         }

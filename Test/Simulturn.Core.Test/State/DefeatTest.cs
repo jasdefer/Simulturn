@@ -29,7 +29,7 @@ public sealed class DefeatTest
 
     private static Command Move(Hexagon destination, Army army)
     {
-        return new Command() { MovementCommands = [new MovementCommand() { Destination = destination, Army = army }] };
+        return new Command() { Movements = [new MovementOrder() { Destination = destination, Army = army }] };
     }
 
     /// <summary>

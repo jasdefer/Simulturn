@@ -59,7 +59,7 @@ public sealed class RandomCommands
 
         Dictionary<Hexagon, Compound> constructions = PickConstructions(playerGameState, armyHexagons, constructionDots, ref matter);
         Dictionary<Hexagon, Army> trainings = PickTrainings(playerGameState, ref matter, ref freeSpace);
-        Dictionary<Hexagon, MovementCommand> movements = PickMovements(playerGameState, armyHexagons, constructionDots, researchHexagons);
+        Dictionary<Hexagon, MovementOrder> movements = PickMovements(playerGameState, armyHexagons, constructionDots, researchHexagons);
 
         Dictionary<Hexagon, Command> commands = [];
         IEnumerable<Hexagon> commandHexagons = constructions.Keys
@@ -75,7 +75,7 @@ public sealed class RandomCommands
             {
                 Construction = constructions.GetValueOrDefault(hexagon),
                 Training = trainings.GetValueOrDefault(hexagon),
-                MovementCommands = movements.TryGetValue(hexagon, out var movement) ? [movement] : [],
+                Movements = movements.TryGetValue(hexagon, out var movement) ? [movement] : [],
                 Research = research?.Hexagon == hexagon ? research.Value.Upgrade : null
             };
         }
@@ -213,7 +213,7 @@ public sealed class RandomCommands
         return trainings;
     }
 
-    private Dictionary<Hexagon, MovementCommand> PickMovements(PlayerGameState playerGameState,
+    private Dictionary<Hexagon, MovementOrder> PickMovements(PlayerGameState playerGameState,
         List<Hexagon> armyHexagons,
         Dictionary<Hexagon, int> constructionDots,
         HashSet<Hexagon> researchHexagons)
@@ -230,7 +230,7 @@ public sealed class RandomCommands
             .OrderBy(x => x.X).ThenBy(x => x.Y)
             .ToList();
 
-        Dictionary<Hexagon, MovementCommand> movements = [];
+        Dictionary<Hexagon, MovementOrder> movements = [];
         foreach (Hexagon hexagon in armyHexagons)
         {
             if (_random.NextDouble() >= _options.MovementProbability)
@@ -262,7 +262,7 @@ public sealed class RandomCommands
                 continue;
             }
             Hexagon destination = PickWeightedDestination(hexagon, neighbors, enemyHexagons, ownCompoundHexagons);
-            movements[hexagon] = new MovementCommand()
+            movements[hexagon] = new MovementOrder()
             {
                 Army = moving,
                 Destination = destination

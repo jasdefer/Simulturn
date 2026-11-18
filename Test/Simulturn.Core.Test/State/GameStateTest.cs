@@ -235,7 +235,7 @@ public sealed class GameStateTest
         var gameState = new GameState(gameSettings);
         var commands = DictionaryExtensions.CommandsToDictionary([
             ("Player01", _player1Start, new Command() { Construction = new Compound() { Plane = 2, Pyramid = 2} }),
-            ("Player02", _player2Start, new Command() { MovementCommands = [ new MovementCommand() { Army = new Army() { Square = 3}, Destination = new Hexagon(0,0) }] }),
+            ("Player02", _player2Start, new Command() { Movements = [ new MovementOrder() { Army = new Army() { Square = 3}, Destination = new Hexagon(0,0) }] }),
         ]);
 
         // Act
@@ -243,7 +243,7 @@ public sealed class GameStateTest
 
         commands = DictionaryExtensions.CommandsToDictionary([
             ("Player01", _player1Start, new Command() { Construction = new Compound() { Plane = 1, Dome = 1} }),
-            ("Player02", new Hexagon(0,0), new Command() { MovementCommands = [ new MovementCommand() { Army = new Army() { Square = 3}, Destination = _player1Start }] }),
+            ("Player02", new Hexagon(0,0), new Command() { Movements = [ new MovementOrder() { Army = new Army() { Square = 3}, Destination = _player1Start }] }),
         ]);
 
         var turn2 = turn1.PlayTurn(commands);
@@ -265,7 +265,7 @@ public sealed class GameStateTest
         var gameState = new GameState(gameSettings);
         var commands = DictionaryExtensions.CommandsToDictionary([
             ("Player01", _player1Start, new Command() { Training = new Army(){Circle = 1, Square = 1, Triangle = 1} }),
-            ("Player02", _player2Start, new Command() { MovementCommands = [ new MovementCommand() { Army = new Army() { Square = 10}, Destination = new Hexagon(0,0) }] }),
+            ("Player02", _player2Start, new Command() { Movements = [ new MovementOrder() { Army = new Army() { Square = 10}, Destination = new Hexagon(0,0) }] }),
         ]);
 
         // Act
@@ -273,7 +273,7 @@ public sealed class GameStateTest
 
         commands = DictionaryExtensions.CommandsToDictionary([
             ("Player01", _player1Start, new Command() { Training = new Army(){Circle = 1, Square = 1, Triangle = 1} }),
-            ("Player02", new Hexagon(0,0), new Command() { MovementCommands = [ new MovementCommand() { Army = new Army() { Square = 10}, Destination = _player1Start }] }),
+            ("Player02", new Hexagon(0,0), new Command() { Movements = [ new MovementOrder() { Army = new Army() { Square = 10}, Destination = _player1Start }] }),
         ]);
 
         var turn2 = turn1.PlayTurn(commands);
@@ -298,7 +298,7 @@ public sealed class GameStateTest
         var gameState = new GameState(gameSettings);
         var commands = DictionaryExtensions.CommandsToDictionary([
             ("Player01", _player1Start, new Command() { Training = new Army(){ Circle = 1 } }),
-            ("Player02", _player2Start, new Command() { MovementCommands = [ new MovementCommand() { Army = new Army() { Square = 10}, Destination = new Hexagon(0,0) }] }),
+            ("Player02", _player2Start, new Command() { Movements = [ new MovementOrder() { Army = new Army() { Square = 10}, Destination = new Hexagon(0,0) }] }),
         ]);
 
         // Act
@@ -306,7 +306,7 @@ public sealed class GameStateTest
 
         commands = DictionaryExtensions.CommandsToDictionary([
             ("Player01", _player1Start, new Command() { Training = new Army(){ Circle = 1 } }),
-            ("Player02", new Hexagon(0,0), new Command() { MovementCommands = [ new MovementCommand() { Army = new Army() { Square = 10}, Destination = _player1Start }] }),
+            ("Player02", new Hexagon(0,0), new Command() { Movements = [ new MovementOrder() { Army = new Army() { Square = 10}, Destination = _player1Start }] }),
         ]);
 
         var turn2 = turn1.PlayTurn(commands);

@@ -23,7 +23,7 @@ public sealed class ScriptedBot(Func<PlayerGameState, IReadOnlyDictionary<Hexago
     {
         return new Dictionary<Hexagon, Command>()
         {
-            { from, new Command() { MovementCommands = [new MovementCommand() { Army = army, Destination = to }] } }
+            { from, new Command() { Movements = [new MovementOrder() { Army = army, Destination = to }] } }
         };
     }
 

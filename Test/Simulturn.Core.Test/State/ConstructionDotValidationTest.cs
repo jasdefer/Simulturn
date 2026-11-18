@@ -34,7 +34,7 @@ public sealed class ConstructionDotValidationTest
 
     private static Command MoveDots(short dots, Hexagon destination)
     {
-        return new Command() { MovementCommands = [new MovementCommand() { Army = new Army() { Dot = dots }, Destination = destination }] };
+        return new Command() { Movements = [new MovementOrder() { Army = new Army() { Dot = dots }, Destination = destination }] };
     }
 
     private static List<CommandValidation> Validate(GameState state, Dictionary<string, Dictionary<Hexagon, Command>> commands)
@@ -125,7 +125,7 @@ public sealed class ConstructionDotValidationTest
         // Act
         var commands = Player1((_start, new Command()
         {
-            MovementCommands = [new MovementCommand() { Army = new Army() { Triangle = 1 }, Destination = _center }]
+            Movements = [new MovementOrder() { Army = new Army() { Triangle = 1 }, Destination = _center }]
         }));
 
         // Assert

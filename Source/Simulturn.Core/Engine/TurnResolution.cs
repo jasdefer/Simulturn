@@ -179,7 +179,7 @@ public sealed class TurnResolution
     {
         foreach ((Hexagon hexagon, Command command) in commands)
         {
-            foreach (MovementCommand movement in command.MovementCommands)
+            foreach (MovementOrder movement in command.Movements)
             {
                 if (movement.Army.IsEmpty)
                 {

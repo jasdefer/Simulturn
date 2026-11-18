@@ -54,7 +54,7 @@ public sealed class CostsTest
     {
         Command command = new()
         {
-            MovementCommands = [new MovementCommand() { Destination = new Hexagon(0, 0), Army = new Army() { Dot = 5 } }]
+            Movements = [new MovementOrder() { Destination = new Hexagon(0, 0), Army = new Army() { Dot = 5 } }]
         };
 
         Costs.Of(_gameSettings, _noUpgrades, command).ShouldBe(new OrderCost(0, 0));
