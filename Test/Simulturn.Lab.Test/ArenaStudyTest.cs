@@ -143,6 +143,24 @@ public sealed class ArenaStudyTest
     }
 
     [Test]
+    public void BotSeeds_GiveTheTwoBotsOfAGameIndependentFirstRolls()
+    {
+        // Seeds a fixed distance apart give System.Random first rolls that follow from each other:
+        // one bot would always open with the answer to the other.
+        int[,] rolls = new int[3, 3];
+
+        for (int mapSeed = 1; mapSeed <= 900; mapSeed++)
+        {
+            int bot = new Random(ArenaStudy.BotSeed(mapSeed, opponent: false)).Next(3);
+            int opponent = new Random(ArenaStudy.BotSeed(mapSeed, opponent: true)).Next(3);
+            rolls[bot, opponent]++;
+        }
+
+        // 100 per pair of rolls if they are independent.
+        rolls.Cast<int>().ShouldAllBe(x => x > 60 && x < 140);
+    }
+
+    [Test]
     public void BotsOfTheCatalog_PlayOnEveryMapOfTheArena()
     {
         ArenaOptions options = new()
