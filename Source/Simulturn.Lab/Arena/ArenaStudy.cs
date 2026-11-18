@@ -47,8 +47,9 @@ public static class ArenaStudy
                     for (int mapSeed = 1; mapSeed <= options.MapSeeds; mapSeed++)
                     {
                         GameSettings settings = map.Create(mapSeed);
-                        games.Add(new ArenaGame(pairing, runBots[bot], runBots[opponent], map.Name, mapSeed, 1, settings));
-                        games.Add(new ArenaGame(pairing, runBots[bot], runBots[opponent], map.Name, mapSeed, 2, settings));
+                        (string first, string second) = SeatsOf(settings, map.Name);
+                        games.Add(new ArenaGame(pairing, runBots[bot], runBots[opponent], map.Name, mapSeed, 1, first, second, settings));
+                        games.Add(new ArenaGame(pairing, runBots[bot], runBots[opponent], map.Name, mapSeed, 2, second, first, settings));
                     }
                 }
             }
@@ -124,23 +125,20 @@ public static class ArenaStudy
     /// <summary>
     /// One game of a run, with the number of its pairing. The bot sits on the given seat, the opponent on the other one.
     /// </summary>
-    private sealed record ArenaGame(int Pairing, BotEntry Bot, BotEntry Opponent, string Map, int MapSeed, int Seat, GameSettings Settings)
+    private sealed record ArenaGame(int Pairing, BotEntry Bot, BotEntry Opponent, string Map, int MapSeed, int Seat,
+        string BotPlayerId, string OpponentPlayerId, GameSettings Settings);
+
+    /// <summary>
+    /// The players of the two seats of a map, seat 1 first.
+    /// </summary>
+    private static (string First, string Second) SeatsOf(GameSettings settings, string map)
     {
-        private readonly ImmutableArray<string> _playerIds = PlayerIdsOf(Settings, Map);
-
-        public string BotPlayerId => _playerIds[Seat - 1];
-
-        public string OpponentPlayerId => _playerIds[2 - Seat];
-
-        private static ImmutableArray<string> PlayerIdsOf(GameSettings settings, string map)
+        ImmutableArray<string> playerIds = [.. Game.Start(settings).State.PlayerIds.Order(StringComparer.Ordinal)];
+        if (playerIds.Length != 2)
         {
-            ImmutableArray<string> playerIds = [.. Game.Start(settings).State.PlayerIds.Order(StringComparer.Ordinal)];
-            if (playerIds.Length != 2)
-            {
-                throw new ArgumentException($"The arena plays games of two players, the map {map} has {playerIds.Length}.");
-            }
-            return playerIds;
+            throw new ArgumentException($"The arena plays games of two players, the map {map} has {playerIds.Length}.");
         }
+        return (playerIds[0], playerIds[1]);
     }
 }
 
