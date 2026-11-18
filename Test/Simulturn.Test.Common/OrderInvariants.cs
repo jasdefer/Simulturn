@@ -24,7 +24,6 @@ public static class OrderInvariants
         GameSettings settings = view.GameSettings;
         PlayerState player = view.PlayerState;
         PossibleOrders possible = Orders.Possible(view, commands);
-        ImmutableDictionary<Hexagon, Command> entered = commands.ToImmutableDictionary();
 
         OrderCost cost = Costs.Of(settings, player.UpgradeLevels, commands);
         OrderCost expectedBudget = new(player.Matter - cost.Matter, player.AvailableSpace - player.UsedSpace - cost.Space);
@@ -40,14 +39,14 @@ public static class OrderInvariants
             foreach (Unit unit in Enum.GetValues<Unit>())
             {
                 CheckLimit(violations, view, $"training {unit} on {hexagon}", orders.Training[unit],
-                    count => Orders.Train(entered, hexagon, Army.FromUnit(unit, count)));
+                    count => new CommandsBuilder(commands).Train(hexagon, Army.FromUnit(unit, count)).Commands);
             }
             foreach (Building building in Enum.GetValues<Building>())
             {
                 CheckLimit(violations, view, $"constructing {building} on {hexagon}", orders.Construction[building],
-                    count => Orders.Construct(entered, hexagon, Compound.FromBuilding(building, count)));
+                    count => new CommandsBuilder(commands).Construct(hexagon, Compound.FromBuilding(building, count)).Commands);
             }
-            CheckResearch(violations, view, entered, hexagon, orders);
+            CheckResearch(violations, view, commands, hexagon, orders);
             foreach (Unit unit in Enum.GetValues<Unit>())
             {
                 // Any destination in range will do: the limit of a movement does not depend on it.
@@ -59,7 +58,7 @@ public static class OrderInvariants
                     continue;
                 }
                 CheckLimit(violations, view, $"moving {unit} off {hexagon}", orders.Movable[unit],
-                    count => Orders.Move(entered, hexagon, destinations[0], Army.FromUnit(unit, count)));
+                    count => new CommandsBuilder(commands).Move(hexagon, destinations[0], Army.FromUnit(unit, count)).Commands);
             }
         }
         return violations;
@@ -83,7 +82,7 @@ public static class OrderInvariants
         }
     }
 
-    private static void CheckResearch(List<string> violations, PlayerGameState view, ImmutableDictionary<Hexagon, Command> commands,
+    private static void CheckResearch(List<string> violations, PlayerGameState view, IReadOnlyDictionary<Hexagon, Command> commands,
         Hexagon hexagon, PossibleHexagonOrders orders)
     {
         // A second research on the hexagon would replace the requested one instead of adding to it.
@@ -98,7 +97,7 @@ public static class OrderInvariants
         foreach (Upgrade upgrade in Enum.GetValues<Upgrade>())
         {
             bool offered = orders.Research.Contains(upgrade);
-            bool accepted = IsValid(view, Orders.Research(commands, hexagon, upgrade));
+            bool accepted = IsValid(view, new CommandsBuilder(commands).Research(hexagon, upgrade).Commands);
             if (offered != accepted)
             {
                 violations.Add($"{view.PlayerId}: researching {upgrade} on {hexagon} is {(offered ? "offered" : "not offered")}, but the validation {(accepted ? "accepts" : "refuses")} it.");

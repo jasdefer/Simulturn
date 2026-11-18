@@ -10,7 +10,7 @@ using System.Collections.Immutable;
 namespace Simulturn.Core.Test.State;
 
 /// <summary>
-/// <see cref="Orders.Possible"/> on its own: what limits an order and how an order entered
+/// <see cref="Orders.Possible"/> and the <see cref="CommandsBuilder"/>: what limits an order and how an order entered
 /// changes what is left. That everything offered is valid and nothing valid is missing is
 /// checked in the random games (<see cref="OrderInvariants"/>).
 /// </summary>
@@ -69,7 +69,7 @@ public sealed class OrdersTest
         var view = View(new GameState(Settings()));
 
         // Act: the plane takes 350 of the 500 matter and one of the five dots.
-        var commands = Orders.Construct(_noCommands, _start, new Compound() { Plane = 1 });
+        var commands = new CommandsBuilder().Construct(_start, new Compound() { Plane = 1 }).ToImmutable();
         PossibleOrders possible = Orders.Possible(view, commands);
 
         // Assert
@@ -88,7 +88,7 @@ public sealed class OrdersTest
 
         Orders.Possible(view, _noCommands).Hexagons[_start].Training.ShouldBe(new Army() { Dot = 3 });
 
-        var commands = Orders.Train(_noCommands, _start, new Army() { Dot = 2 });
+        var commands = new CommandsBuilder().Train(_start, new Army() { Dot = 2 }).ToImmutable();
         Orders.Possible(view, commands).Hexagons[_start].Training.ShouldBe(new Army() { Dot = 1 });
     }
 
@@ -133,7 +133,7 @@ public sealed class OrdersTest
         var view = View(new GameState(Settings(startMatter: 5000)));
 
         // Act: three of the five dots leave.
-        var commands = Orders.Move(_noCommands, _start, _center, new Army() { Dot = 3 });
+        var commands = new CommandsBuilder().Move(_start, _center, new Army() { Dot = 3 }).ToImmutable();
         PossibleHexagonOrders start = Orders.Possible(view, commands).Hexagons[_start];
 
         // Assert
@@ -148,7 +148,7 @@ public sealed class OrdersTest
         var view = View(new GameState(Settings(startMatter: 5000)));
 
         // Act
-        var commands = Orders.Research(_noCommands, _start, Upgrade.TriangleExponent);
+        var commands = new CommandsBuilder().Research(_start, Upgrade.TriangleExponent).ToImmutable();
         PossibleHexagonOrders start = Orders.Possible(view, commands).Hexagons[_start];
 
         // Assert
@@ -161,12 +161,12 @@ public sealed class OrdersTest
     {
         // Arrange: a dot on the center, which offers the triangle upgrade too.
         var state = new GameState(Settings(startMatter: 5000))
-            .PlayTurn(Player1(Orders.Move(_noCommands, _start, _center, new Army() { Dot = 1 })));
+            .PlayTurn(Player1(new CommandsBuilder().Move(_start, _center, new Army() { Dot = 1 }).ToImmutable()));
         var view = View(state);
         Orders.Possible(view, _noCommands).Hexagons[_center].Research.ShouldBe([Upgrade.TriangleExponent]);
 
         // Act
-        var commands = Orders.Research(_noCommands, _start, Upgrade.TriangleExponent);
+        var commands = new CommandsBuilder().Research(_start, Upgrade.TriangleExponent).ToImmutable();
 
         // Assert
         Orders.Possible(view, commands).Hexagons[_center].Research.ShouldBeEmpty();
@@ -177,13 +177,13 @@ public sealed class OrdersTest
     {
         // Arrange: one dot on the center with a pending research, four at the start.
         var state = new GameState(Settings(startMatter: 5000))
-            .PlayTurn(Player1(Orders.Move(_noCommands, _start, _center, new Army() { Dot = 1 })))
-            .PlayTurn(Player1(Orders.Research(_noCommands, _center, Upgrade.TriangleExponent)));
+            .PlayTurn(Player1(new CommandsBuilder().Move(_start, _center, new Army() { Dot = 1 }).ToImmutable()))
+            .PlayTurn(Player1(new CommandsBuilder().Research(_center, Upgrade.TriangleExponent).ToImmutable()));
         var view = View(state);
         Orders.Possible(view, _noCommands).Hexagons[_center].Movable.ShouldBe(Army.Empty);
 
         // Act
-        var commands = Orders.Move(_noCommands, _start, _center, new Army() { Dot = 1 });
+        var commands = new CommandsBuilder().Move(_start, _center, new Army() { Dot = 1 }).ToImmutable();
 
         // Assert
         Orders.Possible(view, commands).Hexagons[_center].Movable.ShouldBe(new Army() { Dot = 1 });
@@ -209,9 +209,11 @@ public sealed class OrdersTest
     [Test]
     public void Move_JoinsTheUnitsThatGoToTheSameDestination()
     {
-        var commands = Orders.Move(_noCommands, _start, _center, new Army() { Dot = 1 });
-        commands = Orders.Move(commands, _start, _center, new Army() { Dot = 2, Triangle = 1 });
-        commands = Orders.Move(commands, _start, _opponentStart, new Army() { Dot = 1 });
+        var commands = new CommandsBuilder()
+            .Move(_start, _center, new Army() { Dot = 1 })
+            .Move(_start, _center, new Army() { Dot = 2, Triangle = 1 })
+            .Move(_start, _opponentStart, new Army() { Dot = 1 })
+            .ToImmutable();
 
         commands[_start].Movements.ShouldBe([
             new MovementOrder() { Destination = _center, Army = new Army() { Dot = 3, Triangle = 1 } },
@@ -221,10 +223,12 @@ public sealed class OrdersTest
     [Test]
     public void TrainConstructAndResearch_AddToTheCommandOfTheHexagon()
     {
-        var commands = Orders.Train(_noCommands, _start, new Army() { Dot = 1 });
-        commands = Orders.Train(commands, _start, new Army() { Dot = 1, Circle = 1 });
-        commands = Orders.Construct(commands, _start, new Compound() { Axis = 1 });
-        commands = Orders.Research(commands, _start, Upgrade.CircleExponent);
+        var commands = new CommandsBuilder()
+            .Train(_start, new Army() { Dot = 1 })
+            .Train(_start, new Army() { Dot = 1, Circle = 1 })
+            .Construct(_start, new Compound() { Axis = 1 })
+            .Research(_start, Upgrade.CircleExponent)
+            .ToImmutable();
 
         Command command = commands.ShouldHaveSingleItem().Value;
         command.Training.ShouldBe(new Army() { Dot = 2, Circle = 1 });

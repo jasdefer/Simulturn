@@ -55,7 +55,7 @@ Entschieden:
 
 - **Die Antwort hat die Form eines Commands,** mit Grenzen statt Mengen. Es gibt keinen eigenen Typ für eine einzelne Order.
 - **Grenzen statt Aufzählung.** Jede Grenze gilt für ihre Order allein: Jede einzelne Order bis zu ihrer Grenze lässt die Befehle gültig. Zwei zusammen können das Budget oder die Dots sprengen. Alle gültigen Kombinationen lassen sich nicht sinnvoll als Daten herausgeben.
-- **Iterativ.** Ein Client nimmt aus einer Antwort eine Order, legt sie mit `Orders.Train`, `Construct`, `Research` oder `Move` zu den Befehlen und fragt neu. Wer einen ganzen Zug auf einmal baut, prüft ihn weiter mit `CommandValidator.Validate`.
+- **Iterativ.** Ein Client nimmt aus einer Antwort eine Order, legt sie in seinen `CommandsBuilder` und fragt mit `builder.Commands` neu. Wer einen ganzen Zug auf einmal baut, prüft ihn weiter mit `CommandValidator.Validate`.
 - **Jeder Zwischenstand ist ein gültiger Zug.** Der letzte Dot einer Forschung ist deshalb erst beweglich, wenn ein anderer dorthin unterwegs ist. Ein Tausch der Dots zweier Forschungs-Hexagone ist über Schritte nicht erreichbar.
 - **Bewegung als bewegliche Armee,** nicht als Liste aller Ziele. Wohin ein Einheitentyp kommt, sagt `Movement.Destinations`.
 - **Keine zweite Kopie der Regeln.** `Orders` schreibt keinen Regelvergleich aus. In den Zufallsspielen prüft `OrderInvariants` nach jedem Zug: Jede Order wird bis zu ihrer Grenze angenommen und mit einer mehr abgelehnt.

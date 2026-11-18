@@ -7,9 +7,9 @@ namespace Simulturn.Core.Engine;
 
 /// <summary>
 /// What a player can order. A client builds a turn step by step: it asks <see cref="Possible"/>
-/// what the commands entered so far leave, takes one order, adds it with <see cref="Train"/>,
-/// <see cref="Construct"/>, <see cref="Research"/> or <see cref="Move"/> and asks again. It computes
-/// no rule itself and never tries a command the validation refuses. The limits come from the rules
+/// what the commands entered so far leave, takes one order, adds it to its <see cref="CommandsBuilder"/>
+/// and asks again. It computes no rule itself and never tries a command the validation refuses.
+/// The limits come from the rules
 /// <see cref="CommandValidator"/> checks: <see cref="Occupancy"/>, <see cref="Costs"/> and the
 /// research rules of the validator itself.
 /// </summary>
@@ -56,64 +56,6 @@ public static class Orders
     }
 
     /// <summary>
-    /// The commands with the units put into training on the hexagon.
-    /// </summary>
-    public static ImmutableDictionary<Hexagon, Command> Train(ImmutableDictionary<Hexagon, Command> commands, Hexagon hexagon, Army training)
-    {
-        return With(commands, hexagon, command => command with { Training = command.Training + training });
-    }
-
-    /// <summary>
-    /// The commands with the constructions started on the hexagon.
-    /// </summary>
-    public static ImmutableDictionary<Hexagon, Command> Construct(ImmutableDictionary<Hexagon, Command> commands, Hexagon hexagon, Compound construction)
-    {
-        return With(commands, hexagon, command => command with { Construction = command.Construction + construction });
-    }
-
-    /// <summary>
-    /// The commands with the research of the upgrade started on the hexagon. A hexagon researches
-    /// one upgrade at a time, so a research already requested there is replaced.
-    /// </summary>
-    public static ImmutableDictionary<Hexagon, Command> Research(ImmutableDictionary<Hexagon, Command> commands, Hexagon hexagon, Upgrade upgrade)
-    {
-        return With(commands, hexagon, command => command with { Research = upgrade });
-    }
-
-    /// <summary>
-    /// The commands with the army moving from the origin to the destination. Units already moving
-    /// there are joined in one <see cref="MovementOrder"/>.
-    /// </summary>
-    public static ImmutableDictionary<Hexagon, Command> Move(ImmutableDictionary<Hexagon, Command> commands, Hexagon origin, Hexagon destination, Army army)
-    {
-        return With(commands, origin, command =>
-        {
-            int index = -1;
-            for (int i = 0; i < command.Movements.Length && index < 0; i++)
-            {
-                if (command.Movements[i].Destination == destination)
-                {
-                    index = i;
-                }
-            }
-            MovementOrder movement = new()
-            {
-                Destination = destination,
-                Army = index < 0 ? army : command.Movements[index].Army + army
-            };
-            return command with
-            {
-                Movements = index < 0 ? command.Movements.Add(movement) : command.Movements.SetItem(index, movement)
-            };
-        });
-    }
-
-    private static ImmutableDictionary<Hexagon, Command> With(ImmutableDictionary<Hexagon, Command> commands, Hexagon hexagon, Func<Command, Command> change)
-    {
-        return commands.SetItem(hexagon, change(commands.GetValueOrDefault(hexagon) ?? _noCommand));
-    }
-
-    /// <summary>
     /// A unit needs a free building of its type, its matter and its space.
     /// </summary>
     private static Army PossibleTraining(GameSettings settings, PlayerState player, Hexagon hexagon, Command command, OrderCost budget)
@@ -150,11 +92,10 @@ public static class Orders
         {
             return [];
         }
-        ImmutableDictionary<Hexagon, Command> entered = commands.ToImmutableDictionary();
         var possible = ImmutableArray.CreateBuilder<Upgrade>();
         foreach (Upgrade upgrade in hexagonSettings.ResearchableUpgrades.Order())
         {
-            if (CommandValidator.AcceptsResearch(view, Research(entered, hexagon, upgrade), hexagon))
+            if (CommandValidator.AcceptsResearch(view, new CommandsBuilder(commands).Research(hexagon, upgrade).Commands, hexagon))
             {
                 possible.Add(upgrade);
             }
