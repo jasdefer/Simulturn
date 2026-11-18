@@ -18,6 +18,12 @@ public sealed class EngineInvariantsTest
     private const ushort MaxTurns = 100;
 
     /// <summary>
+    /// The order invariants validate dozens of commands per player and turn, so they play fewer games.
+    /// </summary>
+    private const int OrderSeeds = 3;
+    private static readonly Dictionary<Hexagon, Command> _noCommands = [];
+
+    /// <summary>
     /// What gives the commands of one player for a turn, from the view of that player.
     /// </summary>
     private delegate IReadOnlyDictionary<Hexagon, Command> CommandSource(PlayerGameState view);
@@ -99,6 +105,31 @@ public sealed class EngineInvariantsTest
                     StateInvariants.CheckState(next.State).ShouldBeEmpty($"Map {map}, seed {seed}, turn {next.State.Turn}."));
 
                 final.Turn.ShouldBeGreaterThan((ushort)0);
+            }
+        }
+    }
+
+    /// <summary>
+    /// The commands of a random player are a turn half entered: what <see cref="Orders.Possible"/>
+    /// offers on top of them is exactly what the validation accepts.
+    /// </summary>
+    [Test]
+    public void RandomGames_OfferExactlyTheOrdersTheValidationAccepts()
+    {
+        foreach ((string map, GameSettings gameSettings) in MapPresets())
+        {
+            for (int seed = 0; seed < OrderSeeds; seed++)
+            {
+                var players = RandomPlayers(seed, options => options with { ResearchProbability = 0.5 });
+                PlayGame(gameSettings, players, (before, commands, _) =>
+                {
+                    foreach ((string playerId, IReadOnlyDictionary<Hexagon, Command> playerCommands) in commands)
+                    {
+                        PlayerGameState view = FogOfWar.GetPlayerGameState(before, playerId);
+                        OrderInvariants.Check(view, playerCommands).ShouldBeEmpty($"Map {map}, seed {seed}, turn {before.Turn}.");
+                        OrderInvariants.Check(view, _noCommands).ShouldBeEmpty($"Map {map}, seed {seed}, turn {before.Turn}, without commands.");
+                    }
+                });
             }
         }
     }

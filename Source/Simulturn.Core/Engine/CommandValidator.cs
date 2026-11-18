@@ -19,6 +19,7 @@ public sealed class CommandValidator
     private readonly Dictionary<Upgrade, byte> _requestedUpgradeCounts;
     private readonly Dictionary<Hexagon, int> _arrivingDots;
     private readonly OrderCost _cost;
+    private readonly OrderCost _budget;
 
     private CommandValidator(GameSettings settings, string playerId, PlayerState playerState, IReadOnlyDictionary<Hexagon, Command> commands)
     {
@@ -28,8 +29,9 @@ public sealed class CommandValidator
         _commands = commands;
         _upgradesInResearch = _playerState.UpgradesInResearch();
         _requestedUpgradeCounts = GetRequestedUpgradeCounts(commands);
-        _arrivingDots = GetArrivingDots(commands);
+        _arrivingDots = Occupancy.ArrivingDots(commands);
         _cost = Costs.Of(settings, playerState.UpgradeLevels, commands);
+        _budget = Costs.Budget(settings, playerState, commands);
     }
 
     /// <summary>
@@ -59,6 +61,21 @@ public sealed class CommandValidator
     {
         CommandValidator validator = new(view.GameSettings, view.PlayerId, view.PlayerState, commands);
         return validator.ValidateCommands();
+    }
+
+    /// <summary>
+    /// Whether the research the commands request on the hexagon breaks no rule: the research rules,
+    /// the dot it needs and its price. For commands that were valid without that research this
+    /// is the whole validation, so <see cref="Orders.Possible"/> asks here instead of repeating the rules.
+    /// </summary>
+    internal static bool AcceptsResearch(PlayerGameState view, IReadOnlyDictionary<Hexagon, Command> commands, Hexagon hexagon)
+    {
+        CommandValidator validator = new(view.GameSettings, view.PlayerId, view.PlayerState, commands);
+        Command command = commands[hexagon];
+        return !validator.ValidateResearch(hexagon, command)
+            .Concat(validator.ValidateResearchKeepsDot(hexagon, command))
+            .Concat(validator.ValidateMatter())
+            .Any();
     }
 
     /// <summary>
@@ -100,7 +117,7 @@ public sealed class CommandValidator
     private IEnumerable<CommandValidation> ValidateSpace()
     {
         if (_commands.Any(x => x.Value.Training.Total > 0) &&
-            _playerState.UsedSpace + _cost.Space > _playerState.AvailableSpace)
+            _budget.Space < 0)
         {
             yield return new InsufficientSpace(_playerId, _playerState.UsedSpace + _cost.Space, _playerState.AvailableSpace);
         }
@@ -266,7 +283,7 @@ public sealed class CommandValidator
 
     private IEnumerable<CommandValidation> ValidateMatter()
     {
-        if (_cost.Matter > _playerState.Matter)
+        if (_budget.Matter < 0)
         {
             yield return new InsufficientMatter(_playerId, _cost.Matter, _playerState.Matter);
         }
@@ -281,15 +298,5 @@ public sealed class CommandValidator
             .Where(command => command.Research is not null)
             .GroupBy(command => command.Research!.Value)
             .ToDictionary(group => group.Key, group => (byte)group.Count());
-    }
-
-    private static Dictionary<Hexagon, int> GetArrivingDots(IReadOnlyDictionary<Hexagon, Command> commands)
-    {
-        Dictionary<Hexagon, int> arrivingDots = [];
-        foreach (MovementOrder movement in commands.Values.SelectMany(command => command.Movements))
-        {
-            arrivingDots[movement.Destination] = arrivingDots.GetValueOrDefault(movement.Destination) + movement.Army.Dot;
-        }
-        return arrivingDots;
     }
 }

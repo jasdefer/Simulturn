@@ -1,4 +1,5 @@
 using Simulturn.Core.Model;
+using Simulturn.Core.Model.Commands;
 
 namespace Simulturn.Core.Engine;
 
@@ -55,6 +56,20 @@ public static class Occupancy
     public static bool HoldsResearch(Army army)
     {
         return army.Dot > 0;
+    }
+
+    /// <summary>
+    /// The dots the movements of the commands bring to every hexagon. A dot that arrives in a turn
+    /// keeps a research alive (<see cref="HoldsResearch"/>), so the last dot may leave when another comes.
+    /// </summary>
+    internal static Dictionary<Hexagon, int> ArrivingDots(IReadOnlyDictionary<Hexagon, Command> commands)
+    {
+        Dictionary<Hexagon, int> arrivingDots = [];
+        foreach (MovementOrder movement in commands.Values.SelectMany(command => command.Movements))
+        {
+            arrivingDots[movement.Destination] = arrivingDots.GetValueOrDefault(movement.Destination) + movement.Army.Dot;
+        }
+        return arrivingDots;
     }
 
     /// <summary>
