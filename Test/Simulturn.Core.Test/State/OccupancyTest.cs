@@ -1,5 +1,7 @@
 using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
+using Simulturn.Core.Setup;
+using Simulturn.Test.Common;
 
 namespace Simulturn.Core.Test.State;
 
@@ -59,5 +61,14 @@ public sealed class OccupancyTest
         Occupancy.HoldsResearch(new Army() { Dot = 1 }).ShouldBeTrue();
         Occupancy.HoldsResearch(new Army() { Triangle = 5, Circle = 5, Square = 5 }).ShouldBeFalse();
         Occupancy.HoldsResearch(Army.Empty).ShouldBeFalse();
+    }
+
+    [Test]
+    public void ProvidedSpace_IsTheSpaceOfEveryBuilding()
+    {
+        GameSettings settings = TestSettings.Create(Maps.Line(-1, 1));
+        var compound = new Compound() { Plane = 1, Axis = 2, Dome = 3 };
+
+        Occupancy.ProvidedSpace(settings, compound).ShouldBe(settings.ProvidedSpace.Plane + 2 * settings.ProvidedSpace.Axis + 3 * settings.ProvidedSpace.Dome);
     }
 }

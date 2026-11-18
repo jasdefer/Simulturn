@@ -55,4 +55,13 @@ public static class Occupancy
     {
         return army.Dot > 0;
     }
+
+    /// <summary>
+    /// The space the buildings give a player for units. Units take it from the moment they are
+    /// ordered (<see cref="Costs.Training(GameSettings, Army)"/>).
+    /// </summary>
+    public static int ProvidedSpace(GameSettings settings, Compound compound)
+    {
+        return compound * settings.ProvidedSpace;
+    }
 }

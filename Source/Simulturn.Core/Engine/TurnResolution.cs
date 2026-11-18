@@ -106,8 +106,7 @@ public sealed class TurnResolution
                     continue;
                 }
                 Army training = Army.FromUnit(unit, command.Training[unit]);
-                // Subtract 1 to account for the current turn, the turn increments after all game state logic is completed
-                ushort completionTurn = (ushort)(_state.Turn + _settings.TrainingDuration[unit] - 1);
+                ushort completionTurn = Schedule.TrainingCompletion(_settings, _state.Turn, unit);
                 player.Trainings.Merge(new TurnHexagon(completionTurn, hexagon), training);
             }
         }
@@ -134,8 +133,7 @@ public sealed class TurnResolution
                     continue;
                 }
                 Compound construction = Compound.FromBuilding(building, command.Construction[building]);
-                // Subtract 1 to account for the current turn, the turn increments after all game state logic is completed
-                ushort completionTurn = (ushort)(_state.Turn + _settings.ConstructionDuration[building] - 1);
+                ushort completionTurn = Schedule.ConstructionCompletion(_settings, _state.Turn, building);
                 player.Constructions.Merge(new TurnHexagon(completionTurn, hexagon), construction);
             }
         }
@@ -144,7 +142,7 @@ public sealed class TurnResolution
             player.Constructions.Remove(key);
             player.Compounds.Merge(key.Hexagon, construction);
             player.Report.CompletedConstructions.Add(key.Hexagon, construction);
-            player.AvailableSpace += construction * _settings.ProvidedSpace;
+            player.AvailableSpace += Occupancy.ProvidedSpace(_settings, construction);
         }
     }
 
@@ -163,8 +161,7 @@ public sealed class TurnResolution
             byte completedLevels = player.UpgradeLevels.GetValueOrDefault(upgrade);
             UpgradeLevel level = _settings.NextUpgradeLevel(upgrade, completedLevels)
                 ?? throw new InvalidOperationException($"{upgrade} has no level after {completedLevels}; the research command was not validated.");
-            // Subtract 1 to account for the current turn, the turn increments after all game state logic is completed
-            player.Researches.Add(hexagon, new Research(upgrade, (ushort)(_state.Turn + level.Duration - 1)));
+            player.Researches.Add(hexagon, new Research(upgrade, Schedule.ResearchCompletion(_state.Turn, level)));
         }
         foreach ((Hexagon hexagon, Research research) in player.Researches.Where(x => x.Value.CompletionTurn == _state.Turn).ToList())
         {
@@ -305,7 +302,7 @@ public sealed class TurnResolution
                         continue;
                     }
                     defender.Compounds.Merge(hexagon, -destroyedCompound);
-                    defender.AvailableSpace -= destroyedCompound * _settings.ProvidedSpace;
+                    defender.AvailableSpace -= Occupancy.ProvidedSpace(_settings, destroyedCompound);
                     _destructions.Add(new DestructionReport(hexagon, attackerId, defenderId, destroyedCompound));
                     CancelTrainings(defender, hexagon, destroyedCompound);
                 }
