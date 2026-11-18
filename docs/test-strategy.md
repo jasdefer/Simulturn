@@ -97,7 +97,7 @@ Test/
   Simulturn.Core.Console/   not a test, manual play
 ```
 
-`Simulturn.Test.Common` references `Simulturn.Core` and Shouldly, never a bot project. Production code gets no test dependency. The standard rules and the maps live in production code, in `Simulturn.Core/Setup`: `DefaultSettings` is the only copy of the rules, `Maps` builds fixed maps by hand, `MapGenerator` builds fair maps from `MapGeneratorOptions` (types `Open`, `HomeOnly`, `Expansions`). `TestSettings` delegates to `DefaultSettings`; console and tests share that source.
+`Simulturn.Test.Common` references `Simulturn.Core` and Shouldly, never a bot project. Production code gets no test dependency. The standard rules and the maps live in production code, in `Simulturn.Core/Setup`: `DefaultSettings` is the only copy of the rules, `Maps` builds fixed maps by hand, `MapGenerator` builds fair maps from `MapGeneratorOptions` (types `Open`, `HomeOnly`, `Expansions`, `Guarded`). `TestSettings` delegates to `DefaultSettings`; console and tests share that source.
 
 ## Conventions
 

@@ -19,11 +19,6 @@ public static class ArenaMaps
         new ArenaMap("Open", seed => DefaultSettings.Create(MapGeneratorOptions.Open with { Seed = seed })),
         new ArenaMap("HomeOnly", seed => DefaultSettings.Create(MapGeneratorOptions.HomeOnly with { Seed = seed })),
         new ArenaMap("Expansions", seed => DefaultSettings.Create(MapGeneratorOptions.Expansions with { Seed = seed })),
-        new ArenaMap("Guarded", seed => DefaultSettings.Create(MapGeneratorOptions.Expansions with
-        {
-            Seed = seed,
-            CenterGuard = new Army() { Triangle = 2, Circle = 2, Square = 2 },
-            ExpansionGuard = new Army() { Dot = 3 }
-        }))
+        new ArenaMap("Guarded", seed => DefaultSettings.Create(MapGeneratorOptions.Guarded with { Seed = seed }))
     ];
 }

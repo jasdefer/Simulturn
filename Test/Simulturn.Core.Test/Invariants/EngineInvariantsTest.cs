@@ -50,11 +50,7 @@ public sealed class EngineInvariantsTest
         yield return ("Open", DefaultSettings.Create(MapGeneratorOptions.Open));
         yield return ("HomeOnly", DefaultSettings.Create(MapGeneratorOptions.HomeOnly));
         yield return ("Expansions", DefaultSettings.Create(MapGeneratorOptions.Expansions));
-        yield return ("Guarded", DefaultSettings.Create(MapGeneratorOptions.Expansions with
-        {
-            CenterGuard = new Army() { Triangle = 2, Circle = 2, Square = 2 },
-            ExpansionGuard = new Army() { Dot = 3 }
-        }));
+        yield return ("Guarded", DefaultSettings.Create(MapGeneratorOptions.Guarded));
     }
 
     /// <summary>
