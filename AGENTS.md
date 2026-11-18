@@ -142,6 +142,7 @@ Follow local conventions in touched files first.
 - Use `readonly struct` for value objects (`Army`, `Hexagon` patterns)
 - Seal every class and record that has no derived types, public ones too; CA1852 only warns for internal types, public types are sealed by convention
 - Value objects implement `IEquatable<T>`, `GetHashCode` and `==`/`!=` (`Army`, `Compound` patterns)
+- An `Army` or a `Compound` computed per type is built with `Army.PerUnit` or `Compound.PerBuilding`, not with a loop over the enum
 - Keep domain objects strongly typed; avoid weakly typed dictionaries/arrays
 - Preserve immutable collection boundaries for stored state
 - Use `.ToBuilder()` only inside mutation-heavy logic, then convert back to immutable

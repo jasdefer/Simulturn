@@ -17,12 +17,7 @@ public static class Occupancy
     /// </summary>
     public static Army TrainingSlots(Compound compound)
     {
-        Army slots = Army.Empty;
-        foreach (Unit unit in EnumValues.Units)
-        {
-            slots = slots.AddUnit(unit, compound[GameSettings.TrainingBuilding(unit)]);
-        }
-        return slots;
+        return Army.PerUnit(unit => compound[GameSettings.TrainingBuilding(unit)]);
     }
 
     /// <summary>

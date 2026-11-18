@@ -120,16 +120,8 @@ public static class Orders
     {
         Compound compound = player.Compounds.GetValueOrDefault(hexagon);
         Army freeSlots = Occupancy.FreeTrainingSlots(compound, player.Trainings.On(hexagon) + command.Training);
-        Army possible = Army.Empty;
-        foreach (Unit unit in EnumValues.Units)
-        {
-            int count = Math.Min(freeSlots[unit], Affordable(budget, Costs.Training(settings, unit), takesSpace: true));
-            if (count > 0)
-            {
-                possible = possible.AddUnit(unit, (short)count);
-            }
-        }
-        return possible;
+        return Army.PerUnit(unit =>
+            Math.Clamp(Affordable(budget, Costs.Training(settings, unit), takesSpace: true), 0, Math.Max(0, (int)freeSlots[unit])));
     }
 
     /// <summary>
@@ -141,17 +133,9 @@ public static class Orders
         {
             return Compound.Empty;
         }
-        int freeDots = Occupancy.FreeDots(remainingArmy, constructions);
-        Compound possible = Compound.Empty;
-        foreach (Building building in EnumValues.Buildings)
-        {
-            int count = Math.Min(freeDots, Affordable(budget, Costs.Construction(settings, building), takesSpace: false));
-            if (count > 0)
-            {
-                possible += Compound.FromBuilding(building, (short)count);
-            }
-        }
-        return possible;
+        int freeDots = Math.Max(0, Occupancy.FreeDots(remainingArmy, constructions));
+        return Compound.PerBuilding(building =>
+            Math.Clamp(Affordable(budget, Costs.Construction(settings, building), takesSpace: false), 0, freeDots));
     }
 
     /// <summary>
@@ -190,16 +174,7 @@ public static class Orders
         {
             movableDots--;
         }
-        Army movable = Army.Empty;
-        foreach (Unit unit in EnumValues.Units)
-        {
-            int count = unit == Unit.Dot ? movableDots : remainingArmy[unit];
-            if (count > 0)
-            {
-                movable = movable.AddUnit(unit, (short)count);
-            }
-        }
-        return movable;
+        return Army.PerUnit(unit => Math.Max(0, unit == Unit.Dot ? movableDots : remainingArmy[unit]));
     }
 
     /// <summary>
