@@ -240,7 +240,7 @@ public sealed class CommandValidator
         {
             yield return new HexagonAlreadyResearching(_playerId, hexagon, upgrade, pendingResearch.Upgrade);
         }
-        if (!_playerState.Armies.TryGetValue(hexagon, out var army) || army.Dot <= 0)
+        if (!Occupancy.HoldsResearch(_playerState.Armies.GetValueOrDefault(hexagon)))
         {
             yield return new ResearchRequiresDot(_playerId, hexagon, upgrade);
         }
@@ -254,8 +254,9 @@ public sealed class CommandValidator
     {
         Army departingArmy = command.Movements.Select(x => x.Army).Sum();
         Army availableArmy = _playerState.Armies.GetValueOrDefault(hexagon);
-        if (availableArmy.Dot > 0 &&
-            availableArmy.Dot - departingArmy.Dot + _arrivingDots.GetValueOrDefault(hexagon) <= 0 &&
+        Army remainingArmy = availableArmy - departingArmy + new Army() { Dot = (short)_arrivingDots.GetValueOrDefault(hexagon) };
+        if (Occupancy.HoldsResearch(availableArmy) &&
+            !Occupancy.HoldsResearch(remainingArmy) &&
             (command.Research is not null || _playerState.Researches.ContainsKey(hexagon)))
         {
             Upgrade researched = command.Research ?? _playerState.Researches[hexagon].Upgrade;

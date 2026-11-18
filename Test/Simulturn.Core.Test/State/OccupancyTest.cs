@@ -52,4 +52,12 @@ public sealed class OccupancyTest
 
         Occupancy.FreeDots(army, constructions).ShouldBe(-1);
     }
+
+    [Test]
+    public void HoldsResearch_NeedsADot()
+    {
+        Occupancy.HoldsResearch(new Army() { Dot = 1 }).ShouldBeTrue();
+        Occupancy.HoldsResearch(new Army() { Triangle = 5, Circle = 5, Square = 5 }).ShouldBeFalse();
+        Occupancy.HoldsResearch(Army.Empty).ShouldBeFalse();
+    }
 }

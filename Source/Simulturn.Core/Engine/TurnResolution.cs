@@ -357,7 +357,7 @@ public sealed class TurnResolution
         {
             foreach ((Hexagon hexagon, Research research) in player.Researches.ToList())
             {
-                if (player.Armies.GetValueOrDefault(hexagon).Dot <= 0)
+                if (!Occupancy.HoldsResearch(player.Armies.GetValueOrDefault(hexagon)))
                 {
                     player.Researches.Remove(hexagon);
                     player.Report.CanceledResearches.Add(hexagon, research.Upgrade);

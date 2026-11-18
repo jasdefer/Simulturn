@@ -194,7 +194,7 @@ public static class StateValidator
             {
                 yield return new UpgradeNotResearchableOnHexagon(playerId, hexagon, research.Upgrade);
             }
-            if (!playerState.Armies.TryGetValue(hexagon, out var army) || army.Dot <= 0)
+            if (!Occupancy.HoldsResearch(playerState.Armies.GetValueOrDefault(hexagon)))
             {
                 yield return new ResearchRequiresDot(playerId, hexagon, research.Upgrade);
             }

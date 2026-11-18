@@ -45,4 +45,14 @@ public static class Occupancy
     {
         return army.Dot - constructions.Sum();
     }
+
+    /// <summary>
+    /// Whether the army keeps a research on its hexagon alive: a research needs a dot there
+    /// from the turn it is ordered until it completes.
+    /// </summary>
+    /// <param name="army">The army of the player on the hexagon.</param>
+    public static bool HoldsResearch(Army army)
+    {
+        return army.Dot > 0;
+    }
 }
