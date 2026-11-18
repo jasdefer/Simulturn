@@ -40,7 +40,7 @@ Stand 2026-11-16, vor der Umsetzung neu zu prüfen.
 
 ## Umsetzung
 
-Stand 2026-11-18, auf dem Branch `feature/bot-foundation`. Vorarbeit war [[occupancy-rules-in-one-place]].
+Stand 2026-11-18, mit PR 25 auf `develop`. Vorarbeit war [[occupancy-rules-in-one-place]].
 
 `Orders.Possible(view, commands)` sagt einem Client, was er nach den bisher eingegebenen Befehlen noch befehlen kann: das Restbudget und je Hexagon ein `PossibleHexagonOrders`.
 
@@ -65,5 +65,5 @@ Noch offen aus diesem Item:
 - Reichweite und Reisezeit über mehrere Züge, und daraus die Bedrohung durch gesehene Armeen.
 - Was ein Upgrade ändert, als Antwort der Engine.
 - Eine Order wieder herausnehmen. Das kann die Befehle ungültig machen (der Dot, der eine Forschung hält).
-- `Orders.Possible` rechnet bei jedem Aufruf alles neu. Ob das für Bots reicht, zeigt die Arena.
+- `Orders.Possible` rechnet bei jedem Aufruf alles neu. Ob das für Bots reicht, zeigt die Arena mit dem Zufallsbot aus [[bot-strength-measurement]], dem ersten Client dieser Schnittstelle.
 - `RandomCommands` hält die Regeln noch selbst ein, statt aus den möglichen Orders zu würfeln.

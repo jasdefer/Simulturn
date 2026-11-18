@@ -12,8 +12,6 @@ namespace Simulturn.Lab.Arena;
 /// </summary>
 public static class ArenaStudy
 {
-    private const int OpponentSeedOffset = 1_000_000;
-
     /// <summary>
     /// Plays the run of the options. The bots and the map types are looked up by name in the
     /// given lists, so a new bot or map needs no change here.
@@ -89,8 +87,8 @@ public static class ArenaStudy
         {
             Dictionary<string, IBot> bots = new()
             {
-                { game.BotPlayerId, game.Bot.Create(game.MapSeed) },
-                { game.OpponentPlayerId, game.Opponent.Create(game.MapSeed + OpponentSeedOffset) }
+                { game.BotPlayerId, game.Bot.Create(BotSeed(game.MapSeed, opponent: false)) },
+                { game.OpponentPlayerId, game.Opponent.Create(BotSeed(game.MapSeed, opponent: true)) }
             };
             return Match.Play(game.Settings, bots, limits);
         }
@@ -100,6 +98,24 @@ public static class ArenaStudy
                 $"{game.Bot.Name} on seat {game.Seat} against {game.Opponent.Name} on map {game.Map} with seed {game.MapSeed}: {exception.Message}",
                 exception);
         }
+    }
+
+    /// <summary>
+    /// The seed of a bot in the games of a map seed, the same on both seats. The seeds of the two
+    /// bots and of neighbouring map seeds share no pattern: <see cref="Random"/> gives seeds that
+    /// lie a fixed distance apart first rolls that depend on each other, so that one bot would
+    /// always open with the answer to the other.
+    /// </summary>
+    public static int BotSeed(int mapSeed, bool opponent)
+    {
+        // The finalizer of MurmurHash3: every bit of the input changes every bit of the result.
+        uint hash = unchecked((uint)(mapSeed * 2 + (opponent ? 1 : 0)));
+        hash ^= hash >> 16;
+        hash *= 0x85EBCA6B;
+        hash ^= hash >> 13;
+        hash *= 0xC2B2AE35;
+        hash ^= hash >> 16;
+        return unchecked((int)hash);
     }
 
     private static T Find<T>(IReadOnlyList<T> items, Func<T, string> name, string wanted, string kind)

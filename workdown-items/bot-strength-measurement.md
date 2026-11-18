@@ -1,9 +1,10 @@
 ---
 id: bot-strength-measurement
 title: Die Stärke eines Bots lässt sich nicht verlässlich messen
-status: in_progress
+status: done
 created: 2026-11-16
-updated: 2026-11-16
+updated: 2026-11-18
+completed: 2026-11-18
 ---
 ## Problem
 
@@ -67,12 +68,12 @@ Keine Vorgaben, nur Stoff zum Nachdenken bei der Umsetzung.
 
 ## Umsetzung
 
-Stand 2026-11-16, auf dem Branch `feature/bot-foundation`.
+Stand 2026-11-18. Die Grundlage ist mit PR 25 auf `develop`; der erste echte Bot entsteht auf dem Branch `feature/random-bot`.
 
 - **Abriss.** `Simulturn.AI`, `Simulturn.Runner` und `Simulturn.AI.Test` sind entfernt. Der Zufallsgenerator für gültige Befehle liegt als Testwerkzeug in `Simulturn.Test.Common` (`RandomCommands`), `EngineInvariantsTest` in `Simulturn.Core.Test`.
 - **`Source/Simulturn.Bots`** (Lib): der Vertrag `IBot` (Sicht rein, Befehle raus), der `BotCatalog` (Name und Fabrik aus einem Seed) und `Match.Play`, das ein Spiel zu Ende spielt. Am ersten Tag gibt es nur den `IdleBot`.
 - **`Source/Simulturn.Lab`** (Console-App): alles, was kein Test ist. Die erste Studie ist die Arena (`arena`), ihre Profile stehen in `appsettings.json`, Werte lassen sich auf der Kommandozeile ersetzen. Weitere Studien, etwa zum Balancing, bekommen einen eigenen Ordner.
-- **`Test/Simulturn.Bots.Test`**: Ebene 4 der Teststrategie, mit geskripteten Bots.
+- **`Test/Simulturn.Bots.Test`** und **`Test/Simulturn.Lab.Test`**: Ebene 4 der Teststrategie, mit geskripteten Bots. Das erste prüft `Match`, das zweite die Arena.
 
 Entschieden:
 
@@ -84,19 +85,28 @@ Entschieden:
 
 Bewusst nicht gebaut: ein Rechenbudget pro Zug, ein Pool eingefrorener Bots, das Fortsetzen und Zusammenführen von Läufen. Sie kommen, wenn ein Bot oder ein Lauf sie braucht.
 
-Der erste echte Bot ist ein Zufallsbot, der aus den möglichen Befehlen wählt. Er wartet auf [[client-possible-orders]] und ist dann die erste Probe für die Arena.
+Der erste echte Bot ist der Zufallsbot (`RandomBot`, im Katalog `random`), gebaut auf dem Branch `feature/random-bot`. Er ist der erste Client von `Orders.Possible` aus [[client-possible-orders]] und die erste Probe für die Arena.
 
-### Ideen für den Zufallsbot
+### Der Zufallsbot
 
-Stand 2026-11-17, aus dem Gespräch zu [[client-possible-orders]]. Keine Vorgaben.
+Stand 2026-11-18. Ein Bot, der gleichverteilt aus allem wählt, was möglich ist, sagt nichts aus: Er zerstreut seine Armeen und verliert gegen jeden. Der Zufallsbot lässt offensichtlich Unsinniges aus und würfelt unter dem Rest. Einen zweiten, ganz dummen Zufallsbot gibt es nicht; den Beleg, dass die Arena Unterschiede misst, liefert der nächste Bot.
 
-Ein Bot, der gleichverteilt aus allem wählt, was möglich ist, sagt nichts aus: Er zerstreut seine Armeen und verliert gegen jeden. Als Maßstab für spätere Bots taugt nur ein Zufall, der offensichtlich Unsinniges auslässt und unter dem Rest würfelt.
+- **Ausgeben.** Er gibt jeden Zug alles aus. Zurück behält er nur den Preis einer Plane, solange es ein Feld mit Matter ohne eigene Plane gibt; ohne diese Reserve hat er nichts mehr, wenn sein Feld leer ist. Dots sind von der Reserve ausgenommen.
+- **Dots.** Ein Feld bekommt so viele Dots, wie dort abbauen können, aber nur solange die Matter des Felds jeden Dot viermal bezahlt (`DotPayback`), dazu die Dots, die Bau und Forschung binden. Ein Dot mehr wird trainiert, solange es ein freies Feld mit Matter oder Upgrades gibt; er läuft dorthin und baut eine Plane oder forscht. Es ist immer nur ein Dot unterwegs.
+- **Gebäude.** Eine Axis, sobald der freie Space nicht mehr für das reicht, was die Gebäude auf einmal trainieren. Ein weiteres Trainingsgebäude nur, wenn das Einkommen die vorhandenen übersteigt oder die Matter sie auf einmal füllt und das neue samt erster Einheit bezahlt. Die Trainingsgebäude stehen auf einem Feld, damit die Einheiten eine Armee sind.
+- **Würfel.** Welche Forschung und welche Kampfeinheit er kauft, welches Trainingsgebäude er baut, wie lange eine Armee Wache hält und wohin sie dann zieht.
+- **Armee.** Die Kampfeinheiten eines Felds ziehen gemeinsam. Bei ihren Trainingsgebäuden sammelt sich die Armee und zieht nur los, wenn sie ein fremdes Feld nehmen kann: Sie hat mehr Einheiten, als sie dort zuletzt gesehen hat, und zerstört mindestens ein bekanntes Gebäude (`Destruction.Of`). Unterwegs bewacht sie auch eigene Felder und freie Felder mit Matter oder Upgrades. Wer kein Einkommen mehr hat und nichts mehr trainiert, greift an, was auch immer dort steht.
+- Upkeep ([[upkeep]]) beachtet er nie.
 
-- Kampfeinheiten eines Hexagons ziehen gemeinsam und werden nicht aufgeteilt. Dots sind Arbeiter und folgen einer eigenen Logik.
-- Kein weiteres Trainingsgebäude, solange das Einkommen pro Zug nicht übersteigt, was die vorhandenen Gebäude ausgeben können.
-- Nicht mehr Dots, als abbauen können. Zum Bedarf zählen auch die Dots, die eine Konstruktion oder eine Forschung binden.
-- Ein Dot darüber hinaus, solange es auf der Karte lohnende Ziele ohne eigenen Dot gibt: Hexagone mit Matter, Hexagone mit erforschbaren Upgrades.
-- Jede dieser Regeln einzeln abschaltbar, damit sich in der Arena messen lässt, was sie bringt.
-- Ob daneben ein zweiter, ganz dummer Zufallsbot als Untergrenze einen Wert hat, ist offen; vermutlich reicht der eine.
+Was der erste Lauf gezeigt hat:
 
-Wohin die Armee zieht und ob sie angreift, bleibt bei diesem Bot gewürfelt.
+- **Seeds der Bots.** Die Arena gab den beiden Bots eines Spiels die Seeds n und n + 1.000.000. `System.Random` liefert für solche Seeds erste Würfe, die auseinander folgen: Der zweite Bot baute als erstes fast immer das Gebäude nach dem des ersten und gewann im Spiegelspiel auf `HomeOnly` 263 von 400 Spielen, der erste 70. Die Seeds kommen jetzt aus `ArenaStudy.BotSeed`, das Spiegelspiel ist ausgeglichen.
+- **Gegen `idle`** (100 Karten-Seeds je Typ, beide Sitze): 799 Siege in 800 Spielen, im Schnitt nach 50 bis 120 Zügen.
+- **Spiegelspiel:** entschieden auf `Expansions` (8 % Unentschieden), `HomeOnly` (20 %) und `Guarded` (29 %). Auf `Open` enden rund 90 % unentschieden: Die Felder dort sind klein, beide bauen die ganze Karte ab, und am Ende hat keiner genug Armee für ein Gebäude. Das ist eine Aussage über die Karte und den Bot, kein Fehler der Messung.
+- **Die Arena misst.** `DotPayback` 2 gegen 4: die 4 gewinnt auf `Expansions` 46 zu 10 und auf `Open` 16 zu 0. Noch höhere Werte gewinnen auf `Expansions` weiter, weil der Bot dann kaum Dots trainiert und früh angreift; der Standard bleibt bei 4. Immer bis zur Abbaugrenze des Felds zu trainieren (`DotPayback` 0) verliert gegen die 4 auf `Open` und `Expansions` 0 zu 114 und 2 zu 114 (60 Karten-Seeds, beide Sitze): Auf einem kleinen Feld kosten zwölf Dots mehr, als sie noch abbauen.
+- **Durchsatz.** 2400 Spiele in 32 Sekunden auf 20 Kernen, obwohl der Bot `Orders.Possible` pro Zug viele Male fragt.
+
+Offen für spätere Items:
+
+- Die Unentschieden auf `Open`: Erst ein Bot mit Plan zeigt, ob sie am Zufallsbot oder an der Karte liegen.
+- Die Armee zählt Einheiten und kennt keine Zusammensetzung. Eine Kampfvorhersage mit `Combat.Fight` gehört zum nächsten Bot ([[opponent-estimate]]).

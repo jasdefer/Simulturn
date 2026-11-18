@@ -8,6 +8,7 @@ public static class BotCatalog
 {
     public static ImmutableArray<BotEntry> All { get; } =
     [
-        new BotEntry("idle", _ => new IdleBot())
+        new BotEntry("idle", _ => new IdleBot()),
+        new BotEntry("random", seed => new RandomBot(seed))
     ];
 }
