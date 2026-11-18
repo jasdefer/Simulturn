@@ -58,7 +58,7 @@ public static class Orders
     /// <summary>
     /// The commands with the units put into training on the hexagon.
     /// </summary>
-    public static ImmutableDictionary<Hexagon, Command> Train(IReadOnlyDictionary<Hexagon, Command> commands, Hexagon hexagon, Army training)
+    public static ImmutableDictionary<Hexagon, Command> Train(ImmutableDictionary<Hexagon, Command> commands, Hexagon hexagon, Army training)
     {
         return With(commands, hexagon, command => command with { Training = command.Training + training });
     }
@@ -66,7 +66,7 @@ public static class Orders
     /// <summary>
     /// The commands with the constructions started on the hexagon.
     /// </summary>
-    public static ImmutableDictionary<Hexagon, Command> Construct(IReadOnlyDictionary<Hexagon, Command> commands, Hexagon hexagon, Compound construction)
+    public static ImmutableDictionary<Hexagon, Command> Construct(ImmutableDictionary<Hexagon, Command> commands, Hexagon hexagon, Compound construction)
     {
         return With(commands, hexagon, command => command with { Construction = command.Construction + construction });
     }
@@ -75,7 +75,7 @@ public static class Orders
     /// The commands with the research of the upgrade started on the hexagon. A hexagon researches
     /// one upgrade at a time, so a research already requested there is replaced.
     /// </summary>
-    public static ImmutableDictionary<Hexagon, Command> Research(IReadOnlyDictionary<Hexagon, Command> commands, Hexagon hexagon, Upgrade upgrade)
+    public static ImmutableDictionary<Hexagon, Command> Research(ImmutableDictionary<Hexagon, Command> commands, Hexagon hexagon, Upgrade upgrade)
     {
         return With(commands, hexagon, command => command with { Research = upgrade });
     }
@@ -84,7 +84,7 @@ public static class Orders
     /// The commands with the army moving from the origin to the destination. Units already moving
     /// there are joined in one <see cref="MovementOrder"/>.
     /// </summary>
-    public static ImmutableDictionary<Hexagon, Command> Move(IReadOnlyDictionary<Hexagon, Command> commands, Hexagon origin, Hexagon destination, Army army)
+    public static ImmutableDictionary<Hexagon, Command> Move(ImmutableDictionary<Hexagon, Command> commands, Hexagon origin, Hexagon destination, Army army)
     {
         return With(commands, origin, command =>
         {
@@ -108,10 +108,9 @@ public static class Orders
         });
     }
 
-    private static ImmutableDictionary<Hexagon, Command> With(IReadOnlyDictionary<Hexagon, Command> commands, Hexagon hexagon, Func<Command, Command> change)
+    private static ImmutableDictionary<Hexagon, Command> With(ImmutableDictionary<Hexagon, Command> commands, Hexagon hexagon, Func<Command, Command> change)
     {
-        Command command = commands.GetValueOrDefault(hexagon) ?? _noCommand;
-        return commands.ToImmutableDictionary().SetItem(hexagon, change(command));
+        return commands.SetItem(hexagon, change(commands.GetValueOrDefault(hexagon) ?? _noCommand));
     }
 
     /// <summary>
@@ -167,10 +166,11 @@ public static class Orders
         {
             return [];
         }
+        ImmutableDictionary<Hexagon, Command> entered = commands.ToImmutableDictionary();
         var possible = ImmutableArray.CreateBuilder<Upgrade>();
         foreach (Upgrade upgrade in hexagonSettings.ResearchableUpgrades.Order())
         {
-            if (CommandValidator.AcceptsResearch(view, Research(commands, hexagon, upgrade), hexagon))
+            if (CommandValidator.AcceptsResearch(view, Research(entered, hexagon, upgrade), hexagon))
             {
                 possible.Add(upgrade);
             }
