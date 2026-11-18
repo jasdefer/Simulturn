@@ -36,8 +36,9 @@ public static class Occupancy
     }
 
     /// <summary>
-    /// The number of dots that are free to start a construction or to leave. Every building
-    /// under construction keeps its own dot on the hexagon until it completes.
+    /// The number of dots no construction keeps busy. Every building under construction keeps
+    /// its own dot on the hexagon until it completes. A free dot can start a construction; whether
+    /// it may leave also depends on a research on the hexagon (<see cref="HoldsResearch"/>).
     /// </summary>
     /// <param name="army">The army of the player on the hexagon.</param>
     /// <param name="constructions">The constructions on the hexagon, whatever their completion turn.</param>
