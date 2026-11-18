@@ -19,9 +19,45 @@ public enum MatchEnd
 }
 
 /// <summary>
-/// The outcome of a match.
+/// The outcome of a match: <see cref="WonBy"/> or <see cref="Drawn"/>. Nothing else builds one,
+/// so a result has a winner exactly when it is a <see cref="MatchEnd.Victory"/>.
 /// </summary>
-/// <param name="End">How the match ended.</param>
-/// <param name="WinnerId">The winner of a <see cref="MatchEnd.Victory"/>, otherwise null.</param>
-/// <param name="Turns">The number of turns that were played.</param>
-public sealed record MatchResult(MatchEnd End, string? WinnerId, ushort Turns);
+public sealed record MatchResult
+{
+    private MatchResult(MatchEnd end, string? winnerId, ushort turns)
+    {
+        End = end;
+        WinnerId = winnerId;
+        Turns = turns;
+    }
+
+    /// <summary>How the match ended.</summary>
+    public MatchEnd End { get; }
+
+    /// <summary>The winner of a <see cref="MatchEnd.Victory"/>, otherwise null.</summary>
+    public string? WinnerId { get; }
+
+    /// <summary>The number of turns that were played.</summary>
+    public ushort Turns { get; }
+
+    /// <summary>
+    /// A match the player won.
+    /// </summary>
+    public static MatchResult WonBy(string winnerId, ushort turns)
+    {
+        return new MatchResult(MatchEnd.Victory, winnerId, turns);
+    }
+
+    /// <summary>
+    /// A match without a winner: a mutual defeat, a stall or the turn limit.
+    /// </summary>
+    /// <exception cref="ArgumentException">The end is a victory, which has a winner.</exception>
+    public static MatchResult Drawn(MatchEnd end, ushort turns)
+    {
+        if (end == MatchEnd.Victory)
+        {
+            throw new ArgumentException($"A victory has a winner, use {nameof(WonBy)}.", nameof(end));
+        }
+        return new MatchResult(end, null, turns);
+    }
+}

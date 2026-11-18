@@ -40,7 +40,7 @@ public sealed class MatchTest
 
         MatchResult result = Match.Play(settings, Bots(attacker, new IdleBot()), _limits);
 
-        result.ShouldBe(new MatchResult(MatchEnd.Victory, "Player01", 1));
+        result.ShouldBe(MatchResult.WonBy("Player01", 1));
     }
 
     [Test]
@@ -52,7 +52,7 @@ public sealed class MatchTest
 
         MatchResult result = Match.Play(settings, Bots(player1, player2), _limits);
 
-        result.ShouldBe(new MatchResult(MatchEnd.MutualDefeat, null, 1));
+        result.ShouldBe(MatchResult.Drawn(MatchEnd.MutualDefeat, 1));
     }
 
     [Test]
@@ -62,7 +62,7 @@ public sealed class MatchTest
 
         MatchResult result = Match.Play(settings, Bots(new IdleBot(), new IdleBot()), new MatchLimits() { StallTurns = 10, MaxTurns = 100 });
 
-        result.ShouldBe(new MatchResult(MatchEnd.Stall, null, 10));
+        result.ShouldBe(MatchResult.Drawn(MatchEnd.Stall, 10));
     }
 
     [Test]
@@ -72,7 +72,7 @@ public sealed class MatchTest
 
         MatchResult result = Match.Play(settings, Bots(new IdleBot(), new IdleBot()), new MatchLimits() { StallTurns = 3, MaxTurns = 5 });
 
-        result.ShouldBe(new MatchResult(MatchEnd.TurnLimit, null, 5));
+        result.ShouldBe(MatchResult.Drawn(MatchEnd.TurnLimit, 5));
     }
 
     [Test]
@@ -86,7 +86,7 @@ public sealed class MatchTest
 
         MatchResult result = Match.Play(settings, Bots(walker, new IdleBot()), new MatchLimits() { StallTurns = 3, MaxTurns = 12 });
 
-        result.ShouldBe(new MatchResult(MatchEnd.TurnLimit, null, 12));
+        result.ShouldBe(MatchResult.Drawn(MatchEnd.TurnLimit, 12));
     }
 
     [Test]

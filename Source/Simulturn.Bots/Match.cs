@@ -36,17 +36,17 @@ public static class Match
             switch (standing.Outcome.Value)
             {
                 case Victory victory:
-                    return new MatchResult(MatchEnd.Victory, victory.WinnerId, turn.State.Turn);
+                    return MatchResult.WonBy(victory.WinnerId, turn.State.Turn);
                 case MutualDefeat:
-                    return new MatchResult(MatchEnd.MutualDefeat, null, turn.State.Turn);
+                    return MatchResult.Drawn(MatchEnd.MutualDefeat, turn.State.Turn);
             }
             if (turn.State.Turn >= limits.MaxTurns)
             {
-                return new MatchResult(MatchEnd.TurnLimit, null, turn.State.Turn);
+                return MatchResult.Drawn(MatchEnd.TurnLimit, turn.State.Turn);
             }
             if (stillTurns >= limits.StallTurns)
             {
-                return new MatchResult(MatchEnd.Stall, null, turn.State.Turn);
+                return MatchResult.Drawn(MatchEnd.Stall, turn.State.Turn);
             }
 
             Dictionary<string, IReadOnlyDictionary<Hexagon, Command>> commands = [];
