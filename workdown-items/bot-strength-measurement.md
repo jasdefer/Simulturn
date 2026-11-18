@@ -3,7 +3,7 @@ id: bot-strength-measurement
 title: Die Stärke eines Bots lässt sich nicht verlässlich messen
 status: in_progress
 created: 2026-11-16
-updated: 2026-11-16
+updated: 2026-11-18
 ---
 ## Problem
 
@@ -67,12 +67,12 @@ Keine Vorgaben, nur Stoff zum Nachdenken bei der Umsetzung.
 
 ## Umsetzung
 
-Stand 2026-11-16, auf dem Branch `feature/bot-foundation`.
+Stand 2026-11-18. Die Grundlage ist mit PR 25 auf `develop`; der erste echte Bot entsteht auf dem Branch `feature/random-bot`.
 
 - **Abriss.** `Simulturn.AI`, `Simulturn.Runner` und `Simulturn.AI.Test` sind entfernt. Der Zufallsgenerator für gültige Befehle liegt als Testwerkzeug in `Simulturn.Test.Common` (`RandomCommands`), `EngineInvariantsTest` in `Simulturn.Core.Test`.
 - **`Source/Simulturn.Bots`** (Lib): der Vertrag `IBot` (Sicht rein, Befehle raus), der `BotCatalog` (Name und Fabrik aus einem Seed) und `Match.Play`, das ein Spiel zu Ende spielt. Am ersten Tag gibt es nur den `IdleBot`.
 - **`Source/Simulturn.Lab`** (Console-App): alles, was kein Test ist. Die erste Studie ist die Arena (`arena`), ihre Profile stehen in `appsettings.json`, Werte lassen sich auf der Kommandozeile ersetzen. Weitere Studien, etwa zum Balancing, bekommen einen eigenen Ordner.
-- **`Test/Simulturn.Bots.Test`**: Ebene 4 der Teststrategie, mit geskripteten Bots.
+- **`Test/Simulturn.Bots.Test`** und **`Test/Simulturn.Lab.Test`**: Ebene 4 der Teststrategie, mit geskripteten Bots. Das erste prüft `Match`, das zweite die Arena.
 
 Entschieden:
 
@@ -84,7 +84,7 @@ Entschieden:
 
 Bewusst nicht gebaut: ein Rechenbudget pro Zug, ein Pool eingefrorener Bots, das Fortsetzen und Zusammenführen von Läufen. Sie kommen, wenn ein Bot oder ein Lauf sie braucht.
 
-Der erste echte Bot ist ein Zufallsbot, der aus den möglichen Befehlen wählt. Er wartet auf [[client-possible-orders]] und ist dann die erste Probe für die Arena.
+Der erste echte Bot ist ein Zufallsbot, der aus den möglichen Befehlen wählt (`Orders.Possible`, zusammengesetzt mit dem `CommandsBuilder`). [[client-possible-orders]] liefert das seit PR 25, der Bot ist damit der nächste Schritt und die erste Probe für die Arena. Erst wenn er dort gespielt hat, ist dieses Item fertig.
 
 ### Ideen für den Zufallsbot
 
