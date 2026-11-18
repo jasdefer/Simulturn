@@ -134,11 +134,13 @@ public static class StateValidator
         {
             Army trainings = playerState.Trainings.On(hexagon);
             Compound compound = playerState.Compounds.GetValueOrDefault(hexagon, Compound.Empty);
+            Army slots = Occupancy.TrainingSlots(compound);
+            Army freeSlots = Occupancy.FreeTrainingSlots(compound, trainings);
             foreach (var unit in EnumValues.Units)
             {
-                if (trainings[unit] > compound[GameSettings.TrainingBuilding(unit)])
+                if (freeSlots[unit] < 0)
                 {
-                    yield return new MissingBuildingForTraining(playerId, hexagon, unit, trainings[unit], compound[GameSettings.TrainingBuilding(unit)]);
+                    yield return new MissingBuildingForTraining(playerId, hexagon, unit, trainings[unit], slots[unit]);
                 }
             }
         }

@@ -117,13 +117,13 @@ public sealed class CommandValidator
         }
         Compound compound = _playerState.Compounds.GetValueOrDefault(hexagon, Compound.Empty);
         Army trainings = _playerState.Trainings.On(hexagon) + command.Training;
+        Army slots = Occupancy.TrainingSlots(compound);
+        Army freeSlots = Occupancy.FreeTrainingSlots(compound, trainings);
         foreach (var unit in EnumValues.Units)
         {
-            short trainedUnits = trainings[unit];
-            short availableBuildings = compound[GameSettings.TrainingBuilding(unit)];
-            if (trainedUnits > availableBuildings)
+            if (freeSlots[unit] < 0)
             {
-                yield return new MissingBuildingForTraining(_playerId, hexagon, unit, trainedUnits, availableBuildings);
+                yield return new MissingBuildingForTraining(_playerId, hexagon, unit, trainings[unit], slots[unit]);
             }
         }
     }

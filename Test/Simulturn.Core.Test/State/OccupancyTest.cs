@@ -1,0 +1,37 @@
+using Simulturn.Core.Engine;
+using Simulturn.Core.Model;
+
+namespace Simulturn.Core.Test.State;
+
+/// <summary>
+/// The functions of <see cref="Occupancy"/> on their own. That the validators and the turn
+/// resolution follow them is shown by the tests of the rules that ask there.
+/// </summary>
+public sealed class OccupancyTest
+{
+    [Test]
+    public void TrainingSlots_AreOnePerBuildingOfTheTrainingType()
+    {
+        var compound = new Compound() { Plane = 1, Dome = 2, Pyramid = 3, Cube = 4, Axis = 5 };
+
+        Occupancy.TrainingSlots(compound).ShouldBe(new Army() { Dot = 1, Circle = 2, Triangle = 3, Square = 4 });
+    }
+
+    [Test]
+    public void FreeTrainingSlots_AreTheSlotsWithoutTheTrainings()
+    {
+        var compound = new Compound() { Plane = 1, Pyramid = 3 };
+        var trainings = new Army() { Dot = 1, Triangle = 1 };
+
+        Occupancy.FreeTrainingSlots(compound, trainings).ShouldBe(new Army() { Dot = 0, Triangle = 2 });
+    }
+
+    [Test]
+    public void FreeTrainingSlots_AreNegativeWhereATrainingHasNoBuilding()
+    {
+        var compound = new Compound() { Plane = 1 };
+        var trainings = new Army() { Dot = 1, Circle = 2 };
+
+        Occupancy.FreeTrainingSlots(compound, trainings).ShouldBe(new Army() { Circle = -2 });
+    }
+}
