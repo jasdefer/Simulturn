@@ -14,6 +14,7 @@ Hierarchical outline following `parent` upward to roots.
 - [Spielstände speichern und wiederherstellen](../workdown-items/game-persistence.md) — status: todo · created: 2026-10-14
 - [Karten erzeugen und Settings nicht sechsfach pflegen](../workdown-items/map-generator-and-default-settings.md) — status: done · created: 2026-10-14 · updated: 2026-11-11 · completed: 2026-11-10
 - [Bewegungsreichweite pro Einheitentyp](../workdown-items/movement-range.md) — status: done · created: 2026-10-14 · updated: 2026-11-13 · completed: 2026-11-13
+- [Belegungsregeln stehen mehrfach im Code](../workdown-items/occupancy-rules-in-one-place.md) — status: done · created: 2026-11-18 · completed: 2026-11-18
 - [Ein Bot weiß nicht, womit er beim Gegner rechnen muss](../workdown-items/opponent-estimate.md) — status: todo · created: 2026-11-16
 - [Warteschlangen enthalten nur offene Aufträge](../workdown-items/pending-only-queues.md) — status: done · created: 2026-11-09 · updated: 2026-11-09 · completed: 2026-11-09
 - [Wissen der Spieler liegt im Regelzustand](../workdown-items/player-knowledge-in-state.md) — status: done · created: 2026-11-11 · updated: 2026-11-11 · completed: 2026-11-11

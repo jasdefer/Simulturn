@@ -26,6 +26,7 @@ Cards grouped into columns by `status`.
 - [Warteschlangen für Trainings und Konstruktionen ohne verschachtelte Dictionaries](../workdown-items/flat-pending-queues.md)
 - [Karten erzeugen und Settings nicht sechsfach pflegen](../workdown-items/map-generator-and-default-settings.md)
 - [Bewegungsreichweite pro Einheitentyp](../workdown-items/movement-range.md)
+- [Belegungsregeln stehen mehrfach im Code](../workdown-items/occupancy-rules-in-one-place.md)
 - [Warteschlangen enthalten nur offene Aufträge](../workdown-items/pending-only-queues.md)
 - [Wissen der Spieler liegt im Regelzustand](../workdown-items/player-knowledge-in-state.md)
 - [Forschung kostet nichts und nutzt die falsche Stufe](../workdown-items/research-cost-and-duration.md)

@@ -16,6 +16,7 @@ flowchart TD
     game-persistence["Spielstände speichern und wiederherstellen"]
     map-generator-and-default-settings["Karten erzeugen und Settings nicht sechsfach pflegen"]
     movement-range["Bewegungsreichweite pro Einheitentyp"]
+    occupancy-rules-in-one-place["Belegungsregeln stehen mehrfach im Code"]
     opponent-estimate["Ein Bot weiß nicht, womit er beim Gegner rechnen muss"]
     pending-only-queues["Warteschlangen enthalten nur offene Aufträge"]
     player-knowledge-in-state["Wissen der Spieler liegt im Regelzustand"]
