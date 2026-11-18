@@ -34,4 +34,15 @@ public static class Occupancy
     {
         return TrainingSlots(compound) - trainings;
     }
+
+    /// <summary>
+    /// The number of dots that are free to start a construction or to leave. Every building
+    /// under construction keeps its own dot on the hexagon until it completes.
+    /// </summary>
+    /// <param name="army">The army of the player on the hexagon.</param>
+    /// <param name="constructions">The constructions on the hexagon, whatever their completion turn.</param>
+    public static int FreeDots(Army army, Compound constructions)
+    {
+        return army.Dot - constructions.Sum();
+    }
 }

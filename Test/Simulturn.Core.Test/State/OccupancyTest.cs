@@ -34,4 +34,22 @@ public sealed class OccupancyTest
 
         Occupancy.FreeTrainingSlots(compound, trainings).ShouldBe(new Army() { Circle = -2 });
     }
+
+    [Test]
+    public void FreeDots_AreTheDotsWithoutOnePerConstruction()
+    {
+        var army = new Army() { Dot = 5, Triangle = 3 };
+        var constructions = new Compound() { Axis = 1, Dome = 2 };
+
+        Occupancy.FreeDots(army, constructions).ShouldBe(2);
+    }
+
+    [Test]
+    public void FreeDots_AreNegativeWhereAConstructionHasNoDot()
+    {
+        var army = new Army() { Dot = 1, Square = 4 };
+        var constructions = new Compound() { Plane = 2 };
+
+        Occupancy.FreeDots(army, constructions).ShouldBe(-1);
+    }
 }

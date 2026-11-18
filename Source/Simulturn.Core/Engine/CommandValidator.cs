@@ -143,10 +143,10 @@ public sealed class CommandValidator
             yield return new HexagonNotBuildable(_playerId, hexagon);
         }
         Compound constructions = _playerState.Constructions.On(hexagon) + command.Construction;
-        short dots = _playerState.Armies.GetValueOrDefault(hexagon)[Unit.Dot];
-        if (constructions.Sum() > dots)
+        Army army = _playerState.Armies.GetValueOrDefault(hexagon);
+        if (Occupancy.FreeDots(army, constructions) < 0)
         {
-            yield return new MissingDotsForConstruction(_playerId, hexagon, constructions, dots);
+            yield return new MissingDotsForConstruction(_playerId, hexagon, constructions, army.Dot);
         }
     }
 
@@ -190,8 +190,8 @@ public sealed class CommandValidator
     /// </summary>
     private IEnumerable<CommandValidation> ValidateConstructionKeepsDots(Hexagon hexagon, Command command)
     {
-        short departingDots = command.Movements.Select(x => x.Army).Sum().Dot;
-        if (departingDots <= 0)
+        Army departingArmy = command.Movements.Select(x => x.Army).Sum();
+        if (departingArmy.Dot <= 0)
         {
             yield break;
         }
@@ -200,10 +200,10 @@ public sealed class CommandValidator
         {
             yield break;
         }
-        int remainingDots = _playerState.Armies.GetValueOrDefault(hexagon).Dot - departingDots;
-        if (constructions.Sum() > remainingDots)
+        Army remainingArmy = _playerState.Armies.GetValueOrDefault(hexagon) - departingArmy;
+        if (Occupancy.FreeDots(remainingArmy, constructions) < 0)
         {
-            yield return new MovementLeavesConstructionWithoutDot(_playerId, hexagon, constructions, (short)Math.Max(0, remainingDots));
+            yield return new MovementLeavesConstructionWithoutDot(_playerId, hexagon, constructions, (short)Math.Max(0, (int)remainingArmy.Dot));
         }
     }
 

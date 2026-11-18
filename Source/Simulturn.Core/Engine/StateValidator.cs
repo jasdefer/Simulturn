@@ -170,10 +170,10 @@ public static class StateValidator
         foreach (Hexagon hexagon in playerState.Constructions.Keys.Select(x => x.Hexagon).Distinct())
         {
             Compound constructions = playerState.Constructions.On(hexagon);
-            short dotCount = playerState.Armies.GetValueOrDefault(hexagon, Army.Empty).Dot;
-            if (constructions.Sum() > dotCount)
+            Army army = playerState.Armies.GetValueOrDefault(hexagon, Army.Empty);
+            if (Occupancy.FreeDots(army, constructions) < 0)
             {
-                yield return new MissingDotsForConstruction(playerId, hexagon, constructions, dotCount);
+                yield return new MissingDotsForConstruction(playerId, hexagon, constructions, army.Dot);
             }
         }
     }
