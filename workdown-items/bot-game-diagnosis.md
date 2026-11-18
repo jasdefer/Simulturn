@@ -3,6 +3,7 @@ id: bot-game-diagnosis
 title: Man sieht nicht, warum ein Bot verliert
 status: todo
 created: 2026-11-16
+updated: 2026-11-18
 depends_on:
 - bot-strength-measurement
 ---
@@ -29,6 +30,21 @@ Stand 2026-11-16, vor der Umsetzung neu zu prüfen.
 - Kennzahlen, die nur aus Regeln folgen, im Core, damit eine UI sie ebenso nutzen kann.
 - Ein Spiel aus einer Messung wieder abspielen und als Text oder später in der UI ansehen.
 - Aus einer Messung gezielt Spiele herausgreifen: die klarsten Niederlagen, die längsten Spiele, die mit ungültigen Befehlen.
+
+## Aus dem ersten Lauf des Zufallsbots
+
+Stand 2026-11-18, aus dem Gespräch nach [[bot-strength-measurement]]. Keine Vorgaben. Das Item ist als Nächstes dran, vor einem weiteren Bot und vor [[state-evaluation]].
+
+Jede Ursache im ersten Lauf wurde von Hand mit einem Wegwerfskript gesucht, das alle paar Züge Matter, Space, Armeen und Gebäude druckt: die Pleite auf `Guarded` (alles ausgegeben, kein Geld für die Plane), verstreute Armeen, die nie ein Gebäude zerstören konnten, das Patt zweier Armeen auf `HomeOnly`, die Erschöpfung auf `Open`. Mit Kennzahlen pro Zug wäre jede davon eine Tabelle gewesen.
+
+Kandidaten, getrennt nach Kurve und Zahl:
+
+- Je Zug und Spieler: Einkommen, Matter auf der Hand, Wert von Armee und Gebäuden in Matter, Zahl der Dots, Felder mit Plane, freier Space, Zahl der Armee-Stapel und Anteil des größten, bewegte Einheiten, gesehene Hexagone.
+- Je Spiel: insgesamt abgebaute Matter, in Kämpfen verlorene und vernichtete Matter, Zug der ersten Expansion, der ersten Kampfeinheit und des ersten Angriffs, Zahl der Dots, die allein unterwegs waren (Expansion, Aufklärung).
+- Der Grund des Spielendes genauer als `MatchEnd`: Ein Spiel am Zuglimit, in dem die ganze Karte abgebaut ist und keiner mehr ein Gebäude zerstören kann, ist etwas anderes als eines, in dem beide noch wachsen.
+- Die Arena zeigt je Paarung Mittelwerte getrennt nach Sieger und Verlierer und schreibt die Kurven einzelner Spiele auf Wunsch mit.
+
+Wie andere Spiele es zeigen (aus dem Gedächtnis, nicht nachgeschlagen): StarCraft 2 Kurven für Einkommen, Arbeiter, Armeewert und ungenutzte Rohstoffe, dazu eine Zahl, wie gut das Einkommen ausgegeben wird; Age of Empires eine Zeitleiste und Punkte nach Militär, Wirtschaft und Technik; Dota 2 den Vorsprung an Gold und Erfahrung über die Zeit. Gemeinsam ist die Trennung von Kurven über die Zeit und wenigen Zahlen pro Spiel.
 
 ## Offene Fragen
 
