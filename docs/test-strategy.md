@@ -17,7 +17,7 @@ The engine (`Simulturn.Core`) is deterministic and pure: `TurnResolution.Resolve
 | 1 Unit | One rule, one turn: a single validation type of `CommandValidator.Validate`, a single phase of `TurnResolution.Resolve`, the value objects `Army`, `Compound`, `Hexagon`, fog of war | Exact values | `Simulturn.Core.Test` |
 | 2 Scenario | Several scripted turns whose interplay has rules (a fight while a training is pending, a research completing and then a fight) | Exact values | `Simulturn.Core.Test` |
 | 3 Invariants | Random games over many seeds, maps and option presets | Invariants after every turn, no exact values | `Simulturn.Core.Test` |
-| 4 Bots | `Match`, the arena of the lab, later the bots themselves | Exact outcome of scripted bots (winner, turn count, rows of a run) | `Simulturn.Bots.Test` (`Match`), `Simulturn.Lab.Test` (arena) |
+| 4 Bots | `Match`, the arena of the lab, the bots themselves (`RandomBotTest`) | Exact outcome of scripted bots (winner, turn count, rows of a run) | `Simulturn.Bots.Test` (`Match`), `Simulturn.Lab.Test` (arena) |
 
 Not planned: integration tests across process or system boundaries. There is no API, no database, no UI. When they arrive, they get their own tests there.
 
@@ -74,7 +74,7 @@ Scale: the number of seeds and turns is a constant in the test. The whole suite 
 
 Goal: `Match` and the arena keep their contract. The tests use scripted bots (`ScriptedBot`) on small hand-built maps, so every outcome is exact: who wins, after how many turns, which rows a run has. One test plays the bots of the catalog on the maps of the arena, with small limits.
 
-A test of a bot shows a behaviour of that bot on a scripted situation. How strong a bot is against another one is not a test: that is a run of the lab (`Source/Simulturn.Lab`), read by a human.
+A test of a bot shows a behaviour of that bot on a scripted situation (`RandomBotTest`: where it trains a dot, what it keeps back, that its army moves as a whole). A bot that rolls dice also gets a test that the same seed plays the same match, and one that a mirror match on every map type issues only valid commands. How strong a bot is against another one is not a test: that is a run of the lab (`Source/Simulturn.Lab`), read by a human.
 
 ## Known bugs
 
