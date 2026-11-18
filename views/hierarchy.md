@@ -5,7 +5,7 @@ Hierarchical outline following `parent` upward to roots.
 - [AI-Gegner spielen zu schwach](../workdown-items/ai-opponents-too-weak.md) — status: todo · created: 2026-11-14 · updated: 2026-11-16
 - [Man sieht nicht, warum ein Bot verliert](../workdown-items/bot-game-diagnosis.md) — status: todo · created: 2026-11-16
 - [Die Stärke eines Bots lässt sich nicht verlässlich messen](../workdown-items/bot-strength-measurement.md) — status: in_progress · created: 2026-11-16 · updated: 2026-11-16
-- [Ein Client kann nicht fragen, was möglich ist](../workdown-items/client-possible-orders.md) — status: todo · created: 2026-11-16
+- [Ein Client kann nicht fragen, was möglich ist](../workdown-items/client-possible-orders.md) — status: in_progress · created: 2026-11-16
 - [Ein Client kann nicht fragen, was passieren würde](../workdown-items/client-what-if.md) — status: todo · created: 2026-11-16
 - [Kampfausgang vorab berechnen können](../workdown-items/combat-forecast-core.md) — status: done · created: 2026-10-14 · updated: 2026-11-13 · completed: 2026-11-13
 - [Auf die nächste .NET-Version wechseln und neue Sprachfeatures nutzen](../workdown-items/dotnet-upgrade-and-union-types.md) — status: done · created: 2026-11-09 · updated: 2026-11-10 · completed: 2026-11-10

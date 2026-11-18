@@ -1,7 +1,7 @@
 ---
 id: client-possible-orders
 title: Ein Client kann nicht fragen, was möglich ist
-status: todo
+status: in_progress
 created: 2026-11-16
 ---
 ## Problem
@@ -37,3 +37,33 @@ Stand 2026-11-16, vor der Umsetzung neu zu prüfen.
 
 - Ein Client kann einen gültigen Zug zusammenstellen, ohne eine Regel selbst zu rechnen und ohne ungültige Befehle zu probieren.
 - UI und Bots stellen dieselben Fragen an dieselbe Stelle.
+
+## Umsetzung
+
+Stand 2026-11-18, auf dem Branch `feature/bot-foundation`. Vorarbeit war [[occupancy-rules-in-one-place]].
+
+`Orders.Possible(view, commands)` sagt einem Client, was er nach den bisher eingegebenen Befehlen noch befehlen kann: das Restbudget und je Hexagon ein `PossibleHexagonOrders`.
+
+| Feld | Bedeutung | Woher die Grenze kommt |
+|---|---|---|
+| `Training` | je Einheitentyp: so viele gehen noch | `Occupancy.FreeTrainingSlots`, Matter und Platz aus `Costs.Budget` |
+| `Construction` | je Gebäude: so viele gehen noch | `Occupancy.FreeDots` der Dots, die bleiben, Matter, `IsBuildable` |
+| `Research` | diese Upgrades kann man hier starten | der `CommandValidator` selbst (`AcceptsResearch`) |
+| `Movable` | diese Einheiten dürfen das Hexagon noch verlassen | `Occupancy.FreeDots`, `Occupancy.HoldsResearch` |
+
+Entschieden:
+
+- **Die Antwort hat die Form eines Commands,** mit Grenzen statt Mengen. Es gibt keinen eigenen Typ für eine einzelne Order.
+- **Grenzen statt Aufzählung.** Jede Grenze gilt für ihre Order allein: Jede einzelne Order bis zu ihrer Grenze lässt die Befehle gültig. Zwei zusammen können das Budget oder die Dots sprengen. Alle gültigen Kombinationen lassen sich nicht sinnvoll als Daten herausgeben.
+- **Iterativ.** Ein Client nimmt aus einer Antwort eine Order, legt sie mit `Orders.Train`, `Construct`, `Research` oder `Move` zu den Befehlen und fragt neu. Wer einen ganzen Zug auf einmal baut, prüft ihn weiter mit `CommandValidator.Validate`.
+- **Jeder Zwischenstand ist ein gültiger Zug.** Der letzte Dot einer Forschung ist deshalb erst beweglich, wenn ein anderer dorthin unterwegs ist. Ein Tausch der Dots zweier Forschungs-Hexagone ist über Schritte nicht erreichbar.
+- **Bewegung als bewegliche Armee,** nicht als Liste aller Ziele. Wohin ein Einheitentyp kommt, sagt `Movement.Destinations`.
+- **Keine zweite Kopie der Regeln.** `Orders` schreibt keinen Regelvergleich aus. In den Zufallsspielen prüft `OrderInvariants` nach jedem Zug: Jede Order wird bis zu ihrer Grenze angenommen und mit einer mehr abgelehnt.
+
+Noch offen aus diesem Item:
+
+- Reichweite und Reisezeit über mehrere Züge, und daraus die Bedrohung durch gesehene Armeen.
+- Was ein Upgrade ändert, als Antwort der Engine.
+- Eine Order wieder herausnehmen. Das kann die Befehle ungültig machen (der Dot, der eine Forschung hält).
+- `Orders.Possible` rechnet bei jedem Aufruf alles neu. Ob das für Bots reicht, zeigt die Arena.
+- `RandomCommands` hält die Regeln noch selbst ein, statt aus den möglichen Orders zu würfeln.

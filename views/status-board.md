@@ -5,7 +5,6 @@ Cards grouped into columns by `status`.
 ## todo
 - [AI-Gegner spielen zu schwach](../workdown-items/ai-opponents-too-weak.md)
 - [Man sieht nicht, warum ein Bot verliert](../workdown-items/bot-game-diagnosis.md)
-- [Ein Client kann nicht fragen, was möglich ist](../workdown-items/client-possible-orders.md)
 - [Ein Client kann nicht fragen, was passieren würde](../workdown-items/client-what-if.md)
 - [Spielstände speichern und wiederherstellen](../workdown-items/game-persistence.md)
 - [Ein Bot weiß nicht, womit er beim Gegner rechnen muss](../workdown-items/opponent-estimate.md)
@@ -18,6 +17,7 @@ Cards grouped into columns by `status`.
 
 ## in_progress
 - [Die Stärke eines Bots lässt sich nicht verlässlich messen](../workdown-items/bot-strength-measurement.md)
+- [Ein Client kann nicht fragen, was möglich ist](../workdown-items/client-possible-orders.md)
 
 ## done
 - [Kampfausgang vorab berechnen können](../workdown-items/combat-forecast-core.md)

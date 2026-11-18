@@ -27,7 +27,7 @@ Goal: every rule of the engine has at least one test that shows it in isolation.
 
 - Every case of the `CommandValidation` union has a test that produces exactly that validation, and a neighbour that shows when it does not appear.
 - Every phase of `TurnResolution.Resolve` (income, training, construction, research, movement, fight, building destruction, cancellation of constructions and trainings, defeat) has a test with exactly one turn.
-- Every rule a client can ask (`Costs`, `Harvest`, `Occupancy`, `Schedule`, `Destruction`, `Standing`, `Game`) has tests of the function itself and one test that shows that `TurnResolution.Resolve` comes to the same result.
+- Every rule a client can ask (`Costs`, `Harvest`, `Occupancy`, `Schedule`, `Orders`, `Destruction`, `Standing`, `Game`) has tests of the function itself and one test that shows that `TurnResolution.Resolve` comes to the same result.
 - One class per rule area, for example `ValidatePendingWorkTest`, `NextTurnIncomeTest`, `FightTest`. The existing `GameStateTest` is not split in one go. When an area is touched, its tests move into the matching class.
 
 ### Layer 2: Scenario
@@ -56,6 +56,11 @@ Transition invariants (`StateInvariants.CheckTransition`, need the previous stat
 - A neutral army only changes by its losses in a reported fight.
 - The reported defeats are the players that are defeated after the turn and were not before.
 - Every reported movement stays within the range: `Movement.ReachableArmy` with the distance of the movement gives the whole moved army.
+
+Order invariants (`OrderInvariants.Check`, need the view of a player and the commands entered so far):
+
+- What `Orders.Possible` offers is what `CommandValidator.Validate` accepts: every training, construction and movement is accepted up to its limit and refused with one more, and a research is offered exactly when it is accepted. The commands of the random player serve as a turn half entered, the empty commands as its start.
+- The budget is the matter and the space of the state minus the cost of the commands.
 
 Determinism (own tests):
 
