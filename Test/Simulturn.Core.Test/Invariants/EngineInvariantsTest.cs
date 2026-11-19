@@ -1,3 +1,4 @@
+using Simulturn.Core.Analysis;
 using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
@@ -154,6 +155,33 @@ public sealed class EngineInvariantsTest
                 var players = RandomPlayers(seed, options => options with { ResearchProbability = 0.5 });
                 PlayGame(gameSettings, players, (before, commands, after) =>
                     StateInvariants.CheckTransition(before, commands, after).ShouldBeEmpty($"Map {map}, seed {seed}, turn {after.State.Turn}."));
+            }
+        }
+    }
+
+    [Test]
+    public void RandomGames_KeepTheMatterLedgerOfEveryPlayerBalanced()
+    {
+        foreach ((string map, GameSettings gameSettings) in MapPresets())
+        {
+            for (int seed = 0; seed < Seeds; seed++)
+            {
+                var players = RandomPlayers(seed, options => options with { ResearchProbability = 0.5 });
+                var ledgers = Ledger.Start(Game.Start(gameSettings).State);
+                PlayGame(gameSettings, players, (_, _, next) =>
+                {
+                    ledgers = Ledger.After(ledgers, next);
+                    foreach ((string playerId, MatterLedger ledger) in ledgers)
+                    {
+                        string game = $"Map {map}, seed {seed}, turn {next.State.Turn}, {playerId}: {ledger}";
+                        ledger.UnexplainedIncome.ShouldBe(0, game);
+                        ledger.UnexplainedSpending.ShouldBe(0, game);
+                    }
+                    // What one of the two players lost to destruction, the other razed. What one killed, the
+                    // other lost in fights; the rest of its losses fell to neutral armies.
+                    ledgers.Values.Sum(x => x.Razed).ShouldBe(ledgers.Values.Sum(x => x.Destroyed), $"Map {map}, seed {seed}, turn {next.State.Turn}.");
+                    ledgers.Values.Sum(x => x.Killed).ShouldBeLessThanOrEqualTo(ledgers.Values.Sum(x => x.Fallen), $"Map {map}, seed {seed}, turn {next.State.Turn}.");
+                });
             }
         }
     }
