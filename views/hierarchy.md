@@ -3,8 +3,8 @@
 Hierarchical outline following `parent` upward to roots.
 
 - [AI-Gegner spielen zu schwach](../workdown-items/ai-opponents-too-weak.md) — status: todo · created: 2026-11-14 · updated: 2026-11-16
-- [Man sieht nicht, warum ein Bot verliert](../workdown-items/bot-game-diagnosis.md) — status: todo · created: 2026-11-16
-- [Die Stärke eines Bots lässt sich nicht verlässlich messen](../workdown-items/bot-strength-measurement.md) — status: in_progress · created: 2026-11-16 · updated: 2026-11-16
+- [Man sieht nicht, warum ein Bot verliert](../workdown-items/bot-game-diagnosis.md) — status: in_progress · created: 2026-11-16 · updated: 2026-11-18
+- [Die Stärke eines Bots lässt sich nicht verlässlich messen](../workdown-items/bot-strength-measurement.md) — status: done · created: 2026-11-16 · updated: 2026-11-18 · completed: 2026-11-18
 - [Ein Client kann nicht fragen, was möglich ist](../workdown-items/client-possible-orders.md) — status: in_progress · created: 2026-11-16
 - [Ein Client kann nicht fragen, was passieren würde](../workdown-items/client-what-if.md) — status: todo · created: 2026-11-16
 - [Kampfausgang vorab berechnen können](../workdown-items/combat-forecast-core.md) — status: done · created: 2026-10-14 · updated: 2026-11-13 · completed: 2026-11-13
@@ -31,4 +31,5 @@ Hierarchical outline following `parent` upward to roots.
 - [Upgrade-Konzept erarbeiten](../workdown-items/upgrade-concept.md) — status: done · created: 2026-11-13 · updated: 2026-11-15 · completed: 2026-11-15
 - [Spieler starten alle mit denselben Voraussetzungen](../workdown-items/upgrade-draft.md) — status: todo · created: 2026-11-15
 - [Es gibt nur drei gleichartige Upgrades](../workdown-items/upgrade-variety.md) — status: todo · created: 2026-11-15
+- [Upkeep steht im Konzept, aber nicht in der Engine](../workdown-items/upkeep.md) — status: todo · created: 2026-11-18
 - [Regressionstests für Validate mit Warteschlangen auf anderen Hexagons](../workdown-items/validate-regression-tests.md) — status: done · created: 2026-10-14 · updated: 2026-11-08 · completed: 2026-11-08

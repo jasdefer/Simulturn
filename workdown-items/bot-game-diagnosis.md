@@ -1,7 +1,7 @@
 ---
 id: bot-game-diagnosis
 title: Man sieht nicht, warum ein Bot verliert
-status: todo
+status: in_progress
 created: 2026-11-16
 updated: 2026-11-18
 depends_on:
@@ -46,12 +46,49 @@ Was sich messen ließe, als Stoff zum Nachdenken. Welche Kennzahlen es werden, z
 
 Wie andere Spiele es zeigen (aus dem Gedächtnis, nicht nachgeschlagen): StarCraft 2 Kurven für Einkommen, Arbeiter, Armeewert und ungenutzte Rohstoffe, dazu eine Zahl, wie gut das Einkommen ausgegeben wird; Age of Empires eine Zeitleiste und Punkte nach Militär, Wirtschaft und Technik; Dota 2 den Vorsprung an Gold und Erfahrung über die Zeit. Gemeinsam ist die Trennung von Kurven über die Zeit und wenigen Zahlen pro Spiel.
 
+## Richtung
+
+Stand 2026-11-18, aus dem Gespräch zum Start der Umsetzung.
+
+Die Kennzahlen dienen einem Schritt in der Schleife der Bot-Entwicklung: Die Arena sagt, dass ein Bot gegen einen anderen verliert. Die Kennzahlen sagen, worin sich Sieger und Verlierer der Paarung unterscheiden. Dann greift man ein typisches Spiel heraus, sieht es an, ändert den Bot und misst neu. Eine Anzeige in der UI ist ein Nebennutzen, kein Ziel dieses Items.
+
+- Eine Matter-Bilanz statt einer Liste von Kennzahlen: Jede Matter hat eine Herkunft und einen Verbleib. Wie viel hat ein Spieler eingenommen, wofür hat er es ausgegeben, und was ist daraus geworden (lebt noch, im Kampf gefallen, zerstört, abgebrochen, noch auf der Hand)? Die Posten ergeben zusammen das Eingenommene. So fehlt nichts, nichts ist doppelt, und eine falsche Berechnung fällt auf.
+- Eine Definition, zwei Auflösungen: je Spiel die Bilanz am Ende, eine Zeile je Spieler, zum Vergleich über viele Spiele. Je Zug dieselben Posten als Verlauf, nur für ein einzelnes Spiel.
+- Die Bilanz zeigt, wo eine Niederlage entsteht, das einzelne Spiel zeigt, warum. Was keinen Wert in Matter hat (Stellung, Aufklärung, verstreute Armeen), gehört nicht in die Bilanz.
+- Eine Zahl außerhalb der Bilanz kommt erst dazu, wenn sich eine konkrete Frage ohne sie nicht beantworten lässt.
+- Alles folgt aus dem Zustand und dem Bericht jedes Zugs. Gerechnet wird aus dem vollen Zustand, die Diagnose darf alles sehen.
+
+Bekannte Schwäche: Die Bilanz am Ende verschluckt das Tempo. Zwei Spieler, die gleich viel ernten, der eine aber viel später, sehen gleich aus. Vorerst hingenommen.
+
+Entschieden:
+
+- Alle Auswertungen laufen nach dem Spiel auf dem vollen Zustand, nichts davon während des Spiels aus der Sicht eines Spielers.
+- Es werden keine Spiele gespeichert. Ein Spiel folgt aus Bots, Karte, Seed und Sitz und wird zum Ansehen noch einmal gespielt.
+- Die Bilanz eines Spiels ist auch für eine UI gedacht, in der man die eigenen Spiele nachträglich ansieht. Sie darf also nicht nur im Lab liegen. Was viele Spiele vergleicht, dient allein der Untersuchung.
+- Es zählt, was ausgegeben wurde, nicht ein späterer Preis.
+- Spiele ohne Sieger sind beim Vergleich eine eigene Gruppe neben Siegern und Verlierern. Erst Mittelwerte, später die Streuung dazu.
+- Herausgegriffen werden typische Spiele einer Gruppe und Ausreißer bei einem Posten.
+
+Funde im Code, Stand 2026-11-18:
+
+- Der `TurnReport` hält nicht fest, was ein Spieler in einem Zug bestellt und bezahlt hat. Die Kosten aller Befehle werden als eine Summe abgezogen, im Bericht stehen nur Matter vorher und nachher. Wofür ausgegeben wurde, lässt sich daraus nicht ablesen.
+- Bei keinem Abbruch kommt Matter zurück. Ein abgebrochenes Training gibt nur den Space frei.
+- Eine Armee merkt sich nicht, was ihre Einheiten gekostet haben. Solange kein Upgrade einen Preis ändert, sind gezahlter und aktueller Preis gleich.
+
+## Stand
+
+Stand 2026-11-18, nach dem ersten Durchstich.
+
+- Der Bericht eines Zugs hält jetzt die bestellten Aufträge mit der gezahlten Matter fest.
+- Es gibt die Bilanz eines Spielers je Zug, aufsummiert seit Spielbeginn. Herkunft: Start-Matter, Startbestand, geerntet. Ausgegeben für: Dots, Kampfeinheiten, Gebäude, Forschung. Noch da: auf der Hand, Dots, Kampfeinheiten, Gebäude, Forschung, in Auftrag. Weg: gefallen, zerstört, abgebrochen. Daneben, was er anderen angetan hat: vernichtet (Einheiten anderer Spieler und neutrale getrennt), abgerissen. Sie geht in allen Zufallsspielen auf.
+- Ein einzelnes Spiel einer Messung lässt sich über seinen Schlüssel (Bots, Karte, Seed, Sitz) noch einmal spielen. Heraus kommen die Bilanz des Spiels als Tabelle und die Bilanz jedes Zugs als CSV.
+
+Noch nicht da: die Bilanz je Spiel in der Arena, der Vergleich von Siegern, Verlierern und Spielen ohne Sieger, das Herausgreifen typischer Spiele und Ausreißer. Die vier Ursachen aus dem ersten Lauf sind noch nicht mit der Bilanz nachgeprüft.
+
 ## Offene Fragen
 
-- Welche Kennzahlen erklären eine Niederlage wirklich? Das zeigt sich erst an Spielen.
-- Kennzahlen aus dem vollen Zustand oder aus der Sicht eines Spielers? Die Diagnose darf alles sehen, eine UI im laufenden Spiel nicht.
-- Wie viel wird je Spiel gespeichert, wenn es viele tausend Spiele sind?
-- Wie sieht man ein Spiel an, solange es keine UI gibt?
+- Reicht die Tabelle je Zug als CSV, um ein Spiel anzusehen, solange es keine UI gibt?
+- Braucht es die Bilanz zu festen Zügen, um das Tempo zu sehen?
 
 ## Woran man es merkt
 
