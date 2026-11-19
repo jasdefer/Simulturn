@@ -279,6 +279,25 @@ public static class StateInvariants
                 violations.Add($"Report: the matter of {playerId} changed by {playerAfter.Matter - playerBefore.Matter}, the reported income is {income} and the commands cost {cost}.");
             }
 
+            int paid = activity.TrainingOrders.Sum(x => x.Matter) + activity.ConstructionOrders.Sum(x => x.Matter) + activity.ResearchOrders.Sum(x => x.Matter);
+            if (paid != cost)
+            {
+                violations.Add($"Report: the orders of {playerId} are reported with {paid} matter, the commands cost {cost}.");
+            }
+            foreach (Hexagon hexagon in before.Hexagons)
+            {
+                Command? command = playerCommands?.GetValueOrDefault(hexagon);
+                Army reportedTraining = activity.TrainingOrders.Where(x => x.Hexagon == hexagon).Select(x => Army.FromUnit(x.Unit, x.Count)).Sum();
+                Compound reportedConstruction = activity.ConstructionOrders.Where(x => x.Hexagon == hexagon).Select(x => Compound.FromBuilding(x.Building, x.Count)).Sum();
+                Upgrade? reportedResearch = activity.ResearchOrders.Where(x => x.Hexagon == hexagon).Select(x => (Upgrade?)x.Upgrade).SingleOrDefault();
+                if (reportedTraining != (command?.Training ?? Army.Empty)
+                    || reportedConstruction != (command?.Construction ?? Compound.Empty)
+                    || reportedResearch != command?.Research)
+                {
+                    violations.Add($"Report: the orders of {playerId} on {hexagon} are reported as {reportedTraining}, {reportedConstruction} and research {reportedResearch}, the command is {command}.");
+                }
+            }
+
             Dictionary<Hexagon, Army> moved = [];
             foreach (MovementReport movement in activity.Movements)
             {

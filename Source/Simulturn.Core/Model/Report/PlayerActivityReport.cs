@@ -23,6 +23,21 @@ public sealed record PlayerActivityReport
     public ImmutableDictionary<Hexagon, IncomeReport> Incomes { get; init; } = ImmutableDictionary<Hexagon, IncomeReport>.Empty;
 
     /// <summary>
+    /// The trainings ordered this turn with the matter paid for them, in the order of the commands.
+    /// </summary>
+    public ImmutableArray<TrainingOrderReport> TrainingOrders { get; init; } = [];
+
+    /// <summary>
+    /// The constructions ordered this turn with the matter paid for them, in the order of the commands.
+    /// </summary>
+    public ImmutableArray<ConstructionOrderReport> ConstructionOrders { get; init; } = [];
+
+    /// <summary>
+    /// The researches ordered this turn with the matter paid for them, in the order of the commands.
+    /// </summary>
+    public ImmutableArray<ResearchOrderReport> ResearchOrders { get; init; } = [];
+
+    /// <summary>
     /// The units that joined the army this turn, including trainings ordered in the same turn.
     /// </summary>
     public ImmutableDictionary<Hexagon, Army> CompletedTrainings { get; init; } = ImmutableDictionary<Hexagon, Army>.Empty;
