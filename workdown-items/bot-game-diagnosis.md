@@ -3,7 +3,7 @@ id: bot-game-diagnosis
 title: Man sieht nicht, warum ein Bot verliert
 status: in_progress
 created: 2026-11-16
-updated: 2026-11-18
+updated: 2026-11-19
 depends_on:
 - bot-strength-measurement
 ---
@@ -84,6 +84,31 @@ Stand 2026-11-18, nach dem ersten Durchstich.
 - Ein einzelnes Spiel einer Messung lässt sich über seinen Schlüssel (Bots, Karte, Seed, Sitz) noch einmal spielen. Heraus kommen die Bilanz des Spiels als Tabelle und die Bilanz jedes Zugs als CSV.
 
 Noch nicht da: die Bilanz je Spiel in der Arena, der Vergleich von Siegern, Verlierern und Spielen ohne Sieger, das Herausgreifen typischer Spiele und Ausreißer. Die vier Ursachen aus dem ersten Lauf sind noch nicht mit der Bilanz nachgeprüft.
+
+Stand 2026-11-19: Der Bericht hält die Preise eines Zugs jetzt einmal je Spieler fest (`TrainingPrices`, `ConstructionPrices`), auch ohne Bestellung. Die Aufträge sind Armeen und Gebäude je Hexagon, ohne eigenen Preis.
+
+## Zur Diskussion: ein Ort für die Preise
+
+Stand 2026-11-19, aus dem Gespräch. Nicht entschieden.
+
+Regeln sollen an einem Ort stehen, den Zugauflösung, Validierung und Clients gemeinsam fragen, damit nichts auseinanderläuft. Für Preise ist das `Costs`. Sobald ein Upgrade einen Preis ändert, reicht der heutige Stand nicht:
+
+- `Costs.Research` und `Costs.Of` kennen die Upgrades des Spielers, `Costs.Training` und `Costs.Construction` nur die Settings. Ein Preis-Upgrade hat dort keinen Platz.
+- Die Preisliste hat keine eigene Funktion. `TurnResolution.PayOrders` und `StateInvariants` bauen sie beide von Hand.
+- Die Bilanz bewertet an etwa acht Stellen Bestand, Gefallenes und Abgebrochenes zum heutigen Preis. Ändern sich Preise im Spiel, geht sie nicht mehr auf. Das widerspricht auch „Es zählt, was ausgegeben wurde, nicht ein späterer Preis".
+
+Vorschlag für den sauberen Zustand, ohne Rücksicht auf den Aufwand:
+
+- Die Preisliste ist die Grundlage: `Costs.TrainingPrices(settings, upgradeLevels)` und `Costs.ConstructionPrices(settings, upgradeLevels)` lesen als Einzige die Preise der Settings und wenden ein Preis-Upgrade an. Alles andere in `Costs` rechnet damit.
+- Jeder Aufrufer sagt, wessen Preis er meint, und übergibt die Upgrades eines Spielers.
+- Space ist kein Preis. Er wird beim Tod einer Einheit und beim Abbruch zum Wert der Settings zurückgegeben und darf von keinem Upgrade abhängen, sonst läuft `UsedSpace` auseinander. `OrderCost` bündelt heute beides.
+- Die Bilanz liest das Ausgegebene aus den Preisen des Berichts und bewertet Bestand zum Grundpreis. Die Differenz ist ein eigener Posten, „durch Upgrades gespart". So geht sie auf und zeigt, ob sich eine Preis-Forschung gelohnt hat.
+
+Offen:
+
+- Jetzt alles in einem Stück (eine Effektart für Preise in `UpgradeEffect`, die geänderten Signaturen, Tests mit Settings aus `DefaultSettings`, noch kein Upgrade der Standardregeln nutzt sie), oder jetzt nur die Preisliste ohne Upgrade-Parameter und der Rest mit dem ersten Preis-Upgrade?
+- Bedenken gegen den Parameter allein: Ohne Effekt verhält sich ein Aufrufer mit den falschen Upgrades gleich, kein Test fängt das.
+- Soll der Grundsatz „eine Regel, ein Ort" in `AGENTS.md` einen eigenen Abschnitt weit oben bekommen? Es gibt keine `CLAUDE.md`; falls eine dazukommt, sollte sie `AGENTS.md` nur einbinden.
 
 ## Offene Fragen
 
