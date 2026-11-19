@@ -123,12 +123,14 @@ public static class Ledger
             + Costs.Construction(settings, activity.CanceledConstructions.Values.Sum()).Matter
             + activity.CanceledResearches.Values.Sum(upgrade => ResearchPrice(settings, player, upgrade));
 
+        Army ordered = activity.TrainingOrders.Values.Sum();
+
         return ledger with
         {
             Harvested = ledger.Harvested + activity.Incomes.Values.Sum(x => x.Matter),
-            SpentOnDots = ledger.SpentOnDots + activity.TrainingOrders.Values.Sum(x => Dots(x.Units) * x.UnitPrice),
-            SpentOnFightingUnits = ledger.SpentOnFightingUnits + activity.TrainingOrders.Values.Sum(x => (x.Units - Dots(x.Units)) * x.UnitPrice),
-            SpentOnBuildings = ledger.SpentOnBuildings + activity.ConstructionOrders.Values.Sum(x => x.Matter),
+            SpentOnDots = ledger.SpentOnDots + Dots(ordered) * activity.TrainingPrices,
+            SpentOnFightingUnits = ledger.SpentOnFightingUnits + (ordered - Dots(ordered)) * activity.TrainingPrices,
+            SpentOnBuildings = ledger.SpentOnBuildings + activity.ConstructionOrders.Values.Sum() * activity.ConstructionPrices,
             SpentOnResearch = ledger.SpentOnResearch + activity.ResearchOrders.Values.Sum(x => x.Matter),
             Fallen = ledger.Fallen + fallen,
             Destroyed = ledger.Destroyed + destroyed,

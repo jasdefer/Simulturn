@@ -23,14 +23,26 @@ public sealed record PlayerActivityReport
     public ImmutableDictionary<Hexagon, IncomeReport> Incomes { get; init; } = ImmutableDictionary<Hexagon, IncomeReport>.Empty;
 
     /// <summary>
-    /// The trainings ordered this turn with the price paid for them. Hexagons without a new training are missing.
+    /// The matter one unit of each type cost the player in this turn, whether or not one was ordered.
+    /// The orders of the turn were paid at this price; the price of the next order comes from the engine.
     /// </summary>
-    public ImmutableDictionary<Hexagon, TrainingOrderReport> TrainingOrders { get; init; } = ImmutableDictionary<Hexagon, TrainingOrderReport>.Empty;
+    public Army TrainingPrices { get; init; }
 
     /// <summary>
-    /// The constructions ordered this turn with the price paid for them. Hexagons without a new construction are missing.
+    /// The matter one building of each type cost the player in this turn, whether or not one was ordered.
+    /// The orders of the turn were paid at this price; the price of the next order comes from the engine.
     /// </summary>
-    public ImmutableDictionary<Hexagon, ConstructionOrderReport> ConstructionOrders { get; init; } = ImmutableDictionary<Hexagon, ConstructionOrderReport>.Empty;
+    public Compound ConstructionPrices { get; init; }
+
+    /// <summary>
+    /// The trainings ordered this turn, paid at <see cref="TrainingPrices"/>. Hexagons without a new training are missing.
+    /// </summary>
+    public ImmutableDictionary<Hexagon, Army> TrainingOrders { get; init; } = ImmutableDictionary<Hexagon, Army>.Empty;
+
+    /// <summary>
+    /// The constructions ordered this turn, paid at <see cref="ConstructionPrices"/>. Hexagons without a new construction are missing.
+    /// </summary>
+    public ImmutableDictionary<Hexagon, Compound> ConstructionOrders { get; init; } = ImmutableDictionary<Hexagon, Compound>.Empty;
 
     /// <summary>
     /// The researches ordered this turn with the matter paid for them. Hexagons without a new research are missing.

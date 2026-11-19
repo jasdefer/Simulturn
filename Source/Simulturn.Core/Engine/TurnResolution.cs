@@ -84,13 +84,15 @@ public sealed class TurnResolution
 
     /// <summary>
     /// Pays all orders of the turn at once: the price the command validation checked, by the same call.
-    /// What each order cost is reported where the order is queued.
+    /// The prices of the turn are reported here, the orders where they are queued.
     /// </summary>
     private void PayOrders(PlayerStateBuilder player, IReadOnlyDictionary<Hexagon, Command> commands)
     {
         OrderCost cost = Costs.Of(_settings, player.UpgradeLevels, commands);
         player.Matter -= cost.Matter;
         player.UsedSpace += cost.Space;
+        player.Report.TrainingPrices = Army.PerUnit(unit => Costs.Training(_settings, unit).Matter);
+        player.Report.ConstructionPrices = Compound.PerBuilding(building => Costs.Construction(_settings, building).Matter);
     }
 
     /// <summary>
@@ -98,12 +100,11 @@ public sealed class TurnResolution
     /// </summary>
     private void ResolveTrainings(PlayerStateBuilder player, IReadOnlyDictionary<Hexagon, Command> commands)
     {
-        Army unitPrice = Army.PerUnit(unit => Costs.Training(_settings, unit).Matter);
         foreach ((Hexagon hexagon, Command command) in commands)
         {
             if (!command.Training.IsEmpty)
             {
-                player.Report.TrainingOrders.Add(hexagon, new TrainingOrderReport(command.Training, unitPrice));
+                player.Report.TrainingOrders.Add(hexagon, command.Training);
             }
             foreach (Unit unit in EnumValues.Units)
             {
@@ -130,12 +131,11 @@ public sealed class TurnResolution
     /// </summary>
     private void ResolveConstructions(PlayerStateBuilder player, IReadOnlyDictionary<Hexagon, Command> commands)
     {
-        Compound unitPrice = Compound.PerBuilding(building => Costs.Construction(_settings, building).Matter);
         foreach ((Hexagon hexagon, Command command) in commands)
         {
             if (!command.Construction.IsEmpty)
             {
-                player.Report.ConstructionOrders.Add(hexagon, new ConstructionOrderReport(command.Construction, unitPrice));
+                player.Report.ConstructionOrders.Add(hexagon, command.Construction);
             }
             foreach (Building building in EnumValues.Buildings)
             {
