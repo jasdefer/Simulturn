@@ -1,16 +1,28 @@
 namespace Simulturn.Core.Model.Report;
 
 /// <summary>
-/// A training a player ordered in a turn: the units of one type on one hexagon and the matter paid for them.
+/// The training a player ordered on one hexagon in a turn, with the price that was paid.
 /// </summary>
-public sealed record TrainingOrderReport(Hexagon Hexagon, Unit Unit, short Count, int Matter);
+/// <param name="Units">The ordered units.</param>
+/// <param name="UnitPrice">The matter one unit of each type cost in this turn.</param>
+public sealed record TrainingOrderReport(Army Units, Army UnitPrice)
+{
+    /// <summary>The matter paid for the order.</summary>
+    public int Matter => Units * UnitPrice;
+}
 
 /// <summary>
-/// A construction a player ordered in a turn: the buildings of one type on one hexagon and the matter paid for them.
+/// The construction a player ordered on one hexagon in a turn, with the price that was paid.
 /// </summary>
-public sealed record ConstructionOrderReport(Hexagon Hexagon, Building Building, short Count, int Matter);
+/// <param name="Buildings">The ordered buildings.</param>
+/// <param name="UnitPrice">The matter one building of each type cost in this turn.</param>
+public sealed record ConstructionOrderReport(Compound Buildings, Compound UnitPrice)
+{
+    /// <summary>The matter paid for the order.</summary>
+    public int Matter => Buildings * UnitPrice;
+}
 
 /// <summary>
-/// A research a player ordered in a turn: the level it buys and the matter paid for it.
+/// The research a player ordered on one hexagon in a turn: the level it buys and the matter paid for it.
 /// </summary>
-public sealed record ResearchOrderReport(Hexagon Hexagon, Upgrade Upgrade, byte Level, int Matter);
+public sealed record ResearchOrderReport(Upgrade Upgrade, byte Level, int Matter);

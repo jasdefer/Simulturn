@@ -126,10 +126,10 @@ public static class Ledger
         return ledger with
         {
             Harvested = ledger.Harvested + activity.Incomes.Values.Sum(x => x.Matter),
-            SpentOnDots = ledger.SpentOnDots + activity.TrainingOrders.Where(x => x.Unit == Unit.Dot).Sum(x => x.Matter),
-            SpentOnFightingUnits = ledger.SpentOnFightingUnits + activity.TrainingOrders.Where(x => x.Unit != Unit.Dot).Sum(x => x.Matter),
-            SpentOnBuildings = ledger.SpentOnBuildings + activity.ConstructionOrders.Sum(x => x.Matter),
-            SpentOnResearch = ledger.SpentOnResearch + activity.ResearchOrders.Sum(x => x.Matter),
+            SpentOnDots = ledger.SpentOnDots + activity.TrainingOrders.Values.Sum(x => Dots(x.Units) * x.UnitPrice),
+            SpentOnFightingUnits = ledger.SpentOnFightingUnits + activity.TrainingOrders.Values.Sum(x => (x.Units - Dots(x.Units)) * x.UnitPrice),
+            SpentOnBuildings = ledger.SpentOnBuildings + activity.ConstructionOrders.Values.Sum(x => x.Matter),
+            SpentOnResearch = ledger.SpentOnResearch + activity.ResearchOrders.Values.Sum(x => x.Matter),
             Fallen = ledger.Fallen + fallen,
             Destroyed = ledger.Destroyed + destroyed,
             Canceled = ledger.Canceled + canceled,

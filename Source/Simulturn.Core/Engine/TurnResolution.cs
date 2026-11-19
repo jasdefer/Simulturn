@@ -98,8 +98,13 @@ public sealed class TurnResolution
     /// </summary>
     private void ResolveTrainings(PlayerStateBuilder player, IReadOnlyDictionary<Hexagon, Command> commands)
     {
+        Army unitPrice = Army.PerUnit(unit => Costs.Training(_settings, unit).Matter);
         foreach ((Hexagon hexagon, Command command) in commands)
         {
+            if (!command.Training.IsEmpty)
+            {
+                player.Report.TrainingOrders.Add(hexagon, new TrainingOrderReport(command.Training, unitPrice));
+            }
             foreach (Unit unit in EnumValues.Units)
             {
                 if (command.Training[unit] <= 0)
@@ -109,7 +114,6 @@ public sealed class TurnResolution
                 Army training = Army.FromUnit(unit, command.Training[unit]);
                 ushort completionTurn = Schedule.TrainingCompletion(_settings, _state.Turn, unit);
                 player.Trainings.Merge(new TurnHexagon(completionTurn, hexagon), training);
-                player.Report.TrainingOrders.Add(new TrainingOrderReport(hexagon, unit, training[unit], Costs.Training(_settings, training).Matter));
             }
         }
         foreach ((TurnHexagon key, Army training) in player.Trainings.Where(x => x.Key.Turn == _state.Turn).ToList())
@@ -126,8 +130,13 @@ public sealed class TurnResolution
     /// </summary>
     private void ResolveConstructions(PlayerStateBuilder player, IReadOnlyDictionary<Hexagon, Command> commands)
     {
+        Compound unitPrice = Compound.PerBuilding(building => Costs.Construction(_settings, building).Matter);
         foreach ((Hexagon hexagon, Command command) in commands)
         {
+            if (!command.Construction.IsEmpty)
+            {
+                player.Report.ConstructionOrders.Add(hexagon, new ConstructionOrderReport(command.Construction, unitPrice));
+            }
             foreach (Building building in EnumValues.Buildings)
             {
                 if (command.Construction[building] <= 0)
@@ -137,7 +146,6 @@ public sealed class TurnResolution
                 Compound construction = Compound.FromBuilding(building, command.Construction[building]);
                 ushort completionTurn = Schedule.ConstructionCompletion(_settings, _state.Turn, building);
                 player.Constructions.Merge(new TurnHexagon(completionTurn, hexagon), construction);
-                player.Report.ConstructionOrders.Add(new ConstructionOrderReport(hexagon, building, construction[building], Costs.Construction(_settings, construction).Matter));
             }
         }
         foreach ((TurnHexagon key, Compound construction) in player.Constructions.Where(x => x.Key.Turn == _state.Turn).ToList())
@@ -165,7 +173,7 @@ public sealed class TurnResolution
             UpgradeLevel level = _settings.NextUpgradeLevel(upgrade, completedLevels)
                 ?? throw new InvalidOperationException($"{upgrade} has no level after {completedLevels}; the research command was not validated.");
             player.Researches.Add(hexagon, new Research(upgrade, Schedule.ResearchCompletion(_state.Turn, level)));
-            player.Report.ResearchOrders.Add(new ResearchOrderReport(hexagon, upgrade, (byte)(completedLevels + 1), level.Cost));
+            player.Report.ResearchOrders.Add(hexagon, new ResearchOrderReport(upgrade, (byte)(completedLevels + 1), level.Cost));
         }
         foreach ((Hexagon hexagon, Research research) in player.Researches.Where(x => x.Value.CompletionTurn == _state.Turn).ToList())
         {

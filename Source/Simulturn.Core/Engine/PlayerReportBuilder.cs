@@ -9,9 +9,9 @@ namespace Simulturn.Core.Engine;
 internal sealed class PlayerReportBuilder
 {
     public ImmutableDictionary<Hexagon, IncomeReport>.Builder Incomes { get; } = ImmutableDictionary.CreateBuilder<Hexagon, IncomeReport>();
-    public ImmutableArray<TrainingOrderReport>.Builder TrainingOrders { get; } = ImmutableArray.CreateBuilder<TrainingOrderReport>();
-    public ImmutableArray<ConstructionOrderReport>.Builder ConstructionOrders { get; } = ImmutableArray.CreateBuilder<ConstructionOrderReport>();
-    public ImmutableArray<ResearchOrderReport>.Builder ResearchOrders { get; } = ImmutableArray.CreateBuilder<ResearchOrderReport>();
+    public ImmutableDictionary<Hexagon, TrainingOrderReport>.Builder TrainingOrders { get; } = ImmutableDictionary.CreateBuilder<Hexagon, TrainingOrderReport>();
+    public ImmutableDictionary<Hexagon, ConstructionOrderReport>.Builder ConstructionOrders { get; } = ImmutableDictionary.CreateBuilder<Hexagon, ConstructionOrderReport>();
+    public ImmutableDictionary<Hexagon, ResearchOrderReport>.Builder ResearchOrders { get; } = ImmutableDictionary.CreateBuilder<Hexagon, ResearchOrderReport>();
     public ImmutableDictionary<Hexagon, Army>.Builder CompletedTrainings { get; } = ImmutableDictionary.CreateBuilder<Hexagon, Army>();
     public ImmutableDictionary<Hexagon, Compound>.Builder CompletedConstructions { get; } = ImmutableDictionary.CreateBuilder<Hexagon, Compound>();
     public ImmutableDictionary<Hexagon, ResearchReport>.Builder CompletedResearches { get; } = ImmutableDictionary.CreateBuilder<Hexagon, ResearchReport>();

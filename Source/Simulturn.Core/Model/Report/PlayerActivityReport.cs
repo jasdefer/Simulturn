@@ -23,19 +23,19 @@ public sealed record PlayerActivityReport
     public ImmutableDictionary<Hexagon, IncomeReport> Incomes { get; init; } = ImmutableDictionary<Hexagon, IncomeReport>.Empty;
 
     /// <summary>
-    /// The trainings ordered this turn with the matter paid for them, in the order of the commands.
+    /// The trainings ordered this turn with the price paid for them. Hexagons without a new training are missing.
     /// </summary>
-    public ImmutableArray<TrainingOrderReport> TrainingOrders { get; init; } = [];
+    public ImmutableDictionary<Hexagon, TrainingOrderReport> TrainingOrders { get; init; } = ImmutableDictionary<Hexagon, TrainingOrderReport>.Empty;
 
     /// <summary>
-    /// The constructions ordered this turn with the matter paid for them, in the order of the commands.
+    /// The constructions ordered this turn with the price paid for them. Hexagons without a new construction are missing.
     /// </summary>
-    public ImmutableArray<ConstructionOrderReport> ConstructionOrders { get; init; } = [];
+    public ImmutableDictionary<Hexagon, ConstructionOrderReport> ConstructionOrders { get; init; } = ImmutableDictionary<Hexagon, ConstructionOrderReport>.Empty;
 
     /// <summary>
-    /// The researches ordered this turn with the matter paid for them, in the order of the commands.
+    /// The researches ordered this turn with the matter paid for them. Hexagons without a new research are missing.
     /// </summary>
-    public ImmutableArray<ResearchOrderReport> ResearchOrders { get; init; } = [];
+    public ImmutableDictionary<Hexagon, ResearchOrderReport> ResearchOrders { get; init; } = ImmutableDictionary<Hexagon, ResearchOrderReport>.Empty;
 
     /// <summary>
     /// The units that joined the army this turn, including trainings ordered in the same turn.
