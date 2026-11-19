@@ -1,3 +1,5 @@
+using Simulturn.Bots;
+
 namespace Simulturn.Lab.Arena;
 
 /// <summary>
@@ -7,6 +9,22 @@ namespace Simulturn.Lab.Arena;
 /// <param name="EngineVersion">The version of the engine with the commit it was built from, so that runs before and after a rule change are not mixed up.</param>
 /// <param name="Rows">The rows in the order of the pairings, the map types and the seats.</param>
 public sealed record ArenaResult(ArenaOptions Options, string EngineVersion, ImmutableArray<ArenaRow> Rows);
+
+/// <summary>
+/// What names one game of a run. The engine, the maps and the bot seeds follow from it, so the
+/// same key always gives the same game as long as the engine and the bots do not change.
+/// </summary>
+/// <param name="Bot">The bot the game is seen from.</param>
+/// <param name="Opponent">The bot it plays against.</param>
+/// <param name="Map">The map type.</param>
+/// <param name="MapSeed">The seed of the map, from 1 to the map seeds of the run.</param>
+/// <param name="Seat">The seat of the bot, 1 is the first player of the settings.</param>
+public sealed record ArenaGameKey(string Bot, string Opponent, string Map, int MapSeed, int Seat);
+
+/// <summary>
+/// A game of a run played again: how it ended and which player each bot was.
+/// </summary>
+public sealed record ArenaReplay(MatchResult Result, string BotPlayerId, string OpponentPlayerId);
 
 /// <summary>
 /// The games of one bot against one opponent on one map type from one seat, seen from the bot.

@@ -3,6 +3,7 @@ using Simulturn.Bots;
 using Simulturn.Bots.Catalog;
 using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
+using Simulturn.Core.Model.Report;
 
 namespace Simulturn.Lab.Arena;
 
@@ -81,7 +82,30 @@ public static class ArenaStudy
         return new ArenaResult(options, EngineVersion(), rows);
     }
 
-    private static MatchResult Play(ArenaGame game, MatchLimits limits)
+    /// <summary>
+    /// Plays one game of a run again, exactly as <see cref="Run"/> plays it, and shows every turn
+    /// to the observer. Nothing of a run is stored: the key of a game is all it takes.
+    /// </summary>
+    /// <exception cref="ArgumentException">The key names an unknown bot or map, a map that is not for two players, or a seat other than 1 and 2.</exception>
+    /// <exception cref="ArenaGameException">The game failed, for example because a bot issued invalid commands.</exception>
+    public static ArenaReplay Replay(ArenaGameKey key, MatchLimits limits, IReadOnlyList<BotEntry> bots, IReadOnlyList<ArenaMap> maps, Action<TurnResult> onTurn)
+    {
+        if (key.Seat is not (1 or 2))
+        {
+            throw new ArgumentException($"The seat of a game is 1 or 2, not {key.Seat}.", nameof(key));
+        }
+        BotEntry bot = Find(bots, x => x.Name, key.Bot, "bot");
+        BotEntry opponent = Find(bots, x => x.Name, key.Opponent, "bot");
+        ArenaMap map = Find(maps, x => x.Name, key.Map, "map");
+        GameSettings settings = map.Create(key.MapSeed);
+        (string first, string second) = SeatsOf(settings, map.Name);
+        ArenaGame game = key.Seat == 1
+            ? new ArenaGame(0, bot, opponent, map.Name, key.MapSeed, 1, first, second, settings)
+            : new ArenaGame(0, bot, opponent, map.Name, key.MapSeed, 2, second, first, settings);
+        return new ArenaReplay(Play(game, limits, onTurn), game.BotPlayerId, game.OpponentPlayerId);
+    }
+
+    private static MatchResult Play(ArenaGame game, MatchLimits limits, Action<TurnResult>? onTurn = null)
     {
         try
         {
@@ -90,7 +114,7 @@ public static class ArenaStudy
                 { game.BotPlayerId, game.Bot.Create(BotSeed(game.MapSeed, opponent: false)) },
                 { game.OpponentPlayerId, game.Opponent.Create(BotSeed(game.MapSeed, opponent: true)) }
             };
-            return Match.Play(game.Settings, bots, limits);
+            return Match.Play(game.Settings, bots, limits, onTurn);
         }
         catch (Exception exception)
         {

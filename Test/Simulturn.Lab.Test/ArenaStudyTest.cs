@@ -7,6 +7,7 @@ using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
 using Simulturn.Core.Setup;
 using Simulturn.Lab.Arena;
+using Simulturn.Lab.Replay;
 using Simulturn.Test.Common;
 
 namespace Simulturn.Lab.Test;
@@ -120,6 +121,27 @@ public sealed class ArenaStudyTest
         exception.InnerException.ShouldBeOfType<InvalidBotCommandsException>();
         exception.Message.ShouldContain("idle on seat");
         exception.Message.ShouldContain("against cheater on map Line with seed");
+    }
+
+    [Test]
+    public void Replay_PlaysTheGameOfTheRunAndKeepsTheLedgersOfEveryTurn()
+    {
+        ReplayResult replay = ReplayStudy.Run(new ArenaGameKey("deserter", "attacker", "Line", MapSeed: 3, Seat: 2), _limits, _bots, _maps);
+
+        // The deserter sits on seat 2 and is Player02. The attacker destroys its plane in the first turn.
+        replay.Result.ShouldBe(MatchResult.WonBy("Player01", 1));
+        replay.Turns.Select(x => x.Turn).ShouldBe([(ushort)0, (ushort)1]);
+        replay.Turns[0].Bot.Destroyed.ShouldBe(0);
+        replay.Turns[1].Bot.Destroyed.ShouldBe(350);
+        replay.Turns[1].Bot.Buildings.ShouldBe(0);
+        replay.Turns[1].Opponent.Razed.ShouldBe(350);
+        replay.Turns[1].Opponent.Buildings.ShouldBe(350);
+    }
+
+    [Test]
+    public void Replay_OfAnUnknownSeat_Throws()
+    {
+        Should.Throw<ArgumentException>(() => ReplayStudy.Run(new ArenaGameKey("deserter", "attacker", "Line", MapSeed: 1, Seat: 3), _limits, _bots, _maps));
     }
 
     [Test]
