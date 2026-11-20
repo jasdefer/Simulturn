@@ -10,37 +10,6 @@ namespace Simulturn.Lab.Replay;
 public static class ReplayTable
 {
     /// <summary>
-    /// The entries of a ledger in the order they are shown. A null value is a heading.
-    /// </summary>
-    private static readonly ImmutableArray<(string Name, Func<MatterLedger, int>? Value)> _entries =
-    [
-        ("Came from", null),
-        ("StartMatter", x => x.StartMatter),
-        ("StartStock", x => x.StartStock),
-        ("Harvested", x => x.Harvested),
-        ("Spent on", null),
-        ("SpentOnDots", x => x.SpentOnDots),
-        ("SpentOnFightingUnits", x => x.SpentOnFightingUnits),
-        ("SpentOnBuildings", x => x.SpentOnBuildings),
-        ("SpentOnResearch", x => x.SpentOnResearch),
-        ("Still there", null),
-        ("OnHand", x => x.OnHand),
-        ("Dots", x => x.Dots),
-        ("FightingUnits", x => x.FightingUnits),
-        ("Buildings", x => x.Buildings),
-        ("Research", x => x.Research),
-        ("Pending", x => x.Pending),
-        ("Gone", null),
-        ("Fallen", x => x.Fallen),
-        ("Destroyed", x => x.Destroyed),
-        ("Canceled", x => x.Canceled),
-        ("Done to others", null),
-        ("Killed", x => x.Killed),
-        ("KilledNeutral", x => x.KilledNeutral),
-        ("Razed", x => x.Razed)
-    ];
-
-    /// <summary>
     /// The ledgers of the game, the bot next to its opponent.
     /// </summary>
     public static string Render(ReplayResult replay)
@@ -52,14 +21,13 @@ public static class ReplayTable
         table.AppendLine(CultureInfo.InvariantCulture, $"{end} after {replay.Result.Turns} turns, {last.RemainingMatter} matter left on the map");
         table.AppendLine();
         table.AppendLine(CultureInfo.InvariantCulture, $"{"",-24}{replay.Key.Bot,12}{replay.Key.Opponent,12}");
-        foreach ((string name, Func<MatterLedger, int>? value) in _entries)
+        foreach (LedgerSection section in LedgerEntries.Sections)
         {
-            if (value is null)
+            table.AppendLine(section.Heading);
+            foreach (LedgerEntry entry in section.Entries)
             {
-                table.AppendLine(name);
-                continue;
+                table.AppendLine(CultureInfo.InvariantCulture, $"  {entry.Name,-22}{entry.Value(last.Bot),12}{entry.Value(last.Opponent),12}");
             }
-            table.AppendLine(CultureInfo.InvariantCulture, $"  {name,-22}{value(last.Bot),12}{value(last.Opponent),12}");
         }
         return table.ToString();
     }
@@ -70,13 +38,12 @@ public static class ReplayTable
     public static string RenderCsv(ReplayResult replay)
     {
         StringBuilder csv = new();
-        var values = _entries.Where(x => x.Value is not null).ToList();
-        csv.AppendLine($"Turn,Bot,RemainingMatter,{string.Join(",", values.Select(x => x.Name))}");
+        csv.AppendLine($"Turn,Bot,RemainingMatter,{string.Join(",", LedgerEntries.All.Select(x => x.Name))}");
         foreach (ReplayTurn turn in replay.Turns)
         {
             foreach ((string bot, MatterLedger ledger) in new[] { (replay.Key.Bot, turn.Bot), (replay.Key.Opponent, turn.Opponent) })
             {
-                csv.AppendLine(CultureInfo.InvariantCulture, $"{turn.Turn},{bot},{turn.RemainingMatter},{string.Join(",", values.Select(x => x.Value!(ledger)))}");
+                csv.AppendLine(CultureInfo.InvariantCulture, $"{turn.Turn},{bot},{turn.RemainingMatter},{string.Join(",", LedgerEntries.All.Select(x => x.Value(ledger)))}");
             }
         }
         return csv.ToString();

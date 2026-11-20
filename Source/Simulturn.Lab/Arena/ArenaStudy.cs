@@ -1,15 +1,18 @@
 using System.Reflection;
 using Simulturn.Bots;
 using Simulturn.Bots.Catalog;
+using Simulturn.Core.Analysis;
 using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Report;
+using Simulturn.Core.Model.State;
 
 namespace Simulturn.Lab.Arena;
 
 /// <summary>
 /// Lets bots play against each other and counts who wins: every pairing on every map with both
-/// seat orders, so that neither the map nor the seat favours a bot unnoticed.
+/// seat orders, so that neither the map nor the seat favours a bot unnoticed. Of every game it
+/// keeps how it ended and the ledgers of both bots.
 /// </summary>
 public static class ArenaStudy
 {
@@ -54,10 +57,10 @@ public static class ArenaStudy
             }
         }
 
-        MatchResult[] results = new MatchResult[games.Count];
+        ArenaGameResult[] results = new ArenaGameResult[games.Count];
         try
         {
-            Parallel.For(0, games.Count, index => results[index] = Play(games[index], options.Limits));
+            Parallel.For(0, games.Count, index => results[index] = Play(games[index], options.Limits).Game);
         }
         catch (AggregateException exception) when (exception.InnerExceptions.OfType<ArenaGameException>().FirstOrDefault() is { } failed)
         {
@@ -74,12 +77,12 @@ public static class ArenaStudy
                     row.Key.Opponent.Name,
                     row.Key.Map,
                     row.Key.Seat,
-                    Wins: row.Count(x => x.Second.WinnerId == x.First.BotPlayerId),
-                    Losses: row.Count(x => x.Second.WinnerId == x.First.OpponentPlayerId),
-                    Draws: row.Count(x => x.Second.WinnerId is null),
+                    Wins: row.Count(x => x.Second.Outcome == ArenaOutcome.Win),
+                    Losses: row.Count(x => x.Second.Outcome == ArenaOutcome.Loss),
+                    Draws: row.Count(x => x.Second.Outcome == ArenaOutcome.Draw),
                     AverageTurns: row.Average(x => (double)x.Second.Turns)))
         ];
-        return new ArenaResult(options, EngineVersion(), rows);
+        return new ArenaResult(options, EngineVersion(), rows, [.. results]);
     }
 
     /// <summary>
@@ -102,10 +105,14 @@ public static class ArenaStudy
         ArenaGame game = key.Seat == 1
             ? new ArenaGame(0, bot, opponent, map.Name, key.MapSeed, 1, first, second, settings)
             : new ArenaGame(0, bot, opponent, map.Name, key.MapSeed, 2, second, first, settings);
-        return new ArenaReplay(Play(game, limits, onTurn), game.BotPlayerId, game.OpponentPlayerId);
+        return new ArenaReplay(Play(game, limits, onTurn).Match, game.BotPlayerId, game.OpponentPlayerId);
     }
 
-    private static MatchResult Play(ArenaGame game, MatchLimits limits, Action<TurnResult>? onTurn = null)
+    /// <summary>
+    /// Plays the game and keeps its ledgers on the way. The match is what the bots played, the
+    /// game is what a run keeps of it.
+    /// </summary>
+    private static (MatchResult Match, ArenaGameResult Game) Play(ArenaGame game, MatchLimits limits, Action<TurnResult>? onTurn = null)
     {
         try
         {
@@ -114,7 +121,33 @@ public static class ArenaStudy
                 { game.BotPlayerId, game.Bot.Create(BotSeed(game.MapSeed, opponent: false)) },
                 { game.OpponentPlayerId, game.Opponent.Create(BotSeed(game.MapSeed, opponent: true)) }
             };
-            return Match.Play(game.Settings, bots, limits, onTurn);
+
+            // The observer gets the start first, so the ledgers and the last state are set after a match.
+            ImmutableDictionary<string, MatterLedger>? ledgers = null;
+            GameState? last = null;
+            MatchResult match = Match.Play(game.Settings, bots, limits, turn =>
+            {
+                ledgers = ledgers is null ? Ledger.Start(turn.State) : Ledger.After(ledgers, turn);
+                last = turn.State;
+                onTurn?.Invoke(turn);
+            });
+            if (ledgers is null || last is null)
+            {
+                throw new InvalidOperationException("The match showed no state to its observer.");
+            }
+
+            ArenaOutcome outcome = match.WinnerId is null
+                ? ArenaOutcome.Draw
+                : match.WinnerId == game.BotPlayerId ? ArenaOutcome.Win : ArenaOutcome.Loss;
+            ArenaGameResult result = new(
+                new ArenaGameKey(game.Bot.Name, game.Opponent.Name, game.Map, game.MapSeed, game.Seat),
+                outcome,
+                match.End,
+                match.Turns,
+                last.RemainingMatter.Values.Sum(),
+                ledgers[game.BotPlayerId],
+                ledgers[game.OpponentPlayerId]);
+            return (match, result);
         }
         catch (Exception exception)
         {

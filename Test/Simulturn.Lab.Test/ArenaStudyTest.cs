@@ -107,10 +107,65 @@ public sealed class ArenaStudyTest
     {
         ArenaOptions options = Options("attacker", "deserter", "idle");
 
-        string first = JsonSerializer.Serialize(ArenaStudy.Run(options, _bots, _maps));
-        string second = JsonSerializer.Serialize(ArenaStudy.Run(options, _bots, _maps));
+        ArenaResult first = ArenaStudy.Run(options, _bots, _maps);
+        ArenaResult second = ArenaStudy.Run(options, _bots, _maps);
 
-        second.ShouldBe(first);
+        JsonSerializer.Serialize(second).ShouldBe(JsonSerializer.Serialize(first));
+        JsonSerializer.Serialize(second.Games).ShouldBe(JsonSerializer.Serialize(first.Games));
+    }
+
+    [Test]
+    public void Run_KeepsEveryGameWithItsKeyAndHowItEnded()
+    {
+        ArenaResult result = ArenaStudy.Run(Options("attacker", "deserter") with { MapSeeds = 2 }, _bots, _maps);
+
+        result.Games.Select(x => x.Key).ShouldBe([
+            new ArenaGameKey("attacker", "deserter", "Line", MapSeed: 1, Seat: 1),
+            new ArenaGameKey("attacker", "deserter", "Line", MapSeed: 1, Seat: 2),
+            new ArenaGameKey("attacker", "deserter", "Line", MapSeed: 2, Seat: 1),
+            new ArenaGameKey("attacker", "deserter", "Line", MapSeed: 2, Seat: 2)
+        ]);
+        result.Games.ShouldAllBe(x => x.Outcome == ArenaOutcome.Win && x.End == MatchEnd.Victory && x.Turns == 1);
+    }
+
+    [Test]
+    public void GameWithoutAWinner_IsADrawWithTheEndOfTheMatch()
+    {
+        ArenaResult result = ArenaStudy.Run(Options("idle", "idle"), _bots, _maps);
+
+        result.Games.Length.ShouldBe(8);
+        result.Games.ShouldAllBe(x => x.Outcome == ArenaOutcome.Draw && x.End == MatchEnd.Stall && x.Turns == 5);
+    }
+
+    [Test]
+    public void GameOfARun_HasTheLedgersItsReplayEndsWith()
+    {
+        ArenaGameKey key = new("deserter", "attacker", "Line", MapSeed: 3, Seat: 2);
+        ArenaResult result = ArenaStudy.Run(Options("deserter", "attacker"), _bots, _maps);
+
+        ReplayResult replay = ReplayStudy.Run(key, _limits, _bots, _maps);
+
+        ArenaGameResult game = result.Games.Single(x => x.Key == key);
+        game.Outcome.ShouldBe(ArenaOutcome.Loss);
+        game.Bot.Destroyed.ShouldBe(350);
+        game.Opponent.Razed.ShouldBe(350);
+        game.Bot.ShouldBe(replay.Turns[^1].Bot);
+        game.Opponent.ShouldBe(replay.Turns[^1].Opponent);
+        game.RemainingMatter.ShouldBe(replay.Turns[^1].RemainingMatter);
+    }
+
+    [Test]
+    public void GamesCsv_HasALinePerGameAndBotWithTheOutcomeOfThatBot()
+    {
+        ArenaResult result = ArenaStudy.Run(Options("attacker", "deserter") with { MapSeeds = 1 }, _bots, _maps);
+
+        string[] lines = ArenaTable.RenderGamesCsv(result).Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        lines.Length.ShouldBe(1 + 2 * 2);
+        lines[0].Split(',').Length.ShouldBe(10 + LedgerEntries.All.Length);
+        lines[1].ShouldStartWith("attacker,deserter,Line,1,1,Victory,1,0,attacker,Win,");
+        lines[2].ShouldStartWith("attacker,deserter,Line,1,1,Victory,1,0,deserter,Loss,");
+        lines.Skip(1).ShouldAllBe(x => x.Split(',').Length == lines[0].Split(',').Length);
     }
 
     [Test]
