@@ -3,7 +3,7 @@ id: bot-game-diagnosis
 title: Man sieht nicht, warum ein Bot verliert
 status: in_progress
 created: 2026-11-16
-updated: 2026-11-19
+updated: 2026-11-20
 depends_on:
 - bot-strength-measurement
 ---
@@ -109,6 +109,12 @@ Offen:
 - Jetzt alles in einem Stück (eine Effektart für Preise in `UpgradeEffect`, die geänderten Signaturen, Tests mit Settings aus `DefaultSettings`, noch kein Upgrade der Standardregeln nutzt sie), oder jetzt nur die Preisliste ohne Upgrade-Parameter und der Rest mit dem ersten Preis-Upgrade?
 - Bedenken gegen den Parameter allein: Ohne Effekt verhält sich ein Aufrufer mit den falschen Upgrades gleich, kein Test fängt das.
 - Soll der Grundsatz „eine Regel, ein Ort" in `AGENTS.md` einen eigenen Abschnitt weit oben bekommen? Es gibt keine `CLAUDE.md`; falls eine dazukommt, sollte sie `AGENTS.md` nur einbinden.
+
+Entschieden, Stand 2026-11-20: Jetzt nur die Preisliste, ohne Upgrade-Parameter. Ob es je ein Upgrade gibt, das einen Preis ändert, ist offen, und nichts wird für ein Upgrade gebaut, das es vielleicht nie gibt.
+
+- Umgesetzt: `Costs.TrainingPrices(settings)` und `Costs.ConstructionPrices(settings)` lesen als Einzige die Preise der Settings. `Costs.Training`, `Costs.Construction`, der Bericht des Zugs und `StateInvariants` fragen dort.
+- Erst mit dem ersten Preis-Upgrade: die Upgrades eines Spielers an den Preisfunktionen und bei allen Aufrufern, die Effektart in `UpgradeEffect`, Space getrennt vom Preis, der Posten „durch Upgrades gespart" in der Bilanz. Der Vorschlag oben gilt dafür weiter.
+- Die Frage nach einem eigenen Abschnitt in `AGENTS.md` für „eine Regel, ein Ort" bleibt offen.
 
 ## Offene Fragen
 

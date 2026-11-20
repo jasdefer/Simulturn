@@ -3,7 +3,7 @@
 Hierarchical outline following `parent` upward to roots.
 
 - [AI-Gegner spielen zu schwach](../workdown-items/ai-opponents-too-weak.md) — status: todo · created: 2026-11-14 · updated: 2026-11-16
-- [Man sieht nicht, warum ein Bot verliert](../workdown-items/bot-game-diagnosis.md) — status: in_progress · created: 2026-11-16 · updated: 2026-11-19
+- [Man sieht nicht, warum ein Bot verliert](../workdown-items/bot-game-diagnosis.md) — status: in_progress · created: 2026-11-16 · updated: 2026-11-20
 - [Die Stärke eines Bots lässt sich nicht verlässlich messen](../workdown-items/bot-strength-measurement.md) — status: done · created: 2026-11-16 · updated: 2026-11-18 · completed: 2026-11-18
 - [Ein Client kann nicht fragen, was möglich ist](../workdown-items/client-possible-orders.md) — status: in_progress · created: 2026-11-16
 - [Ein Client kann nicht fragen, was passieren würde](../workdown-items/client-what-if.md) — status: todo · created: 2026-11-16

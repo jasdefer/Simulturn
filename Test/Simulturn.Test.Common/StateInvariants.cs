@@ -279,8 +279,8 @@ public static class StateInvariants
                 violations.Add($"Report: the matter of {playerId} changed by {playerAfter.Matter - playerBefore.Matter}, the reported income is {income} and the commands cost {cost}.");
             }
 
-            if (activity.TrainingPrices != Army.PerUnit(unit => Costs.Training(settings, unit).Matter)
-                || activity.ConstructionPrices != Compound.PerBuilding(building => Costs.Construction(settings, building).Matter))
+            if (activity.TrainingPrices != Costs.TrainingPrices(settings)
+                || activity.ConstructionPrices != Costs.ConstructionPrices(settings))
             {
                 violations.Add($"Report: the prices of {playerId} are reported as {activity.TrainingPrices} and {activity.ConstructionPrices}, the engine asks other prices.");
             }

@@ -91,8 +91,8 @@ public sealed class TurnResolution
         OrderCost cost = Costs.Of(_settings, player.UpgradeLevels, commands);
         player.Matter -= cost.Matter;
         player.UsedSpace += cost.Space;
-        player.Report.TrainingPrices = Army.PerUnit(unit => Costs.Training(_settings, unit).Matter);
-        player.Report.ConstructionPrices = Compound.PerBuilding(building => Costs.Construction(_settings, building).Matter);
+        player.Report.TrainingPrices = Costs.TrainingPrices(_settings);
+        player.Report.ConstructionPrices = Costs.ConstructionPrices(_settings);
     }
 
     /// <summary>
