@@ -78,7 +78,7 @@ Scale: the number of seeds and turns is a constant in the test. The whole suite 
 
 ### Layer 4: Bots
 
-Goal: `Match` and the arena keep their contract. The tests use scripted bots (`ScriptedBot`) on small hand-built maps, so every outcome is exact: who wins, after how many turns, which rows a run has. One test plays the bots of the catalog on the maps of the arena, with small limits.
+Goal: `Match` and the arena keep their contract. The tests use scripted bots (`ScriptedBot`) on small hand-built maps, so every outcome is exact: who wins, after how many turns, which rows and games a run has. What only reads the games of a run (the comparison) is tested on games built by hand, without playing. One test plays the bots of the catalog on the maps of the arena, with small limits.
 
 A test of a bot shows a behaviour of that bot on a scripted situation (`RandomBotTest`: where it trains a dot, what it keeps back, that its army moves as a whole). A bot that rolls dice also gets a test that the same seed plays the same match, and one that a mirror match on every map type issues only valid commands. How strong a bot is against another one is not a test: that is a run of the lab (`Source/Simulturn.Lab`), read by a human.
 

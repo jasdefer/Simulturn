@@ -87,6 +87,17 @@ Noch nicht da: die Bilanz je Spiel in der Arena, der Vergleich von Siegern, Verl
 
 Stand 2026-11-19: Der Bericht hält die Preise eines Zugs jetzt einmal je Spieler fest (`TrainingPrices`, `ConstructionPrices`), auch ohne Bestellung. Die Aufträge sind Armeen und Gebäude je Hexagon, ohne eigenen Preis.
 
+Stand 2026-11-20: Die Arena hält je Spiel fest, wie es endete, und die Bilanz beider Bots am Ende. Daraus entsteht der Vergleich: je Paarung und Karte die Spiele, die der erste Bot gewonnen, verloren und ohne Sieger beendet hat, mit dem Mittelwert jedes Postens für beide Bots, dazu Zugzahl, Rest-Matter der Karte und die Art des Endes. `arena` druckt ihn und schreibt die Spiele und den Vergleich als CSV. Die Bilanz mitzurechnen kostet keine messbare Laufzeit (Profil `full`, 1600 Spiele: rund 5,3 s vorher und nachher).
+
+Entschieden dabei:
+
+- Die Bilanz wird in jedem Lauf mitgerechnet, ohne Schalter.
+- Der Vergleich liegt im Lab und ist kein eigener Befehl. Er liest nur die Spiele eines Laufs.
+- Beide Sitze fallen in dieselbe Gruppe.
+- Ein typisches Spiel ist das, dessen Posten am nächsten am Mittelwert seiner Gruppe liegen. Noch nicht umgesetzt.
+
+Noch nicht da: das Herausgreifen typischer Spiele und Ausreißer, die Streuung neben den Mittelwerten. Die vier Ursachen aus dem ersten Lauf sind noch nicht nachgeprüft. Der Lauf `random` gegen `idle` zeigt nur Siege und ein einziges Spiel ohne Sieger; für die Gegenprobe braucht es eine Paarung, in der beide Seiten verlieren.
+
 ## Zur Diskussion: ein Ort für die Preise
 
 Stand 2026-11-19, aus dem Gespräch. Nicht entschieden.

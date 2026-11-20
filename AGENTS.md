@@ -72,7 +72,7 @@ dotnet run --project Test/Simulturn.Core.Console/Simulturn.Core.Console.csproj
 ```
 
 ### Run the lab
-The first argument is the study, `--profile` picks a profile of `Source/Simulturn.Lab/appsettings.json` (default `quick`), any other `--Key value` replaces a value of the profile. The result goes to `measurements/` (not in git).
+The first argument is the study, `--profile` picks a profile of `Source/Simulturn.Lab/appsettings.json` (default `quick`), any other `--Key value` replaces a value of the profile. The result goes to `measurements/` (not in git). `arena` prints the win rates and the comparison of its games and writes three files: the rows as JSON, one line per game and bot (`-games.csv`) and the comparison (`-comparison.csv`).
 ```bash
 dotnet run --project Source/Simulturn.Lab -c Release -- arena
 dotnet run --project Source/Simulturn.Lab -c Release -- arena --profile full --MapSeeds 500
@@ -131,7 +131,9 @@ At generation time, `dotnet build Simulturn.sln` and
 - A bot that rolls dice sorts what it rolls among (a dictionary has no order), so that a seed always gives the same play
 - The arena gives the bots of a game their seeds through `ArenaStudy.BotSeed`, never as numbers a fixed distance apart: `System.Random` gives such seeds first rolls that follow from each other
 - `Source/Simulturn.Lab` holds what only serves to examine the game, one folder per study. `Source/Simulturn.Bots` holds what a UI needs too. `ArenaStudy.Run(options, bots, maps)` plays every pairing on every map type with both seat orders and gives an `ArenaResult` with one `ArenaRow` per pairing, map type and seat; the options name bots and maps, the lists passed in provide them
-- No game of a run is stored. An `ArenaGameKey` (bot, opponent, map, map seed, seat) names a game, and `ArenaStudy.Replay` plays it again exactly as the run did, as long as the engine and the bots are the same. `ReplayStudy.Run` does that and keeps the ledgers of every turn
+- A run keeps an `ArenaGameResult` per game (`ArenaResult.Games`): the key, how it ended and the ledgers of both bots at the end. The rows are counted from the games. `ComparisonStudy.Of(games)` groups them per bot, opponent, map type and outcome and averages every entry of the ledgers; it plays nothing. The arena command prints it, there is no study of its own for it
+- `LedgerEntries` in the lab lists the entries of a `MatterLedger` with their names and headings. Every table and file of the lab that shows a ledger reads the list; a new entry of the ledger needs its line there, and `LedgerEntriesTest` fails without it
+- The course of a game is not stored, only how it ended and its ledgers. An `ArenaGameKey` (bot, opponent, map, map seed, seat) names a game, and `ArenaStudy.Replay` plays it again exactly as the run did, as long as the engine and the bots are the same. `ReplayStudy.Run` does that and keeps the ledgers of every turn
 
 ## Code Style Guidelines
 Follow local conventions in touched files first.
