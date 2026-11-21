@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using Simulturn.Core.Analysis;
+using Simulturn.Lab.Arena;
 
 namespace Simulturn.Lab.Replay;
 
@@ -12,15 +13,15 @@ public static class ReplayTable
     /// <summary>
     /// The ledgers of the game, the bot next to its opponent.
     /// </summary>
-    public static string Render(ReplayResult replay)
+    public static string Render(PlayedGame replay)
     {
         StringBuilder table = new();
-        ReplayTurn last = replay.Turns[^1];
+        PlayedTurn last = replay.Turns[^1];
         string end = replay.Result.WinnerId is null ? $"{replay.Result.End}" : $"{replay.Result.End} of {replay.Result.WinnerId}";
-        table.AppendLine(CultureInfo.InvariantCulture, $"{replay.Key.Bot} on seat {replay.Key.Seat} against {replay.Key.Opponent} on map {replay.Key.Map} with seed {replay.Key.MapSeed}");
+        table.AppendLine(CultureInfo.InvariantCulture, $"{replay.Game.Key.Bot} on seat {replay.Game.Key.Seat} against {replay.Game.Key.Opponent} on map {replay.Game.Key.Map} with seed {replay.Game.Key.MapSeed}");
         table.AppendLine(CultureInfo.InvariantCulture, $"{end} after {replay.Result.Turns} turns, {last.RemainingMatter} matter left on the map");
         table.AppendLine();
-        table.AppendLine(CultureInfo.InvariantCulture, $"{"",-24}{replay.Key.Bot,12}{replay.Key.Opponent,12}");
+        table.AppendLine(CultureInfo.InvariantCulture, $"{"",-24}{replay.Game.Key.Bot,12}{replay.Game.Key.Opponent,12}");
         foreach (LedgerSection section in LedgerEntries.Sections)
         {
             table.AppendLine(section.Heading);
@@ -35,13 +36,13 @@ public static class ReplayTable
     /// <summary>
     /// One line per turn and bot with every entry of its ledger, summed up from the start of the game.
     /// </summary>
-    public static string RenderCsv(ReplayResult replay)
+    public static string RenderCsv(PlayedGame replay)
     {
         StringBuilder csv = new();
         csv.AppendLine($"Turn,Bot,RemainingMatter,{string.Join(",", LedgerEntries.All.Select(x => x.Name))}");
-        foreach (ReplayTurn turn in replay.Turns)
+        foreach (PlayedTurn turn in replay.Turns)
         {
-            foreach ((string bot, MatterLedger ledger) in new[] { (replay.Key.Bot, turn.Bot), (replay.Key.Opponent, turn.Opponent) })
+            foreach ((string bot, MatterLedger ledger) in new[] { (replay.Game.Key.Bot, turn.Bot), (replay.Game.Key.Opponent, turn.Opponent) })
             {
                 csv.AppendLine(CultureInfo.InvariantCulture, $"{turn.Turn},{bot},{turn.RemainingMatter},{string.Join(",", LedgerEntries.All.Select(x => x.Value(ledger)))}");
             }

@@ -36,7 +36,7 @@ public static class ReplayCommand
         }
         ArenaGameKey key = new(options.Bots[0], options.Bots[1], options.Maps[0], ReadNumber(configuration, "MapSeed"), ReadNumber(configuration, "Seat"));
 
-        ReplayResult replay = ReplayStudy.Run(key, options.Limits, BotCatalog.All, ArenaMaps.All);
+        PlayedGame replay = ArenaStudy.Replay(key, options.Limits, BotCatalog.All, ArenaMaps.All);
         output.Write(ReplayTable.Render(replay));
 
         string folder = configuration["OutputFolder"] ?? "measurements";

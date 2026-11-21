@@ -60,9 +60,22 @@ public enum ArenaOutcome
 public sealed record ArenaGameResult(ArenaGameKey Key, ArenaOutcome Outcome, MatchEnd End, ushort Turns, int RemainingMatter, MatterLedger Bot, MatterLedger Opponent);
 
 /// <summary>
-/// A game of a run played again: how it ended and which player each bot was.
+/// A game of the arena with its course: what a run keeps of it, how the match ended and every
+/// state it went through. A run drops the course once the game is over, a replay shows it.
 /// </summary>
-public sealed record ArenaReplay(MatchResult Result, string BotPlayerId, string OpponentPlayerId);
+/// <param name="Game">What a run keeps of the game.</param>
+/// <param name="Result">How the match ended.</param>
+/// <param name="Turns">One entry per state of the game, the start first. The last one holds the ledgers of the game.</param>
+public sealed record PlayedGame(ArenaGameResult Game, MatchResult Result, ImmutableArray<PlayedTurn> Turns);
+
+/// <summary>
+/// One state of a game. Whatever a study wants to know of every turn is kept here.
+/// </summary>
+/// <param name="Turn">The turn of the state, 0 is the start.</param>
+/// <param name="RemainingMatter">The matter left on all hexagons of the map.</param>
+/// <param name="Bot">The ledger of the bot of the key.</param>
+/// <param name="Opponent">The ledger of its opponent.</param>
+public sealed record PlayedTurn(ushort Turn, int RemainingMatter, MatterLedger Bot, MatterLedger Opponent);
 
 /// <summary>
 /// The games of one bot against one opponent on one map type from one seat, seen from the bot.

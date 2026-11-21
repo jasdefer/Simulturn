@@ -4,8 +4,6 @@ using Simulturn.Bots.Catalog;
 using Simulturn.Core.Analysis;
 using Simulturn.Core.Engine;
 using Simulturn.Core.Model;
-using Simulturn.Core.Model.Report;
-using Simulturn.Core.Model.State;
 
 namespace Simulturn.Lab.Arena;
 
@@ -86,12 +84,12 @@ public static class ArenaStudy
     }
 
     /// <summary>
-    /// Plays one game of a run again, exactly as <see cref="Run"/> plays it, and shows every turn
-    /// to the observer. Nothing of a run is stored: the key of a game is all it takes.
+    /// Plays one game of a run again, exactly as <see cref="Run"/> plays it, and keeps every turn
+    /// of it. Nothing of a run is stored: the key of a game is all it takes.
     /// </summary>
     /// <exception cref="ArgumentException">The key names an unknown bot or map, a map that is not for two players, or a seat other than 1 and 2.</exception>
     /// <exception cref="ArenaGameException">The game failed, for example because a bot issued invalid commands.</exception>
-    public static ArenaReplay Replay(ArenaGameKey key, MatchLimits limits, IReadOnlyList<BotEntry> bots, IReadOnlyList<ArenaMap> maps, Action<TurnResult> onTurn)
+    public static PlayedGame Replay(ArenaGameKey key, MatchLimits limits, IReadOnlyList<BotEntry> bots, IReadOnlyList<ArenaMap> maps)
     {
         if (key.Seat is not (1 or 2))
         {
@@ -105,14 +103,14 @@ public static class ArenaStudy
         ArenaGame game = key.Seat == 1
             ? new ArenaGame(0, bot, opponent, map.Name, key.MapSeed, 1, first, second, settings)
             : new ArenaGame(0, bot, opponent, map.Name, key.MapSeed, 2, second, first, settings);
-        return new ArenaReplay(Play(game, limits, onTurn).Match, game.BotPlayerId, game.OpponentPlayerId);
+        return Play(game, limits);
     }
 
     /// <summary>
-    /// Plays the game and keeps its ledgers on the way. The match is what the bots played, the
-    /// game is what a run keeps of it.
+    /// The only place of the lab that plays a game: it keeps the ledgers of both bots for every
+    /// turn on the way. A run keeps the end of it, a replay all of it.
     /// </summary>
-    private static (MatchResult Match, ArenaGameResult Game) Play(ArenaGame game, MatchLimits limits, Action<TurnResult>? onTurn = null)
+    private static PlayedGame Play(ArenaGame game, MatchLimits limits)
     {
         try
         {
@@ -122,16 +120,19 @@ public static class ArenaStudy
                 { game.OpponentPlayerId, game.Opponent.Create(BotSeed(game.MapSeed, opponent: true)) }
             };
 
-            // The observer gets the start first, so the ledgers and the last state are set after a match.
+            // The match shows the start first, so the first ledgers are the ones of the start.
             ImmutableDictionary<string, MatterLedger>? ledgers = null;
-            GameState? last = null;
+            ImmutableArray<PlayedTurn>.Builder turns = ImmutableArray.CreateBuilder<PlayedTurn>();
             MatchResult match = Match.Play(game.Settings, bots, limits, turn =>
             {
                 ledgers = ledgers is null ? Ledger.Start(turn.State) : Ledger.After(ledgers, turn);
-                last = turn.State;
-                onTurn?.Invoke(turn);
+                turns.Add(new PlayedTurn(
+                    turn.State.Turn,
+                    turn.State.RemainingMatter.Values.Sum(),
+                    ledgers[game.BotPlayerId],
+                    ledgers[game.OpponentPlayerId]));
             });
-            if (ledgers is null || last is null)
+            if (turns.Count == 0)
             {
                 throw new InvalidOperationException("The match showed no state to its observer.");
             }
@@ -139,15 +140,16 @@ public static class ArenaStudy
             ArenaOutcome outcome = match.WinnerId is null
                 ? ArenaOutcome.Draw
                 : match.WinnerId == game.BotPlayerId ? ArenaOutcome.Win : ArenaOutcome.Loss;
+            PlayedTurn last = turns[^1];
             ArenaGameResult result = new(
                 new ArenaGameKey(game.Bot.Name, game.Opponent.Name, game.Map, game.MapSeed, game.Seat),
                 outcome,
                 match.End,
                 match.Turns,
-                last.RemainingMatter.Values.Sum(),
-                ledgers[game.BotPlayerId],
-                ledgers[game.OpponentPlayerId]);
-            return (match, result);
+                last.RemainingMatter,
+                last.Bot,
+                last.Opponent);
+            return new PlayedGame(result, match, turns.ToImmutable());
         }
         catch (Exception exception)
         {

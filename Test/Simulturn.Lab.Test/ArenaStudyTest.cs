@@ -7,7 +7,6 @@ using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
 using Simulturn.Core.Setup;
 using Simulturn.Lab.Arena;
-using Simulturn.Lab.Replay;
 using Simulturn.Test.Common;
 
 namespace Simulturn.Lab.Test;
@@ -143,7 +142,7 @@ public sealed class ArenaStudyTest
         ArenaGameKey key = new("deserter", "attacker", "Line", MapSeed: 3, Seat: 2);
         ArenaResult result = ArenaStudy.Run(Options("deserter", "attacker"), _bots, _maps);
 
-        ReplayResult replay = ReplayStudy.Run(key, _limits, _bots, _maps);
+        PlayedGame replay = ArenaStudy.Replay(key, _limits, _bots, _maps);
 
         ArenaGameResult game = result.Games.Single(x => x.Key == key);
         game.Outcome.ShouldBe(ArenaOutcome.Loss);
@@ -181,7 +180,7 @@ public sealed class ArenaStudyTest
     [Test]
     public void Replay_PlaysTheGameOfTheRunAndKeepsTheLedgersOfEveryTurn()
     {
-        ReplayResult replay = ReplayStudy.Run(new ArenaGameKey("deserter", "attacker", "Line", MapSeed: 3, Seat: 2), _limits, _bots, _maps);
+        PlayedGame replay = ArenaStudy.Replay(new ArenaGameKey("deserter", "attacker", "Line", MapSeed: 3, Seat: 2), _limits, _bots, _maps);
 
         // The deserter sits on seat 2 and is Player02. The attacker destroys its plane in the first turn.
         replay.Result.ShouldBe(MatchResult.WonBy("Player01", 1));
@@ -196,7 +195,7 @@ public sealed class ArenaStudyTest
     [Test]
     public void Replay_OfAnUnknownSeat_Throws()
     {
-        Should.Throw<ArgumentException>(() => ReplayStudy.Run(new ArenaGameKey("deserter", "attacker", "Line", MapSeed: 1, Seat: 3), _limits, _bots, _maps));
+        Should.Throw<ArgumentException>(() => ArenaStudy.Replay(new ArenaGameKey("deserter", "attacker", "Line", MapSeed: 1, Seat: 3), _limits, _bots, _maps));
     }
 
     [Test]
