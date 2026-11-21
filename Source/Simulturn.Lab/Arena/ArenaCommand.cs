@@ -9,8 +9,8 @@ namespace Simulturn.Lab.Arena;
 
 /// <summary>
 /// The <c>arena</c> study of the lab: reads a profile from the configuration, plays the run,
-/// prints the table and the comparison of its games and writes the result, the games and the
-/// comparison to files.
+/// prints the table and the comparison of its games and writes the result, the games, the
+/// comparison and the games to look at to files.
 /// </summary>
 public static class ArenaCommand
 {
@@ -42,8 +42,10 @@ public static class ArenaCommand
         File.WriteAllText($"{name}.json", JsonSerializer.Serialize(result, _json));
         File.WriteAllText($"{name}-games.csv", ArenaTable.RenderGamesCsv(result));
         File.WriteAllText($"{name}-comparison.csv", ComparisonTable.RenderCsv(comparison));
+        File.WriteAllText($"{name}-picks.csv", ComparisonTable.RenderPicksCsv(comparison));
         output.WriteLine();
-        output.WriteLine($"Written to {Path.GetFullPath(name)}.json, the games to -games.csv, the comparison to -comparison.csv");
+        output.WriteLine($"Written to {Path.GetFullPath(name)}.json, the games to -games.csv, the comparison to -comparison.csv, the games to look at to -picks.csv");
+        output.WriteLine($"Look at a game with: replay --profile {profile} --Bots <bot>,<opponent> --Maps <map> --MapSeed <seed> --Seat <seat>");
         return 0;
     }
 

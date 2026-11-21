@@ -3,7 +3,7 @@ id: bot-game-diagnosis
 title: Man sieht nicht, warum ein Bot verliert
 status: in_progress
 created: 2026-11-16
-updated: 2026-11-20
+updated: 2026-11-21
 depends_on:
 - bot-strength-measurement
 ---
@@ -97,6 +97,16 @@ Entschieden dabei:
 - Ein typisches Spiel ist das, dessen Posten am nächsten am Mittelwert seiner Gruppe liegen. Noch nicht umgesetzt.
 
 Noch nicht da: das Herausgreifen typischer Spiele und Ausreißer, die Streuung neben den Mittelwerten. Die vier Ursachen aus dem ersten Lauf sind noch nicht nachgeprüft. Der Lauf `random` gegen `idle` zeigt nur Siege und ein einziges Spiel ohne Sieger; für die Gegenprobe braucht es eine Paarung, in der beide Seiten verlieren.
+
+Stand 2026-11-21: Der Vergleich nennt je Gruppe die Spiele zum Ansehen. Das typische Spiel steht in der Tabelle der Arena (Karten-Seed und Sitz). Die Ausreißer stehen in einer eigenen Datei (`-picks.csv`): je Gruppe, Bot und Posten das Spiel mit dem niedrigsten und das mit dem höchsten Wert, daneben der Mittelwert. Jedes davon lässt sich mit `replay` ansehen.
+
+Entschieden dabei:
+
+- Der Abstand eines Spiels zum Mittelwert ist die Matter, um die seine Posten abweichen, über alle Posten beider Bilanzen aufsummiert. Jeder Posten ist Matter, also wird nichts gewichtet und nichts normiert. Zugzahl und Rest-Matter der Karte zählen nicht mit.
+- Ein Ausreißer ist das Spiel am Ende eines Postens, ohne Schwelle. Ein Posten, der in allen Spielen der Gruppe gleich ist, hat keinen.
+- Bei Gleichstand gilt das erste Spiel des Laufs.
+
+Noch nicht da: die Streuung neben den Mittelwerten. Die vier Ursachen aus dem ersten Lauf sind noch nicht nachgeprüft. Weitere Bots, und damit eine Paarung, in der beide Seiten verlieren, kommen später und nicht in diesem PR.
 
 ## Zur Diskussion: ein Ort für die Preise
 

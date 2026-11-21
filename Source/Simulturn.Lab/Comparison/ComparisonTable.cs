@@ -8,7 +8,7 @@ namespace Simulturn.Lab.Comparison;
 
 /// <summary>
 /// Renders a comparison: one text block per bot, opponent and map type with the groups next to
-/// each other, and one CSV line per group and bot.
+/// each other, one CSV line per group and bot, and the games to look at.
 /// </summary>
 public static class ComparisonTable
 {
@@ -41,6 +41,7 @@ public static class ComparisonTable
             {
                 AppendLine(table, $"  Ended by {end}", columns, x => Number(x.EndedBy(end), width) + new string(' ', width));
             }
+            AppendLine(table, "  Typical game", columns, x => Game(x.Typical()).PadLeft(2 * width));
             foreach (LedgerSection section in LedgerEntries.Sections)
             {
                 table.AppendLine(section.Heading);
@@ -69,6 +70,49 @@ public static class ComparisonTable
             csv.AppendLine(CultureInfo.InvariantCulture, $"{game},{group.Opponent},{Averages(group.OpponentAverage)}");
         }
         return csv.ToString();
+    }
+
+    /// <summary>
+    /// The games to look at, named by map seed and seat so that <c>replay</c> can play them: one
+    /// line per group for its typical game, and per bot and entry one for the game with the lowest
+    /// and one for the game with the highest value. An entry that is the same in every game of a
+    /// group has no lines.
+    /// </summary>
+    public static string RenderPicksCsv(IReadOnlyList<ComparisonGroup> groups)
+    {
+        StringBuilder csv = new();
+        csv.AppendLine("Bot,Opponent,Map,Outcome,Games,Pick,Player,Entry,Value,Average,MapSeed,Seat");
+        foreach (ComparisonGroup group in groups)
+        {
+            string prefix = $"{group.Bot},{group.Opponent},{group.Map},{group.Outcome},{group.Games.Length}";
+            ArenaGameKey typical = group.Typical().Key;
+            csv.AppendLine(CultureInfo.InvariantCulture, $"{prefix},Typical,,,,,{typical.MapSeed},{typical.Seat}");
+            AppendOutliers(csv, prefix, group.Bot, x => x.Bot, group.BotOutliers, group.BotAverage);
+            AppendOutliers(csv, prefix, group.Opponent, x => x.Opponent, group.OpponentOutliers, group.OpponentAverage);
+        }
+        return csv.ToString();
+    }
+
+    private static void AppendOutliers(StringBuilder csv, string prefix, string player, Func<ArenaGameResult, MatterLedger> ledger,
+        Func<Func<MatterLedger, int>, ComparisonOutliers?> outliers, Func<Func<MatterLedger, int>, double> average)
+    {
+        foreach (LedgerEntry entry in LedgerEntries.All)
+        {
+            if (outliers(entry.Value) is not { } found)
+            {
+                continue;
+            }
+            foreach ((string pick, ArenaGameResult game) in new[] { ("Lowest", found.Lowest), ("Highest", found.Highest) })
+            {
+                csv.AppendLine(CultureInfo.InvariantCulture,
+                    $"{prefix},{pick},{player},{entry.Name},{entry.Value(ledger(game))},{average(entry.Value):F1},{game.Key.MapSeed},{game.Key.Seat}");
+            }
+        }
+    }
+
+    private static string Game(ArenaGameResult game)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"seed {game.Key.MapSeed} seat {game.Key.Seat}");
     }
 
     private static string Averages(Func<Func<MatterLedger, int>, double> average)

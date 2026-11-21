@@ -75,4 +75,52 @@ public sealed record ComparisonGroup(string Bot, string Opponent, string Map, Ar
     {
         return Games.Average(x => (double)entry(x.Opponent));
     }
+
+    /// <summary>
+    /// The game to look at in place of the group: the one whose ledgers lie closest to the
+    /// averages of the group. The distance of a game is the matter its entries are away from
+    /// their averages, added up over every entry of both ledgers. Every entry is matter, so
+    /// nothing is weighted. Of two games equally close, the first of the run is taken.
+    /// </summary>
+    public ArenaGameResult Typical()
+    {
+        var averages = LedgerEntries.All
+            .Select(x => (x.Value, OfBot: BotAverage(x.Value), OfOpponent: OpponentAverage(x.Value)))
+            .ToList();
+        return Games.MinBy(game => averages.Sum(x =>
+            Math.Abs(x.Value(game.Bot) - x.OfBot) + Math.Abs(x.Value(game.Opponent) - x.OfOpponent)))!;
+    }
+
+    /// <summary>
+    /// The games with the lowest and the highest value of an entry in the ledger of the bot, or
+    /// null when the entry is the same in every game of the group.
+    /// </summary>
+    public ComparisonOutliers? BotOutliers(Func<MatterLedger, int> entry)
+    {
+        return Outliers(x => entry(x.Bot));
+    }
+
+    /// <summary>
+    /// The games with the lowest and the highest value of an entry in the ledger of the opponent,
+    /// or null when the entry is the same in every game of the group.
+    /// </summary>
+    public ComparisonOutliers? OpponentOutliers(Func<MatterLedger, int> entry)
+    {
+        return Outliers(x => entry(x.Opponent));
+    }
+
+    private ComparisonOutliers? Outliers(Func<ArenaGameResult, int> value)
+    {
+        ArenaGameResult lowest = Games.MinBy(value)!;
+        ArenaGameResult highest = Games.MaxBy(value)!;
+        return value(lowest) == value(highest) ? null : new ComparisonOutliers(lowest, highest);
+    }
 }
+
+/// <summary>
+/// The two games of a group that lie at the ends of one entry. Of several games with the same
+/// value, the first of the run is taken.
+/// </summary>
+/// <param name="Lowest">The game with the lowest value of the entry.</param>
+/// <param name="Highest">The game with the highest value of the entry.</param>
+public sealed record ComparisonOutliers(ArenaGameResult Lowest, ArenaGameResult Highest);

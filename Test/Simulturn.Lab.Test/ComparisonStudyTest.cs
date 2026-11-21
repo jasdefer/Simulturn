@@ -78,6 +78,90 @@ public sealed class ComparisonStudyTest
         drawn.EndedBy(MatchEnd.Victory).ShouldBe(0);
     }
 
+    /// <summary>
+    /// Three won games on one map: the bot harvests 100, 400 and 1000, its opponent always 200.
+    /// The averages are 500 and 200, so the second game is the closest.
+    /// </summary>
+    private static readonly ImmutableArray<ArenaGameResult> _spread =
+    [
+        Game("Open", 1, 1, ArenaOutcome.Win, MatchEnd.Victory, turns: 10, harvested: 100, opponentHarvested: 200),
+        Game("Open", 1, 2, ArenaOutcome.Win, MatchEnd.Victory, turns: 10, harvested: 400, opponentHarvested: 200),
+        Game("Open", 2, 1, ArenaOutcome.Win, MatchEnd.Victory, turns: 10, harvested: 1000, opponentHarvested: 200)
+    ];
+
+    [Test]
+    public void TypicalGame_IsTheOneClosestToTheAveragesOfTheGroup()
+    {
+        ComparisonGroup won = ComparisonStudy.Of(_spread)[0];
+
+        won.Typical().Key.ShouldBe(new ArenaGameKey("early", "late", "Open", 1, 2));
+    }
+
+    [Test]
+    public void TypicalGame_CountsTheLedgerOfTheOpponentToo()
+    {
+        ComparisonGroup won = ComparisonStudy.Of(
+        [
+            Game("Open", 1, 1, ArenaOutcome.Win, MatchEnd.Victory, turns: 10, harvested: 500, opponentHarvested: 0),
+            Game("Open", 1, 2, ArenaOutcome.Win, MatchEnd.Victory, turns: 10, harvested: 500, opponentHarvested: 400),
+            Game("Open", 2, 1, ArenaOutcome.Win, MatchEnd.Victory, turns: 10, harvested: 500, opponentHarvested: 1100)
+        ])[0];
+
+        won.Typical().Key.MapSeed.ShouldBe(1);
+        won.Typical().Key.Seat.ShouldBe(2);
+    }
+
+    [Test]
+    public void TypicalGame_OfGamesEquallyClose_IsTheFirstOfTheRun()
+    {
+        ComparisonGroup drawn = ComparisonStudy.Of(_games)[2];
+
+        drawn.Typical().Key.MapSeed.ShouldBe(2);
+    }
+
+    [Test]
+    public void Outliers_AreTheGamesWithTheLowestAndTheHighestValueOfAnEntry()
+    {
+        ComparisonGroup won = ComparisonStudy.Of(_spread)[0];
+
+        ComparisonOutliers outliers = won.BotOutliers(x => x.Harvested).ShouldNotBeNull();
+
+        outliers.Lowest.Key.ShouldBe(new ArenaGameKey("early", "late", "Open", 1, 1));
+        outliers.Highest.Key.ShouldBe(new ArenaGameKey("early", "late", "Open", 2, 1));
+    }
+
+    [Test]
+    public void EntryThatIsTheSameInEveryGame_HasNoOutliers()
+    {
+        ComparisonGroup won = ComparisonStudy.Of(_spread)[0];
+
+        won.OpponentOutliers(x => x.Harvested).ShouldBeNull();
+        won.BotOutliers(x => x.Fallen).ShouldBeNull();
+    }
+
+    [Test]
+    public void PicksCsv_NamesTheTypicalGameAndTheOutliersOfEveryGroup()
+    {
+        string[] lines = ComparisonTable.RenderPicksCsv(ComparisonStudy.Of(_spread)).Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        lines.ShouldBe([
+            "Bot,Opponent,Map,Outcome,Games,Pick,Player,Entry,Value,Average,MapSeed,Seat",
+            "early,late,Open,Win,3,Typical,,,,,1,2",
+            "early,late,Open,Win,3,Lowest,early,Harvested,100,500.0,1,1",
+            "early,late,Open,Win,3,Highest,early,Harvested,1000,500.0,2,1"
+        ]);
+    }
+
+    [Test]
+    public void Table_NamesTheTypicalGameOfEveryGroup()
+    {
+        string[] lines = ComparisonTable.Render(ComparisonStudy.Of(_games)).Split('\n', StringSplitOptions.TrimEntries);
+
+        lines.ShouldContain(x => x.StartsWith("Typical game", StringComparison.Ordinal)
+            && x.Split(' ', StringSplitOptions.RemoveEmptyEntries).SequenceEqual(
+                new[] { "Typical", "game", "seed", "1", "seat", "1", "seed", "1", "seat", "2", "seed", "2", "seat", "1" }));
+    }
+
     [Test]
     public void NoGames_GiveNoGroup()
     {
