@@ -14,11 +14,13 @@ public static class Match
 {
     /// <summary>
     /// Plays the game of the settings with one bot per player, keyed by player id.
-    /// Every bot gets the view of its player and nothing else.
+    /// Every bot gets the view of its player and nothing else. Whoever wants to look at the game
+    /// passes an observer: it gets the start of the game and then the result of every turn, with
+    /// the full state and report. The bots never see it.
     /// </summary>
     /// <exception cref="ArgumentException">The bots are not exactly the players of the settings.</exception>
     /// <exception cref="InvalidBotCommandsException">A bot issued invalid commands.</exception>
-    public static MatchResult Play(GameSettings settings, IReadOnlyDictionary<string, IBot> bots, MatchLimits limits)
+    public static MatchResult Play(GameSettings settings, IReadOnlyDictionary<string, IBot> bots, MatchLimits limits, Action<TurnResult>? onTurn = null)
     {
         TurnResult turn = Game.Start(settings);
         if (!turn.State.PlayerIds.SetEquals(bots.Keys))
@@ -28,6 +30,7 @@ public static class Match
                 nameof(bots));
         }
         ImmutableArray<string> playerIds = [.. turn.State.PlayerIds.Order(StringComparer.Ordinal)];
+        onTurn?.Invoke(turn);
 
         int stillTurns = 0;
         while (true)
@@ -62,6 +65,7 @@ public static class Match
             {
                 case TurnResult next:
                     turn = next;
+                    onTurn?.Invoke(turn);
                     break;
                 case RefusedCommands refused:
                     string culprit = refused.Validations.Keys.Order(StringComparer.Ordinal).First();

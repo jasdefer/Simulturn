@@ -34,6 +34,7 @@ flowchart TD
     upgrade-concept["Upgrade-Konzept erarbeiten"]
     upgrade-draft["Spieler starten alle mit denselben Voraussetzungen"]
     upgrade-variety["Es gibt nur drei gleichartige Upgrades"]
+    upkeep["Upkeep steht im Konzept, aber nicht in der Engine"]
     validate-regression-tests["Regressionstests für Validate mit Warteschlangen auf anderen Hexagons"]
     ai-opponents-too-weak --> bot-game-diagnosis
     ai-opponents-too-weak --> bot-strength-measurement

@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using Simulturn.Core.Analysis;
 
 namespace Simulturn.Lab.Arena;
 
@@ -24,5 +25,30 @@ public static class ArenaTable
             }
         }
         return table.ToString();
+    }
+
+    /// <summary>
+    /// One line per game and bot of the run: the game, how it ended for the bot of the line and
+    /// every entry of its ledger at the end of the game.
+    /// </summary>
+    public static string RenderGamesCsv(ArenaResult result)
+    {
+        StringBuilder csv = new();
+        csv.AppendLine($"Bot,Opponent,Map,MapSeed,Seat,End,Turns,RemainingMatter,Player,Outcome,{string.Join(",", LedgerEntries.All.Select(x => x.Name))}");
+        foreach (ArenaGameResult game in result.Games)
+        {
+            ArenaOutcome opponentOutcome = game.Outcome switch
+            {
+                ArenaOutcome.Win => ArenaOutcome.Loss,
+                ArenaOutcome.Loss => ArenaOutcome.Win,
+                _ => ArenaOutcome.Draw
+            };
+            foreach ((string player, ArenaOutcome outcome, MatterLedger ledger) in new[] { (game.Key.Bot, game.Outcome, game.Bot), (game.Key.Opponent, opponentOutcome, game.Opponent) })
+            {
+                csv.AppendLine(CultureInfo.InvariantCulture,
+                    $"{game.Key.Bot},{game.Key.Opponent},{game.Key.Map},{game.Key.MapSeed},{game.Key.Seat},{game.End},{game.Turns},{game.RemainingMatter},{player},{outcome},{string.Join(",", LedgerEntries.All.Select(x => x.Value(ledger)))}");
+            }
+        }
+        return csv.ToString();
     }
 }

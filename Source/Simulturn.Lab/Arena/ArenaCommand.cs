@@ -3,12 +3,14 @@ using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Simulturn.Bots;
 using Simulturn.Bots.Catalog;
+using Simulturn.Lab.Comparison;
 
 namespace Simulturn.Lab.Arena;
 
 /// <summary>
 /// The <c>arena</c> study of the lab: reads a profile from the configuration, plays the run,
-/// prints the table and writes the result to a file.
+/// prints the table and the comparison of its games and writes the result, the games, the
+/// comparison and the games to look at to files.
 /// </summary>
 public static class ArenaCommand
 {
@@ -29,14 +31,21 @@ public static class ArenaCommand
 
         ArenaOptions options = ReadOptions(configuration, section);
         ArenaResult result = ArenaStudy.Run(options, BotCatalog.All, ArenaMaps.All);
+        ImmutableArray<ComparisonGroup> comparison = ComparisonStudy.Of(result.Games);
         output.Write(ArenaTable.Render(result));
+        output.WriteLine();
+        output.Write(ComparisonTable.Render(comparison));
 
         string folder = configuration["OutputFolder"] ?? "measurements";
         Directory.CreateDirectory(folder);
-        string file = Path.Combine(folder, $"arena-{profile}-{DateTime.Now:yyyyMMdd-HHmmss}.json");
-        File.WriteAllText(file, JsonSerializer.Serialize(result, _json));
+        string name = Path.Combine(folder, $"arena-{profile}-{DateTime.Now:yyyyMMdd-HHmmss}");
+        File.WriteAllText($"{name}.json", JsonSerializer.Serialize(result, _json));
+        File.WriteAllText($"{name}-games.csv", ArenaTable.RenderGamesCsv(result));
+        File.WriteAllText($"{name}-comparison.csv", ComparisonTable.RenderCsv(comparison));
+        File.WriteAllText($"{name}-picks.csv", ComparisonTable.RenderPicksCsv(comparison));
         output.WriteLine();
-        output.WriteLine($"Written to {Path.GetFullPath(file)}");
+        output.WriteLine($"Written to {Path.GetFullPath(name)}.json, the games to -games.csv, the comparison to -comparison.csv, the games to look at to -picks.csv");
+        output.WriteLine($"Look at a game with: replay --profile {profile} --Bots <bot>,<opponent> --Maps <map> --MapSeed <seed> --Seat <seat>");
         return 0;
     }
 

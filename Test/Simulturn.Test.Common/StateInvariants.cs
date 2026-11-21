@@ -279,6 +279,37 @@ public static class StateInvariants
                 violations.Add($"Report: the matter of {playerId} changed by {playerAfter.Matter - playerBefore.Matter}, the reported income is {income} and the commands cost {cost}.");
             }
 
+            if (activity.TrainingPrices != Costs.TrainingPrices(settings)
+                || activity.ConstructionPrices != Costs.ConstructionPrices(settings))
+            {
+                violations.Add($"Report: the prices of {playerId} are reported as {activity.TrainingPrices} and {activity.ConstructionPrices}, the engine asks other prices.");
+            }
+            int paid = activity.TrainingOrders.Values.Sum() * activity.TrainingPrices
+                + activity.ConstructionOrders.Values.Sum() * activity.ConstructionPrices
+                + activity.ResearchOrders.Values.Sum(x => x.Matter);
+            if (paid != cost)
+            {
+                violations.Add($"Report: the orders of {playerId} are reported with {paid} matter, the commands cost {cost}.");
+            }
+            foreach (Hexagon hexagon in before.Hexagons)
+            {
+                Command? command = playerCommands?.GetValueOrDefault(hexagon);
+                Army reportedTraining = activity.TrainingOrders.GetValueOrDefault(hexagon);
+                Compound reportedConstruction = activity.ConstructionOrders.GetValueOrDefault(hexagon);
+                Upgrade? reportedResearch = activity.ResearchOrders.GetValueOrDefault(hexagon)?.Upgrade;
+                if (activity.TrainingOrders.ContainsKey(hexagon) && reportedTraining.IsEmpty
+                    || activity.ConstructionOrders.ContainsKey(hexagon) && reportedConstruction.IsEmpty)
+                {
+                    violations.Add($"Report: {playerId} has an empty order on {hexagon}.");
+                }
+                if (reportedTraining != (command?.Training ?? Army.Empty)
+                    || reportedConstruction != (command?.Construction ?? Compound.Empty)
+                    || reportedResearch != command?.Research)
+                {
+                    violations.Add($"Report: the orders of {playerId} on {hexagon} are reported as {reportedTraining}, {reportedConstruction} and research {reportedResearch}, the command is {command}.");
+                }
+            }
+
             Dictionary<Hexagon, Army> moved = [];
             foreach (MovementReport movement in activity.Movements)
             {

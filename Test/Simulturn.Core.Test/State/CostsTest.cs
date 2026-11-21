@@ -39,6 +39,30 @@ public sealed class CostsTest
     }
 
     [Test]
+    public void Prices_AreTheMatterOfOneUnitAndOneBuildingOfEachType()
+    {
+        Army trainingPrices = Costs.TrainingPrices(_gameSettings);
+        Compound constructionPrices = Costs.ConstructionPrices(_gameSettings);
+
+        trainingPrices.ShouldBe(new Army() { Triangle = 200, Circle = 200, Square = 200, Dot = 75 });
+        constructionPrices.ShouldBe(new Compound() { Axis = 150, Dome = 100, Cube = 150, Plane = 350, Pyramid = 150 });
+        trainingPrices.ShouldBe(Army.PerUnit(unit => Costs.Training(_gameSettings, unit).Matter));
+        constructionPrices.ShouldBe(Compound.PerBuilding(building => Costs.Construction(_gameSettings, building).Matter));
+    }
+
+    [Test]
+    public void TurnResolution_ReportsThePricesOfTheTurn()
+    {
+        GameState state = new(_gameSettings);
+
+        TurnResult result = state.ResolveTurn(new Dictionary<string, Dictionary<Hexagon, Command>>());
+
+        PlayerActivityReport activity = result.Report.Activities["Player01"];
+        activity.TrainingPrices.ShouldBe(Costs.TrainingPrices(_gameSettings));
+        activity.ConstructionPrices.ShouldBe(Costs.ConstructionPrices(_gameSettings));
+    }
+
+    [Test]
     public void Research_CostsTheLevelAfterTheCompletedOnes()
     {
         var levelOne = _noUpgrades.Add(Upgrade.TriangleExponent, 1);

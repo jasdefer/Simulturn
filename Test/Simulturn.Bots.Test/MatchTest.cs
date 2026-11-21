@@ -1,6 +1,7 @@
 using Simulturn.Bots.Catalog;
 using Simulturn.Core.Model;
 using Simulturn.Core.Model.Commands;
+using Simulturn.Core.Model.Report;
 using Simulturn.Core.Setup;
 using Simulturn.Test.Common;
 
@@ -102,6 +103,21 @@ public sealed class MatchTest
 
         player1Views.ShouldBe([("Player01", 0), ("Player01", 1), ("Player01", 2)]);
         player2Views.ShouldBe([("Player02", 0), ("Player02", 1), ("Player02", 2)]);
+    }
+
+    [Test]
+    public void Observer_GetsTheStartAndTheResultOfEveryTurn()
+    {
+        GameSettings settings = CreateSettings(_twentySquares, _fiveDots);
+        var attacker = ScriptedBot.OnFirstTurn(_ => ScriptedBot.Move(_player1Start, _player2Start, _twentySquares));
+        List<TurnResult> turns = [];
+
+        MatchResult result = Match.Play(settings, Bots(attacker, new IdleBot()), _limits, turns.Add);
+
+        turns.Select(x => x.State.Turn).ShouldBe([(ushort)0, (ushort)1]);
+        turns[0].Report.ShouldBe(TurnReport.Empty);
+        turns[1].Report.Defeats.ShouldBe(["Player02"]);
+        turns[1].State.Turn.ShouldBe(result.Turns);
     }
 
     [Test]

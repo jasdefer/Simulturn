@@ -23,6 +23,33 @@ public sealed record PlayerActivityReport
     public ImmutableDictionary<Hexagon, IncomeReport> Incomes { get; init; } = ImmutableDictionary<Hexagon, IncomeReport>.Empty;
 
     /// <summary>
+    /// The matter one unit of each type cost the player in this turn, whether or not one was ordered.
+    /// The orders of the turn were paid at this price; the price of the next order comes from the engine.
+    /// </summary>
+    public Army TrainingPrices { get; init; }
+
+    /// <summary>
+    /// The matter one building of each type cost the player in this turn, whether or not one was ordered.
+    /// The orders of the turn were paid at this price; the price of the next order comes from the engine.
+    /// </summary>
+    public Compound ConstructionPrices { get; init; }
+
+    /// <summary>
+    /// The trainings ordered this turn, paid at <see cref="TrainingPrices"/>. Hexagons without a new training are missing.
+    /// </summary>
+    public ImmutableDictionary<Hexagon, Army> TrainingOrders { get; init; } = ImmutableDictionary<Hexagon, Army>.Empty;
+
+    /// <summary>
+    /// The constructions ordered this turn, paid at <see cref="ConstructionPrices"/>. Hexagons without a new construction are missing.
+    /// </summary>
+    public ImmutableDictionary<Hexagon, Compound> ConstructionOrders { get; init; } = ImmutableDictionary<Hexagon, Compound>.Empty;
+
+    /// <summary>
+    /// The researches ordered this turn with the matter paid for them. Hexagons without a new research are missing.
+    /// </summary>
+    public ImmutableDictionary<Hexagon, ResearchOrderReport> ResearchOrders { get; init; } = ImmutableDictionary<Hexagon, ResearchOrderReport>.Empty;
+
+    /// <summary>
     /// The units that joined the army this turn, including trainings ordered in the same turn.
     /// </summary>
     public ImmutableDictionary<Hexagon, Army> CompletedTrainings { get; init; } = ImmutableDictionary<Hexagon, Army>.Empty;
