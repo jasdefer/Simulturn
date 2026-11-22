@@ -7,6 +7,7 @@ using Simulturn.Core.Model.Commands;
 using Simulturn.Core.Model.State;
 using Simulturn.Core.Setup;
 using Simulturn.Lab.Arena;
+using Simulturn.Lab.Replay;
 using Simulturn.Test.Common;
 
 namespace Simulturn.Lab.Test;
@@ -190,6 +191,14 @@ public sealed class ArenaStudyTest
         replay.Turns[1].Bot.Buildings.ShouldBe(0);
         replay.Turns[1].Opponent.Razed.ShouldBe(350);
         replay.Turns[1].Opponent.Buildings.ShouldBe(350);
+    }
+
+    [Test]
+    public void ReplayTable_NamesTheWinnerByItsBot()
+    {
+        PlayedGame replay = ArenaStudy.Replay(new ArenaGameKey("deserter", "attacker", "Line", MapSeed: 3, Seat: 2), _limits, _bots, _maps);
+
+        ReplayTable.Render(replay).ShouldContain("Victory of attacker after 1 turns");
     }
 
     [Test]

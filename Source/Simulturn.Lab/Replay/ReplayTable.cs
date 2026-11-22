@@ -17,7 +17,12 @@ public static class ReplayTable
     {
         StringBuilder table = new();
         PlayedTurn last = replay.Turns[^1];
-        string end = replay.Result.WinnerId is null ? $"{replay.Result.End}" : $"{replay.Result.End} of {replay.Result.WinnerId}";
+        string end = replay.Game.Outcome switch
+        {
+            ArenaOutcome.Win => $"{replay.Result.End} of {replay.Game.Key.Bot}",
+            ArenaOutcome.Loss => $"{replay.Result.End} of {replay.Game.Key.Opponent}",
+            _ => $"{replay.Result.End}"
+        };
         table.AppendLine(CultureInfo.InvariantCulture, $"{replay.Game.Key.Bot} on seat {replay.Game.Key.Seat} against {replay.Game.Key.Opponent} on map {replay.Game.Key.Map} with seed {replay.Game.Key.MapSeed}");
         table.AppendLine(CultureInfo.InvariantCulture, $"{end} after {replay.Result.Turns} turns, {last.RemainingMatter} matter left on the map");
         table.AppendLine();
