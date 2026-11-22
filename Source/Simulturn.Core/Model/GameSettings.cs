@@ -38,6 +38,23 @@ public sealed record GameSettings
     public int Seed { get; init; }
 
     /// <summary>
+    /// The players of the settings in seat order, seat 1 first: everyone who starts on a hexagon,
+    /// sorted by id. The order means nothing to the rules, it only names the seats. This is the
+    /// only place that puts the players in an order; whoever seats someone (a bot, a user) asks here.
+    /// </summary>
+    public ImmutableArray<string> SeatOrder()
+    {
+        return
+        [
+            .. HexagonSettings.Values
+                .Where(x => x.PlayerInitialization is not null)
+                .Select(x => x.PlayerInitialization!.Value.StartingPlayerId)
+                .Distinct()
+                .Order(StringComparer.Ordinal)
+        ];
+    }
+
+    /// <summary>
     /// The number of levels defined for the upgrade in <see cref="Upgrades"/>. An upgrade without
     /// a definition has no levels and can never be researched, no matter which hexagon offers it.
     /// </summary>

@@ -23,13 +23,13 @@ public static class Match
     public static MatchResult Play(GameSettings settings, IReadOnlyDictionary<string, IBot> bots, MatchLimits limits, Action<TurnResult>? onTurn = null)
     {
         TurnResult turn = Game.Start(settings);
+        ImmutableArray<string> playerIds = settings.SeatOrder();
         if (!turn.State.PlayerIds.SetEquals(bots.Keys))
         {
             throw new ArgumentException(
-                $"The bots ({string.Join(", ", bots.Keys.Order(StringComparer.Ordinal))}) are not the players of the settings ({string.Join(", ", turn.State.PlayerIds.Order(StringComparer.Ordinal))}).",
+                $"The bots ({string.Join(", ", bots.Keys.Order(StringComparer.Ordinal))}) are not the players of the settings ({string.Join(", ", playerIds)}).",
                 nameof(bots));
         }
-        ImmutableArray<string> playerIds = [.. turn.State.PlayerIds.Order(StringComparer.Ordinal)];
         onTurn?.Invoke(turn);
 
         int stillTurns = 0;
