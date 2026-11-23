@@ -153,15 +153,16 @@ Behoben:
 Bewusst gelassen:
 
 - `arena` und `replay` lesen den Ausgabeordner je mit zwei gleichen Zeilen, haben je ein `ReadNumber`, das Verschiedenes tut (Wert des Profils mit Ersatzwert, Wert nur von der Kommandozeile), und die Namen der Studien stehen in `Program.cs` dreimal untereinander. Eine gemeinsame Stelle wäre jeweils größer als das, was sie spart. Mit einer dritten oder vierten Studie neu anzusehen.
+- Die Bilanz liest den Preis abgeschlossener Forschung nicht bei `Costs`, sondern bei `NextUpgradeLevel`. Den Preis abgebrochener und laufender Forschung bestimmt sie aus dem Zustand nach dem Zug; das stimmt nur, weil je Upgrade höchstens eine Forschung läuft. Beides ist heute richtig. Eine Funktion in `Costs` für den Preis einer Stufe wäre eine leere Hülle, solange kein Upgrade den Preis einer Forschung ändert. Die Annahme über die eine Forschung machen der Abschluss einer Forschung und `Costs.Research` genauso; die Stufe im Bericht einer abgebrochenen Forschung nähme sie nur an einer Stelle weg. Mit dem ersten Upgrade auf den Preis einer Forschung oder mit zwei Forschungen desselben Upgrades neu anzusehen.
+- Zwei Paarungen mit denselben Namen (`--Bots random,idle,idle`) fallen in der Tabelle der Arena und im Vergleich zusammen. Es sind dieselben Spiele zweimal: Der Seed eines Bots folgt aus Map-Seed und Stelle in der Paarung (`ArenaStudy.BotSeed`), nicht aus der Paarung. Die Mittelwerte bleiben also gleich, nur die Zahl der Spiele verdoppelt sich. Die Eingabe ist ohne Sinn, niemand braucht sie.
+- Spielt ein Bot gegen sich selbst (`--Bots random,random`), sagt der Name des Siegers in den Dateien nicht, welcher der beiden gewonnen hat. Eine Spalte mit der Stelle des Siegers erst, wenn jemand das Spiel eines Bots gegen sich selbst auswertet.
 
 Noch offen, als Probleme:
 
-- Die Bilanz liest den Preis abgeschlossener Forschung nicht bei `Costs`. Den Preis abgebrochener Forschung bestimmt sie aus dem Zustand nach dem Zug; das stimmt nur, weil je Upgrade höchstens eine Forschung läuft.
 - Eine Gruppe des Vergleichs rechnet Mittelwerte und typisches Spiel bei jedem Zugriff neu. Bei den heutigen Größen ohne Folgen.
 - Die Liste der Posten einer Bilanz mit Namen und Abschnitten liegt im Lab. Eine UI, die eine Bilanz zeigt, braucht sie auch. Ein neuer Posten braucht vier Stellen, nur eine davon sichert ein Test.
 - Die Preise im Bericht eines Zugs stehen je Spieler, sind heute aber für alle gleich und eine Kopie der Settings. Das passt nicht ganz zu „nichts für ein Upgrade bauen, das es vielleicht nie gibt".
 - Die Laufzeit nach dem Umbau ist nur im Akkubetrieb gemessen (Profil `full`, 54 bis 79 s vorher wie nachher, zu verrauscht für eine Aussage). Am Netz nachzumessen und mit den rund 5,3 s von 2026-11-20 zu vergleichen.
-- Zwei Paarungen mit denselben Namen (`--Bots random,idle,idle`) fallen in der Tabelle der Arena und im Vergleich zusammen, obwohl es verschiedene Bots mit verschiedenen Seeds sind. Spielt ein Bot gegen sich selbst, sagt der Name des Siegers in den Dateien nicht, welcher der beiden gewonnen hat. Beides war schon vor dem Umbau so.
 
 Über das Item hinaus, aus dem Gespräch:
 
