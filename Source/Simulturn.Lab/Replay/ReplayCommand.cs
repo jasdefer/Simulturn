@@ -31,17 +31,17 @@ public static class ReplayCommand
         ArenaOptions options = ArenaCommand.ReadOptions(configuration, section);
         if (options.Bots.Length < 2 || options.Maps.IsEmpty)
         {
-            output.WriteLine("A replay needs two bots and a map: --Bots <bot>,<opponent> --Maps <map> --MapSeed <seed> --Seat <1|2>");
+            output.WriteLine("A replay needs two bots and a map: --Bots <first>,<second> --Maps <map> --MapSeed <seed> --Seat <1|2, the seat of the first bot>");
             return 2;
         }
-        ArenaGameKey key = new(options.Bots[0], options.Bots[1], options.Maps[0], ReadNumber(configuration, "MapSeed"), ReadNumber(configuration, "Seat"));
+        ArenaGameKey key = new([options.Bots[0], options.Bots[1]], options.Maps[0], ReadNumber(configuration, "MapSeed"), ReadNumber(configuration, "Seat"));
 
         PlayedGame replay = ArenaStudy.Replay(key, options.Limits, BotCatalog.All, ArenaMaps.All);
         output.Write(ReplayTable.Render(replay));
 
         string folder = configuration["OutputFolder"] ?? "measurements";
         Directory.CreateDirectory(folder);
-        string file = Path.Combine(folder, $"replay-{key.Bot}-{key.Opponent}-{key.Map}-{key.MapSeed}-{key.Seat}.csv");
+        string file = Path.Combine(folder, $"replay-{string.Join("-", key.Bots)}-{key.Map}-{key.MapSeed}-{key.Seat}.csv");
         File.WriteAllText(file, ReplayTable.RenderCsv(replay));
         output.WriteLine();
         output.WriteLine($"Every turn written to {Path.GetFullPath(file)}");

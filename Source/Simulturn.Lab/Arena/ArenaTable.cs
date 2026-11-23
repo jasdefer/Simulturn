@@ -28,25 +28,19 @@ public static class ArenaTable
     }
 
     /// <summary>
-    /// One line per game and bot of the run: the game, how it ended for the bot of the line and
-    /// every entry of its ledger at the end of the game.
+    /// One line per game and bot of the run: the game, who won it (empty when nobody did), the
+    /// bot of the line and every entry of its ledger at the end of the game.
     /// </summary>
     public static string RenderGamesCsv(ArenaResult result)
     {
         StringBuilder csv = new();
-        csv.AppendLine($"Bot,Opponent,Map,MapSeed,Seat,End,Turns,RemainingMatter,Player,Outcome,{string.Join(",", LedgerEntries.All.Select(x => x.Name))}");
+        csv.AppendLine($"FirstBot,SecondBot,Map,MapSeed,Seat,End,Turns,RemainingMatter,Winner,Bot,{string.Join(",", LedgerEntries.All.Select(x => x.Name))}");
         foreach (ArenaGameResult game in result.Games)
         {
-            ArenaOutcome opponentOutcome = game.Outcome switch
-            {
-                ArenaOutcome.Win => ArenaOutcome.Loss,
-                ArenaOutcome.Loss => ArenaOutcome.Win,
-                _ => ArenaOutcome.Draw
-            };
-            foreach ((string player, ArenaOutcome outcome, MatterLedger ledger) in new[] { (game.Key.Bot, game.Outcome, game.Bot), (game.Key.Opponent, opponentOutcome, game.Opponent) })
+            foreach (int bot in game.Key.Bots.Places)
             {
                 csv.AppendLine(CultureInfo.InvariantCulture,
-                    $"{game.Key.Bot},{game.Key.Opponent},{game.Key.Map},{game.Key.MapSeed},{game.Key.Seat},{game.End},{game.Turns},{game.RemainingMatter},{player},{outcome},{string.Join(",", LedgerEntries.All.Select(x => x.Value(ledger)))}");
+                    $"{string.Join(",", game.Key.Bots)},{game.Key.Map},{game.Key.MapSeed},{game.Key.Seat},{game.End},{game.Turns},{game.RemainingMatter},{game.WinnerName},{game.Key.Bots[bot]},{string.Join(",", LedgerEntries.All.Select(x => x.Value(game.Ledgers[bot])))}");
             }
         }
         return csv.ToString();

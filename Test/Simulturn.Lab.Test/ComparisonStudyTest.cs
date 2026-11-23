@@ -7,45 +7,46 @@ namespace Simulturn.Lab.Test;
 
 public sealed class ComparisonStudyTest
 {
+    private static readonly PerBot<string> _bots = ["early", "late"];
+
     /// <summary>
-    /// A game of the bot "early" against "late". Only the harvest of the two differs between the games.
+    /// A game of "early" against "late". Only the harvest of the two differs between the games.
     /// </summary>
-    private static ArenaGameResult Game(string map, int mapSeed, int seat, ArenaOutcome outcome, MatchEnd end, ushort turns,
-        int remainingMatter = 0, int harvested = 0, int opponentHarvested = 0)
+    private static ArenaGameResult Game(string map, int mapSeed, int seat, int? winner, MatchEnd end, ushort turns,
+        int remainingMatter = 0, int firstHarvested = 0, int secondHarvested = 0)
     {
         return new ArenaGameResult(
-            new ArenaGameKey("early", "late", map, mapSeed, seat),
-            outcome,
+            new ArenaGameKey(_bots, map, mapSeed, seat),
+            winner,
             end,
             turns,
             remainingMatter,
-            new MatterLedger() { Harvested = harvested },
-            new MatterLedger() { Harvested = opponentHarvested });
+            [new MatterLedger() { Harvested = firstHarvested }, new MatterLedger() { Harvested = secondHarvested }]);
     }
 
     /// <summary>
-    /// On "Open" the bot wins twice from both seats, loses once and draws twice. On "Guarded" it only wins.
+    /// On "Open" the first bot wins twice from both seats, the second once and nobody twice. On "Guarded" only the first wins.
     /// </summary>
     private static readonly ImmutableArray<ArenaGameResult> _games =
     [
-        Game("Open", 1, 1, ArenaOutcome.Win, MatchEnd.Victory, turns: 10, remainingMatter: 100, harvested: 1000, opponentHarvested: 400),
-        Game("Open", 1, 2, ArenaOutcome.Loss, MatchEnd.Victory, turns: 40, remainingMatter: 50, harvested: 300, opponentHarvested: 900),
-        Game("Open", 2, 1, ArenaOutcome.Draw, MatchEnd.TurnLimit, turns: 500),
-        Game("Open", 2, 2, ArenaOutcome.Win, MatchEnd.Victory, turns: 20, remainingMatter: 300, harvested: 2000, opponentHarvested: 600),
-        Game("Open", 3, 1, ArenaOutcome.Draw, MatchEnd.Stall, turns: 100),
-        Game("Guarded", 1, 1, ArenaOutcome.Win, MatchEnd.Victory, turns: 30)
+        Game("Open", 1, 1, 0, MatchEnd.Victory, turns: 10, remainingMatter: 100, firstHarvested: 1000, secondHarvested: 400),
+        Game("Open", 1, 2, 1, MatchEnd.Victory, turns: 40, remainingMatter: 50, firstHarvested: 300, secondHarvested: 900),
+        Game("Open", 2, 1, null, MatchEnd.TurnLimit, turns: 500),
+        Game("Open", 2, 2, 0, MatchEnd.Victory, turns: 20, remainingMatter: 300, firstHarvested: 2000, secondHarvested: 600),
+        Game("Open", 3, 1, null, MatchEnd.Stall, turns: 100),
+        Game("Guarded", 1, 1, 0, MatchEnd.Victory, turns: 30)
     ];
 
     [Test]
-    public void Games_FallIntoAGroupPerMapAndOutcome()
+    public void Games_FallIntoAGroupPerMapAndWinner()
     {
         ImmutableArray<ComparisonGroup> groups = ComparisonStudy.Of(_games);
 
-        groups.Select(x => (x.Bot, x.Opponent, x.Map, x.Outcome, x.Games.Length)).ShouldBe([
-            ("early", "late", "Open", ArenaOutcome.Win, 2),
-            ("early", "late", "Open", ArenaOutcome.Loss, 1),
-            ("early", "late", "Open", ArenaOutcome.Draw, 2),
-            ("early", "late", "Guarded", ArenaOutcome.Win, 1)
+        groups.Select(x => (x.Bots, x.Map, x.Winner, x.Games.Length)).ShouldBe([
+            (_bots, "Open", (int?)0, 2),
+            (_bots, "Open", 1, 1),
+            (_bots, "Open", null, 2),
+            (_bots, "Guarded", 0, 1)
         ]);
     }
 
@@ -64,8 +65,8 @@ public sealed class ComparisonStudyTest
 
         won.AverageTurns.ShouldBe(15);
         won.AverageRemainingMatter.ShouldBe(200);
-        won.BotAverage(x => x.Harvested).ShouldBe(1500);
-        won.OpponentAverage(x => x.Harvested).ShouldBe(500);
+        won.Average(0, x => x.Harvested).ShouldBe(1500);
+        won.Average(1, x => x.Harvested).ShouldBe(500);
     }
 
     [Test]
@@ -79,14 +80,14 @@ public sealed class ComparisonStudyTest
     }
 
     /// <summary>
-    /// Three won games on one map: the bot harvests 100, 400 and 1000, its opponent always 200.
+    /// Three games on one map won by the first bot: it harvests 100, 400 and 1000, the second always 200.
     /// The averages are 500 and 200, so the second game is the closest.
     /// </summary>
     private static readonly ImmutableArray<ArenaGameResult> _spread =
     [
-        Game("Open", 1, 1, ArenaOutcome.Win, MatchEnd.Victory, turns: 10, harvested: 100, opponentHarvested: 200),
-        Game("Open", 1, 2, ArenaOutcome.Win, MatchEnd.Victory, turns: 10, harvested: 400, opponentHarvested: 200),
-        Game("Open", 2, 1, ArenaOutcome.Win, MatchEnd.Victory, turns: 10, harvested: 1000, opponentHarvested: 200)
+        Game("Open", 1, 1, 0, MatchEnd.Victory, turns: 10, firstHarvested: 100, secondHarvested: 200),
+        Game("Open", 1, 2, 0, MatchEnd.Victory, turns: 10, firstHarvested: 400, secondHarvested: 200),
+        Game("Open", 2, 1, 0, MatchEnd.Victory, turns: 10, firstHarvested: 1000, secondHarvested: 200)
     ];
 
     [Test]
@@ -94,17 +95,17 @@ public sealed class ComparisonStudyTest
     {
         ComparisonGroup won = ComparisonStudy.Of(_spread)[0];
 
-        won.Typical().Key.ShouldBe(new ArenaGameKey("early", "late", "Open", 1, 2));
+        won.Typical().Key.ShouldBe(new ArenaGameKey(["early", "late"], "Open", 1, 2));
     }
 
     [Test]
-    public void TypicalGame_CountsTheLedgerOfTheOpponentToo()
+    public void TypicalGame_CountsTheLedgersOfBothBots()
     {
         ComparisonGroup won = ComparisonStudy.Of(
         [
-            Game("Open", 1, 1, ArenaOutcome.Win, MatchEnd.Victory, turns: 10, harvested: 500, opponentHarvested: 0),
-            Game("Open", 1, 2, ArenaOutcome.Win, MatchEnd.Victory, turns: 10, harvested: 500, opponentHarvested: 400),
-            Game("Open", 2, 1, ArenaOutcome.Win, MatchEnd.Victory, turns: 10, harvested: 500, opponentHarvested: 1100)
+            Game("Open", 1, 1, 0, MatchEnd.Victory, turns: 10, firstHarvested: 500, secondHarvested: 0),
+            Game("Open", 1, 2, 0, MatchEnd.Victory, turns: 10, firstHarvested: 500, secondHarvested: 400),
+            Game("Open", 2, 1, 0, MatchEnd.Victory, turns: 10, firstHarvested: 500, secondHarvested: 1100)
         ])[0];
 
         won.Typical().Key.MapSeed.ShouldBe(1);
@@ -124,10 +125,10 @@ public sealed class ComparisonStudyTest
     {
         ComparisonGroup won = ComparisonStudy.Of(_spread)[0];
 
-        ComparisonOutliers outliers = won.BotOutliers(x => x.Harvested).ShouldNotBeNull();
+        ComparisonOutliers outliers = won.Outliers(0, x => x.Harvested).ShouldNotBeNull();
 
-        outliers.Lowest.Key.ShouldBe(new ArenaGameKey("early", "late", "Open", 1, 1));
-        outliers.Highest.Key.ShouldBe(new ArenaGameKey("early", "late", "Open", 2, 1));
+        outliers.Lowest.Key.ShouldBe(new ArenaGameKey(["early", "late"], "Open", 1, 1));
+        outliers.Highest.Key.ShouldBe(new ArenaGameKey(["early", "late"], "Open", 2, 1));
     }
 
     [Test]
@@ -135,8 +136,8 @@ public sealed class ComparisonStudyTest
     {
         ComparisonGroup won = ComparisonStudy.Of(_spread)[0];
 
-        won.OpponentOutliers(x => x.Harvested).ShouldBeNull();
-        won.BotOutliers(x => x.Fallen).ShouldBeNull();
+        won.Outliers(1, x => x.Harvested).ShouldBeNull();
+        won.Outliers(0, x => x.Fallen).ShouldBeNull();
     }
 
     [Test]
@@ -145,10 +146,10 @@ public sealed class ComparisonStudyTest
         string[] lines = ComparisonTable.RenderPicksCsv(ComparisonStudy.Of(_spread)).Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         lines.ShouldBe([
-            "Bot,Opponent,Map,Outcome,Games,Pick,Player,Entry,Value,Average,MapSeed,Seat",
-            "early,late,Open,Win,3,Typical,,,,,1,2",
-            "early,late,Open,Win,3,Lowest,early,Harvested,100,500.0,1,1",
-            "early,late,Open,Win,3,Highest,early,Harvested,1000,500.0,2,1"
+            "FirstBot,SecondBot,Map,Winner,Games,Pick,Bot,Entry,Value,Average,MapSeed,Seat",
+            "early,late,Open,early,3,Typical,,,,,1,2",
+            "early,late,Open,early,3,Lowest,early,Harvested,100,500.0,1,1",
+            "early,late,Open,early,3,Highest,early,Harvested,1000,500.0,2,1"
         ]);
     }
 
@@ -175,8 +176,8 @@ public sealed class ComparisonStudyTest
 
         table.ShouldContain("early against late on Open");
         table.ShouldContain("early against late on Guarded");
-        table.ShouldContain("Won (2)");
-        table.ShouldContain("Lost (1)");
+        table.ShouldContain("early won (2)");
+        table.ShouldContain("late won (1)");
         table.ShouldContain("No winner (2)");
         string[] lines = table.Split('\n', StringSplitOptions.TrimEntries);
         foreach (LedgerEntry entry in LedgerEntries.All)
@@ -195,9 +196,9 @@ public sealed class ComparisonStudyTest
         string[] lines = ComparisonTable.RenderCsv(ComparisonStudy.Of(_games)).Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         lines.Length.ShouldBe(1 + 2 * 4);
-        lines[0].ShouldStartWith("Bot,Opponent,Map,Outcome,Games,Victory,MutualDefeat,Stall,TurnLimit,Turns,RemainingMatter,Player,StartMatter,");
-        lines[1].ShouldStartWith("early,late,Open,Win,2,2,0,0,0,15.0,200.0,early,0.0,0.0,1500.0,");
-        lines[2].ShouldStartWith("early,late,Open,Win,2,2,0,0,0,15.0,200.0,late,0.0,0.0,500.0,");
+        lines[0].ShouldStartWith("FirstBot,SecondBot,Map,Winner,Games,Victory,MutualDefeat,Stall,TurnLimit,Turns,RemainingMatter,Bot,StartMatter,");
+        lines[1].ShouldStartWith("early,late,Open,early,2,2,0,0,0,15.0,200.0,early,0.0,0.0,1500.0,");
+        lines[2].ShouldStartWith("early,late,Open,early,2,2,0,0,0,15.0,200.0,late,0.0,0.0,500.0,");
         lines.ShouldAllBe(x => x.Split(',').Length == 12 + LedgerEntries.All.Length);
     }
 }

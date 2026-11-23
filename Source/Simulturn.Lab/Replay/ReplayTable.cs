@@ -11,28 +11,23 @@ namespace Simulturn.Lab.Replay;
 public static class ReplayTable
 {
     /// <summary>
-    /// The ledgers of the game, the bot next to its opponent.
+    /// The ledgers of the game, the bots next to each other.
     /// </summary>
     public static string Render(PlayedGame replay)
     {
         StringBuilder table = new();
         PlayedTurn last = replay.Turns[^1];
-        string end = replay.Game.Outcome switch
-        {
-            ArenaOutcome.Win => $"{replay.Result.End} of {replay.Game.Key.Bot}",
-            ArenaOutcome.Loss => $"{replay.Result.End} of {replay.Game.Key.Opponent}",
-            _ => $"{replay.Result.End}"
-        };
-        table.AppendLine(CultureInfo.InvariantCulture, $"{replay.Game.Key.Bot} on seat {replay.Game.Key.Seat} against {replay.Game.Key.Opponent} on map {replay.Game.Key.Map} with seed {replay.Game.Key.MapSeed}");
+        string end = replay.Game.WinnerName is { } winner ? $"{replay.Result.End} of {winner}" : $"{replay.Result.End}";
+        table.AppendLine(CultureInfo.InvariantCulture, $"{replay.Game.Key}");
         table.AppendLine(CultureInfo.InvariantCulture, $"{end} after {replay.Result.Turns} turns, {last.RemainingMatter} matter left on the map");
         table.AppendLine();
-        table.AppendLine(CultureInfo.InvariantCulture, $"{"",-24}{replay.Game.Key.Bot,12}{replay.Game.Key.Opponent,12}");
+        table.AppendLine(CultureInfo.InvariantCulture, $"{"",-24}{string.Concat(replay.Game.Key.Bots.Select(x => x.PadLeft(12)))}");
         foreach (LedgerSection section in LedgerEntries.Sections)
         {
             table.AppendLine(section.Heading);
             foreach (LedgerEntry entry in section.Entries)
             {
-                table.AppendLine(CultureInfo.InvariantCulture, $"  {entry.Name,-22}{entry.Value(last.Bot),12}{entry.Value(last.Opponent),12}");
+                table.AppendLine(CultureInfo.InvariantCulture, $"  {entry.Name,-22}{string.Concat(last.Ledgers.Select(x => $"{entry.Value(x),12}"))}");
             }
         }
         return table.ToString();
@@ -47,9 +42,9 @@ public static class ReplayTable
         csv.AppendLine($"Turn,Bot,RemainingMatter,{string.Join(",", LedgerEntries.All.Select(x => x.Name))}");
         foreach (PlayedTurn turn in replay.Turns)
         {
-            foreach ((string bot, MatterLedger ledger) in new[] { (replay.Game.Key.Bot, turn.Bot), (replay.Game.Key.Opponent, turn.Opponent) })
+            foreach (int bot in replay.Game.Key.Bots.Places)
             {
-                csv.AppendLine(CultureInfo.InvariantCulture, $"{turn.Turn},{bot},{turn.RemainingMatter},{string.Join(",", LedgerEntries.All.Select(x => x.Value(ledger)))}");
+                csv.AppendLine(CultureInfo.InvariantCulture, $"{turn.Turn},{replay.Game.Key.Bots[bot]},{turn.RemainingMatter},{string.Join(",", LedgerEntries.All.Select(x => x.Value(turn.Ledgers[bot])))}");
             }
         }
         return csv.ToString();

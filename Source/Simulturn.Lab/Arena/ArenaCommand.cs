@@ -45,7 +45,7 @@ public static class ArenaCommand
         File.WriteAllText($"{name}-picks.csv", ComparisonTable.RenderPicksCsv(comparison));
         output.WriteLine();
         output.WriteLine($"Written to {Path.GetFullPath(name)}.json, the games to -games.csv, the comparison to -comparison.csv, the games to look at to -picks.csv");
-        output.WriteLine($"Look at a game with: replay --profile {profile} --Bots <bot>,<opponent> --Maps <map> --MapSeed <seed> --Seat <seat>");
+        output.WriteLine($"Look at a game with: replay --profile {profile} --Bots <first>,<second> --Maps <map> --MapSeed <seed> --Seat <seat>");
         return 0;
     }
 

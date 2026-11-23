@@ -120,42 +120,41 @@ public sealed class ArenaStudyTest
         ArenaResult result = ArenaStudy.Run(Options("attacker", "deserter") with { MapSeeds = 2 }, _bots, _maps);
 
         result.Games.Select(x => x.Key).ShouldBe([
-            new ArenaGameKey("attacker", "deserter", "Line", MapSeed: 1, Seat: 1),
-            new ArenaGameKey("attacker", "deserter", "Line", MapSeed: 1, Seat: 2),
-            new ArenaGameKey("attacker", "deserter", "Line", MapSeed: 2, Seat: 1),
-            new ArenaGameKey("attacker", "deserter", "Line", MapSeed: 2, Seat: 2)
+            new ArenaGameKey(["attacker", "deserter"], "Line", MapSeed: 1, Seat: 1),
+            new ArenaGameKey(["attacker", "deserter"], "Line", MapSeed: 1, Seat: 2),
+            new ArenaGameKey(["attacker", "deserter"], "Line", MapSeed: 2, Seat: 1),
+            new ArenaGameKey(["attacker", "deserter"], "Line", MapSeed: 2, Seat: 2)
         ]);
-        result.Games.ShouldAllBe(x => x.Outcome == ArenaOutcome.Win && x.End == MatchEnd.Victory && x.Turns == 1);
+        result.Games.ShouldAllBe(x => x.Winner == 0 && x.End == MatchEnd.Victory && x.Turns == 1);
     }
 
     [Test]
-    public void GameWithoutAWinner_IsADrawWithTheEndOfTheMatch()
+    public void GameWithoutAWinner_HasNoWinnerAndTheEndOfTheMatch()
     {
         ArenaResult result = ArenaStudy.Run(Options("idle", "idle"), _bots, _maps);
 
         result.Games.Length.ShouldBe(8);
-        result.Games.ShouldAllBe(x => x.Outcome == ArenaOutcome.Draw && x.End == MatchEnd.Stall && x.Turns == 5);
+        result.Games.ShouldAllBe(x => x.Winner == null && x.End == MatchEnd.Stall && x.Turns == 5);
     }
 
     [Test]
     public void GameOfARun_HasTheLedgersItsReplayEndsWith()
     {
-        ArenaGameKey key = new("deserter", "attacker", "Line", MapSeed: 3, Seat: 2);
+        ArenaGameKey key = new(["deserter", "attacker"], "Line", MapSeed: 3, Seat: 2);
         ArenaResult result = ArenaStudy.Run(Options("deserter", "attacker"), _bots, _maps);
 
         PlayedGame replay = ArenaStudy.Replay(key, _limits, _bots, _maps);
 
         ArenaGameResult game = result.Games.Single(x => x.Key == key);
-        game.Outcome.ShouldBe(ArenaOutcome.Loss);
-        game.Bot.Destroyed.ShouldBe(350);
-        game.Opponent.Razed.ShouldBe(350);
-        game.Bot.ShouldBe(replay.Turns[^1].Bot);
-        game.Opponent.ShouldBe(replay.Turns[^1].Opponent);
+        game.Winner.ShouldBe(1);
+        game.Ledgers[0].Destroyed.ShouldBe(350);
+        game.Ledgers[1].Razed.ShouldBe(350);
+        game.Ledgers.ShouldBe(replay.Turns[^1].Ledgers);
         game.RemainingMatter.ShouldBe(replay.Turns[^1].RemainingMatter);
     }
 
     [Test]
-    public void GamesCsv_HasALinePerGameAndBotWithTheOutcomeOfThatBot()
+    public void GamesCsv_HasALinePerGameAndBotWithTheWinnerOfTheGame()
     {
         ArenaResult result = ArenaStudy.Run(Options("attacker", "deserter") with { MapSeeds = 1 }, _bots, _maps);
 
@@ -163,8 +162,8 @@ public sealed class ArenaStudyTest
 
         lines.Length.ShouldBe(1 + 2 * 2);
         lines[0].Split(',').Length.ShouldBe(10 + LedgerEntries.All.Length);
-        lines[1].ShouldStartWith("attacker,deserter,Line,1,1,Victory,1,0,attacker,Win,");
-        lines[2].ShouldStartWith("attacker,deserter,Line,1,1,Victory,1,0,deserter,Loss,");
+        lines[1].ShouldStartWith("attacker,deserter,Line,1,1,Victory,1,0,attacker,attacker,");
+        lines[2].ShouldStartWith("attacker,deserter,Line,1,1,Victory,1,0,attacker,deserter,");
         lines.Skip(1).ShouldAllBe(x => x.Split(',').Length == lines[0].Split(',').Length);
     }
 
@@ -181,30 +180,36 @@ public sealed class ArenaStudyTest
     [Test]
     public void Replay_PlaysTheGameOfTheRunAndKeepsTheLedgersOfEveryTurn()
     {
-        PlayedGame replay = ArenaStudy.Replay(new ArenaGameKey("deserter", "attacker", "Line", MapSeed: 3, Seat: 2), _limits, _bots, _maps);
+        PlayedGame replay = ArenaStudy.Replay(new ArenaGameKey(["deserter", "attacker"], "Line", MapSeed: 3, Seat: 2), _limits, _bots, _maps);
 
         // The deserter sits on seat 2 and is Player02. The attacker destroys its plane in the first turn.
         replay.Result.ShouldBe(MatchResult.WonBy("Player01", 1));
         replay.Turns.Select(x => x.Turn).ShouldBe([(ushort)0, (ushort)1]);
-        replay.Turns[0].Bot.Destroyed.ShouldBe(0);
-        replay.Turns[1].Bot.Destroyed.ShouldBe(350);
-        replay.Turns[1].Bot.Buildings.ShouldBe(0);
-        replay.Turns[1].Opponent.Razed.ShouldBe(350);
-        replay.Turns[1].Opponent.Buildings.ShouldBe(350);
+        replay.Turns[0].Ledgers[0].Destroyed.ShouldBe(0);
+        replay.Turns[1].Ledgers[0].Destroyed.ShouldBe(350);
+        replay.Turns[1].Ledgers[0].Buildings.ShouldBe(0);
+        replay.Turns[1].Ledgers[1].Razed.ShouldBe(350);
+        replay.Turns[1].Ledgers[1].Buildings.ShouldBe(350);
     }
 
     [Test]
     public void ReplayTable_NamesTheWinnerByItsBot()
     {
-        PlayedGame replay = ArenaStudy.Replay(new ArenaGameKey("deserter", "attacker", "Line", MapSeed: 3, Seat: 2), _limits, _bots, _maps);
+        PlayedGame replay = ArenaStudy.Replay(new ArenaGameKey(["deserter", "attacker"], "Line", MapSeed: 3, Seat: 2), _limits, _bots, _maps);
 
         ReplayTable.Render(replay).ShouldContain("Victory of attacker after 1 turns");
     }
 
     [Test]
+    public void Replay_OfAGameWithThreeBots_Throws()
+    {
+        Should.Throw<ArgumentException>(() => ArenaStudy.Replay(new ArenaGameKey(["deserter", "attacker", "idle"], "Line", MapSeed: 1, Seat: 1), _limits, _bots, _maps));
+    }
+
+    [Test]
     public void Replay_OfAnUnknownSeat_Throws()
     {
-        Should.Throw<ArgumentException>(() => ArenaStudy.Replay(new ArenaGameKey("deserter", "attacker", "Line", MapSeed: 1, Seat: 3), _limits, _bots, _maps));
+        Should.Throw<ArgumentException>(() => ArenaStudy.Replay(new ArenaGameKey(["deserter", "attacker"], "Line", MapSeed: 1, Seat: 3), _limits, _bots, _maps));
     }
 
     [Test]
@@ -236,9 +241,9 @@ public sealed class ArenaStudyTest
 
         for (int mapSeed = 1; mapSeed <= 900; mapSeed++)
         {
-            int bot = new Random(ArenaStudy.BotSeed(mapSeed, opponent: false)).Next(3);
-            int opponent = new Random(ArenaStudy.BotSeed(mapSeed, opponent: true)).Next(3);
-            rolls[bot, opponent]++;
+            int first = new Random(ArenaStudy.BotSeed(mapSeed, bot: 0)).Next(3);
+            int second = new Random(ArenaStudy.BotSeed(mapSeed, bot: 1)).Next(3);
+            rolls[first, second]++;
         }
 
         // 100 per pair of rolls if they are independent.

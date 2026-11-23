@@ -24,40 +24,33 @@ public sealed record ArenaResult(
 /// What names one game of a run. The engine, the maps and the bot seeds follow from it, so the
 /// same key always gives the same game as long as the engine and the bots do not change.
 /// </summary>
-/// <param name="Bot">The bot the game is seen from.</param>
-/// <param name="Opponent">The bot it plays against.</param>
+/// <param name="Bots">The bots of the game in the order of their pairing. The game is seen from neither.</param>
 /// <param name="Map">The map type.</param>
 /// <param name="MapSeed">The seed of the map, from 1 to the map seeds of the run.</param>
-/// <param name="Seat">The seat of the bot, 1 is the first player of the settings.</param>
-public sealed record ArenaGameKey(string Bot, string Opponent, string Map, int MapSeed, int Seat);
-
-/// <summary>
-/// How a game ended for the bot it is seen from.
-/// </summary>
-public enum ArenaOutcome
+/// <param name="Seat">The seat of the first bot, 1 is the first player of the settings. The bots after it take the seats after it.</param>
+public sealed record ArenaGameKey(PerBot<string> Bots, string Map, int MapSeed, int Seat)
 {
-    /// <summary>The bot won.</summary>
-    Win,
-
-    /// <summary>The opponent won.</summary>
-    Loss,
-
-    /// <summary>Nobody won: mutual defeat, stall or turn limit.</summary>
-    Draw
+    public override string ToString()
+    {
+        return $"{Bots[0]} on seat {Seat} against {string.Join(" and ", Bots.Skip(1))} on map {Map} with seed {MapSeed}";
+    }
 }
 
 /// <summary>
-/// One game of a run: how it ended and where the matter of both bots went. The course of the
+/// One game of a run: how it ended and where the matter of its bots went. The course of the
 /// game is not kept; <see cref="ArenaStudy.Replay"/> plays it again from the key.
 /// </summary>
 /// <param name="Key">The game.</param>
-/// <param name="Outcome">How it ended for the bot of the key.</param>
+/// <param name="Winner">The place of the bot that won among the bots of the key, or null when nobody won: mutual defeat, stall or turn limit.</param>
 /// <param name="End">How the match ended.</param>
 /// <param name="Turns">The number of turns that were played.</param>
 /// <param name="RemainingMatter">The matter left on all hexagons of the map at the end.</param>
-/// <param name="Bot">The ledger of the bot of the key at the end of the game.</param>
-/// <param name="Opponent">The ledger of its opponent at the end of the game.</param>
-public sealed record ArenaGameResult(ArenaGameKey Key, ArenaOutcome Outcome, MatchEnd End, ushort Turns, int RemainingMatter, MatterLedger Bot, MatterLedger Opponent);
+/// <param name="Ledgers">The ledgers of the bots of the key at the end of the game.</param>
+public sealed record ArenaGameResult(ArenaGameKey Key, int? Winner, MatchEnd End, ushort Turns, int RemainingMatter, PerBot<MatterLedger> Ledgers)
+{
+    /// <summary>The name of the bot that won, or null when nobody won.</summary>
+    public string? WinnerName => Winner is { } bot ? Key.Bots[bot] : null;
+}
 
 /// <summary>
 /// A game of the arena with its course: what a run keeps of it, how the match ended and every
@@ -73,9 +66,8 @@ public sealed record PlayedGame(ArenaGameResult Game, MatchResult Result, Immuta
 /// </summary>
 /// <param name="Turn">The turn of the state, 0 is the start.</param>
 /// <param name="RemainingMatter">The matter left on all hexagons of the map.</param>
-/// <param name="Bot">The ledger of the bot of the key.</param>
-/// <param name="Opponent">The ledger of its opponent.</param>
-public sealed record PlayedTurn(ushort Turn, int RemainingMatter, MatterLedger Bot, MatterLedger Opponent);
+/// <param name="Ledgers">The ledgers of the bots of the key.</param>
+public sealed record PlayedTurn(ushort Turn, int RemainingMatter, PerBot<MatterLedger> Ledgers);
 
 /// <summary>
 /// The games of one bot against one opponent on one map type from one seat, seen from the bot.

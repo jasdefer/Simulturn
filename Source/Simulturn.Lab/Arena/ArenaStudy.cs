@@ -40,9 +40,9 @@ public static class ArenaStudy
         // The number of the pairing keeps two pairings of bots with the same names apart.
         List<(int Pairing, ArenaGame Game)> games = [];
         int pairing = 0;
-        for (int bot = 0; bot < runBots.Length; bot++)
+        for (int first = 0; first < runBots.Length; first++)
         {
-            for (int opponent = bot + 1; opponent < runBots.Length; opponent++)
+            for (int second = first + 1; second < runBots.Length; second++)
             {
                 pairing++;
                 foreach (ArenaMap map in runMaps)
@@ -52,8 +52,8 @@ public static class ArenaStudy
                         GameSettings settings = CreateMap(map, mapSeed);
                         foreach (int seat in _seats)
                         {
-                            ArenaGameKey key = new(runBots[bot].Name, runBots[opponent].Name, map.Name, mapSeed, seat);
-                            games.Add((pairing, new ArenaGame(key, runBots[bot], runBots[opponent], settings)));
+                            ArenaGameKey key = new([runBots[first].Name, runBots[second].Name], map.Name, mapSeed, seat);
+                            games.Add((pairing, new ArenaGame(key, [runBots[first], runBots[second]], settings)));
                         }
                     }
                 }
@@ -74,15 +74,15 @@ public static class ArenaStudy
         ImmutableArray<ArenaRow> rows =
         [
             .. games.Zip(results)
-                .GroupBy(x => (x.First.Pairing, x.Second.Key.Bot, x.Second.Key.Opponent, x.Second.Key.Map, x.Second.Key.Seat))
+                .GroupBy(x => (x.First.Pairing, x.Second.Key.Bots, x.Second.Key.Map, x.Second.Key.Seat))
                 .Select(row => new ArenaRow(
-                    row.Key.Bot,
-                    row.Key.Opponent,
+                    row.Key.Bots[0],
+                    row.Key.Bots[1],
                     row.Key.Map,
                     row.Key.Seat,
-                    Wins: row.Count(x => x.Second.Outcome == ArenaOutcome.Win),
-                    Losses: row.Count(x => x.Second.Outcome == ArenaOutcome.Loss),
-                    Draws: row.Count(x => x.Second.Outcome == ArenaOutcome.Draw),
+                    Wins: row.Count(x => x.Second.Winner == 0),
+                    Losses: row.Count(x => x.Second.Winner == 1),
+                    Draws: row.Count(x => x.Second.Winner is null),
                     AverageTurns: row.Average(x => (double)x.Second.Turns)))
         ];
         return new ArenaResult(options, EngineVersion(), rows, [.. results]);
@@ -92,7 +92,7 @@ public static class ArenaStudy
     /// Plays one game of a run again, exactly as <see cref="Run"/> plays it, and keeps every turn
     /// of it. Nothing of a run is stored: the key of a game is all it takes.
     /// </summary>
-    /// <exception cref="ArgumentException">The key names an unknown bot or map, a map that is not for two players, or a seat other than 1 and 2.</exception>
+    /// <exception cref="ArgumentException">The key names an unknown bot or map, a map that is not for two players, more or fewer than two bots, or a seat other than 1 and 2.</exception>
     /// <exception cref="ArenaGameException">The game failed, for example because a bot issued invalid commands.</exception>
     public static PlayedGame Replay(ArenaGameKey key, MatchLimits limits, IReadOnlyList<BotEntry> bots, IReadOnlyList<ArenaMap> maps)
     {
@@ -100,10 +100,13 @@ public static class ArenaStudy
         {
             throw new ArgumentException($"The seat of a game is 1 or 2, not {key.Seat}.", nameof(key));
         }
-        BotEntry bot = Find(bots, x => x.Name, key.Bot, "bot");
-        BotEntry opponent = Find(bots, x => x.Name, key.Opponent, "bot");
+        if (key.Bots.Count != _seats.Length)
+        {
+            throw new ArgumentException($"A game of the arena has {_seats.Length} bots, not {key.Bots.Count}.", nameof(key));
+        }
+        PerBot<BotEntry> gameBots = [.. key.Bots.Select(name => Find(bots, x => x.Name, name, "bot"))];
         ArenaMap map = Find(maps, x => x.Name, key.Map, "map");
-        return Play(new ArenaGame(key, bot, opponent, CreateMap(map, key.MapSeed)), limits);
+        return Play(new ArenaGame(key, gameBots, CreateMap(map, key.MapSeed)), limits);
     }
 
     /// <summary>
@@ -115,66 +118,54 @@ public static class ArenaStudy
         ArenaGameKey key = game.Key;
         try
         {
-            // The only place that seats the bots: the bot of the key takes the player of its seat,
-            // the opponent the other one.
+            // The only place that seats the bots: the first bot of the key takes the player of its
+            // seat, the bots after it the players after that one.
             ImmutableArray<string> seatOrder = game.Settings.SeatOrder();
-            string botPlayerId = seatOrder[key.Seat - 1];
-            string opponentPlayerId = seatOrder[_seats.Length - key.Seat];
-            Dictionary<string, IBot> bots = new()
+            PerBot<string> playerIds = [.. key.Bots.Places.Select(bot => seatOrder[(key.Seat - 1 + bot) % seatOrder.Length])];
+            Dictionary<string, IBot> bots = new();
+            foreach (int bot in key.Bots.Places)
             {
-                { botPlayerId, game.Bot.Create(BotSeed(key.MapSeed, opponent: false)) },
-                { opponentPlayerId, game.Opponent.Create(BotSeed(key.MapSeed, opponent: true)) }
-            };
+                bots.Add(playerIds[bot], game.Bots[bot].Create(BotSeed(key.MapSeed, bot)));
+            }
 
             // The match shows the start first, so the first ledgers are the ones of the start.
             ImmutableDictionary<string, MatterLedger>? ledgers = null;
             ImmutableArray<PlayedTurn>.Builder turns = ImmutableArray.CreateBuilder<PlayedTurn>();
             MatchResult match = Match.Play(game.Settings, bots, limits, turn =>
             {
-                ledgers = ledgers is null ? Ledger.Start(turn.State) : Ledger.After(ledgers, turn);
+                ImmutableDictionary<string, MatterLedger> after = ledgers is null ? Ledger.Start(turn.State) : Ledger.After(ledgers, turn);
+                ledgers = after;
                 turns.Add(new PlayedTurn(
                     turn.State.Turn,
                     turn.State.RemainingMatter.Values.Sum(),
-                    ledgers[botPlayerId],
-                    ledgers[opponentPlayerId]));
+                    [.. playerIds.Select(x => after[x])]));
             });
             if (turns.Count == 0)
             {
                 throw new InvalidOperationException("The match showed no state to its observer.");
             }
 
-            ArenaOutcome outcome = match.WinnerId is null
-                ? ArenaOutcome.Draw
-                : match.WinnerId == botPlayerId ? ArenaOutcome.Win : ArenaOutcome.Loss;
+            int? winner = match.WinnerId is null ? null : playerIds.Places.Single(x => playerIds[x] == match.WinnerId);
             PlayedTurn last = turns[^1];
-            ArenaGameResult result = new(
-                key,
-                outcome,
-                match.End,
-                match.Turns,
-                last.RemainingMatter,
-                last.Bot,
-                last.Opponent);
+            ArenaGameResult result = new(key, winner, match.End, match.Turns, last.RemainingMatter, last.Ledgers);
             return new PlayedGame(result, match, turns.ToImmutable());
         }
         catch (Exception exception)
         {
-            throw new ArenaGameException(
-                $"{key.Bot} on seat {key.Seat} against {key.Opponent} on map {key.Map} with seed {key.MapSeed}: {exception.Message}",
-                exception);
+            throw new ArenaGameException($"{key}: {exception.Message}", exception);
         }
     }
 
     /// <summary>
-    /// The seed of a bot in the games of a map seed, the same on both seats. The seeds of the two
-    /// bots and of neighbouring map seeds share no pattern: <see cref="Random"/> gives seeds that
-    /// lie a fixed distance apart first rolls that depend on each other, so that one bot would
-    /// always open with the answer to the other.
+    /// The seed of the bot at a place of its pairing in the games of a map seed, the same on both
+    /// seats. The seeds of the bots of a game and of neighbouring map seeds share no pattern:
+    /// <see cref="Random"/> gives seeds that lie a fixed distance apart first rolls that depend on
+    /// each other, so that one bot would always open with the answer to the other.
     /// </summary>
-    public static int BotSeed(int mapSeed, bool opponent)
+    public static int BotSeed(int mapSeed, int bot)
     {
         // The finalizer of MurmurHash3: every bit of the input changes every bit of the result.
-        uint hash = unchecked((uint)(mapSeed * 2 + (opponent ? 1 : 0)));
+        uint hash = unchecked((uint)(mapSeed * _seats.Length + bot));
         hash ^= hash >> 16;
         hash *= 0x85EBCA6B;
         hash ^= hash >> 13;
@@ -207,7 +198,7 @@ public static class ArenaStudy
     /// A game that can be played: its key with what the names of the key stand for. Which player
     /// each bot is follows from the seat of the key and the settings, <see cref="Play"/> works it out.
     /// </summary>
-    private sealed record ArenaGame(ArenaGameKey Key, BotEntry Bot, BotEntry Opponent, GameSettings Settings);
+    private sealed record ArenaGame(ArenaGameKey Key, PerBot<BotEntry> Bots, GameSettings Settings);
 
     /// <summary>
     /// The settings of a map for a seed. The arena plays games of two players only.
