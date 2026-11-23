@@ -148,10 +148,14 @@ Behoben:
 - Die Reihenfolge der Spieler einer Karte hat jeder Aufrufer selbst festgelegt. Jetzt geben die Settings sie (`GameSettings.SeatOrder`).
 - `replay` nannte den Sieger bei der Spieler-Id statt beim Bot.
 - „Bot" und „Gegner" waren im Lab kein Begriff, sondern überall ein Paar, und jedes Spiel wurde aus der Sicht des ersten Bots gezählt. Bei drei Bots war derselbe Bot in einer Paarung der „Bot" und in der anderen der „Gegner". Jetzt wird ein Spiel aus keiner Sicht gezählt: Die Bots einer Paarung sind eine Liste (`PerBot<T>`), ein Bot ist seine Stelle darin, der Sieger eines Spiels ist eine Stelle oder niemand. Was es je Bot gibt, ist eine Schleife. Die Siegquote steht für beide Bots. Ein Lauf vor und nach dem Umbau gab dieselben Spiele, Bilanzen und ausgewählten Spiele (Profil `quick`).
+- `arena` und `replay` haben das Profil jeweils selbst gesucht. Hätte `replay` es anders gelesen, hätte es mit anderen Limits gespielt und ein anderes Spiel gezeigt als das gemessene. Jetzt lesen beide es an einer Stelle (`ArenaCommand.ReadProfile`).
+
+Bewusst gelassen:
+
+- `arena` und `replay` lesen den Ausgabeordner je mit zwei gleichen Zeilen, haben je ein `ReadNumber`, das Verschiedenes tut (Wert des Profils mit Ersatzwert, Wert nur von der Kommandozeile), und die Namen der Studien stehen in `Program.cs` dreimal untereinander. Eine gemeinsame Stelle wäre jeweils größer als das, was sie spart. Mit einer dritten oder vierten Studie neu anzusehen.
 
 Noch offen, als Probleme:
 
-- `arena` und `replay` suchen das Profil, lesen den Ausgabeordner und lesen Zahlen jeweils mit eigenem, gleichem Code. Die Namen der Studien stehen im Programm dreimal.
 - Die Bilanz liest den Preis abgeschlossener Forschung nicht bei `Costs`. Den Preis abgebrochener Forschung bestimmt sie aus dem Zustand nach dem Zug; das stimmt nur, weil je Upgrade höchstens eine Forschung läuft.
 - Eine Gruppe des Vergleichs rechnet Mittelwerte und typisches Spiel bei jedem Zugriff neu. Bei den heutigen Größen ohne Folgen.
 - Die Liste der Posten einer Bilanz mit Namen und Abschnitten liegt im Lab. Eine UI, die eine Bilanz zeigt, braucht sie auch. Ein neuer Posten braucht vier Stellen, nur eine davon sichert ein Test.

@@ -19,16 +19,12 @@ public static class ReplayCommand
     /// <returns>The exit code: 0 after a replay, 2 when the game is not named.</returns>
     public static int Run(IConfiguration configuration, TextWriter output)
     {
-        string profile = configuration["profile"] ?? ArenaCommand.DefaultProfile;
-        IConfigurationSection section = configuration.GetSection($"Arena:Profiles:{profile}");
-        if (!section.Exists())
+        if (ArenaCommand.ReadProfile(configuration, output) is not { } profile)
         {
-            IEnumerable<string> known = configuration.GetSection("Arena:Profiles").GetChildren().Select(x => x.Key);
-            output.WriteLine($"There is no arena profile '{profile}'. Known: {string.Join(", ", known)}.");
             return 2;
         }
 
-        ArenaOptions options = ArenaCommand.ReadOptions(configuration, section);
+        ArenaOptions options = profile.Options;
         if (options.Bots.Length < 2 || options.Maps.IsEmpty)
         {
             output.WriteLine("A replay needs two bots and a map: --Bots <first>,<second> --Maps <map> --MapSeed <seed> --Seat <1|2, the seat of the first bot>");

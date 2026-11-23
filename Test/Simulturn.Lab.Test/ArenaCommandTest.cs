@@ -16,13 +16,37 @@ public sealed class ArenaCommandTest
         { "Arena:Profiles:quick:StallTurns", "50" }
     };
 
-    private static ArenaOptions Read(params (string Key, string Value)[] commandLine)
+    private static IConfiguration Configuration(params (string Key, string Value)[] commandLine)
     {
-        IConfiguration configuration = new ConfigurationBuilder()
+        return new ConfigurationBuilder()
             .AddInMemoryCollection(_profile)
             .AddInMemoryCollection(commandLine.ToDictionary(x => x.Key, x => (string?)x.Value))
             .Build();
-        return ArenaCommand.ReadOptions(configuration, configuration.GetSection("Arena:Profiles:quick"));
+    }
+
+    private static ArenaOptions Read(params (string Key, string Value)[] commandLine)
+    {
+        return ArenaCommand.ReadProfile(Configuration(commandLine), TextWriter.Null).ShouldNotBeNull().Options;
+    }
+
+    [Test]
+    public void NoProfileNamed_GivesTheDefaultProfile()
+    {
+        ArenaProfile? profile = ArenaCommand.ReadProfile(Configuration(), TextWriter.Null);
+
+        profile.ShouldNotBeNull().Name.ShouldBe(ArenaCommand.DefaultProfile);
+    }
+
+    [Test]
+    public void UnknownProfile_GivesNothingAndNamesTheKnownOnes()
+    {
+        StringWriter output = new();
+
+        ArenaProfile? profile = ArenaCommand.ReadProfile(Configuration(("profile", "missing")), output);
+
+        profile.ShouldBeNull();
+        output.ToString().ShouldContain("'missing'");
+        output.ToString().ShouldContain("quick");
     }
 
     [Test]
