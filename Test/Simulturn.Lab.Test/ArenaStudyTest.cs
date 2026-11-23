@@ -56,25 +56,25 @@ public sealed class ArenaStudyTest
     }
 
     [Test]
-    public void StrongerBot_WinsEveryGameFromBothSeats()
+    public void FirstBot_WinsEveryGameFromBothSeatsWhenItIsTheStronger()
     {
         ArenaResult result = ArenaStudy.Run(Options("attacker", "deserter"), _bots, _maps);
 
         result.Rows.ShouldBe([
-            new ArenaRow("attacker", "deserter", "Line", Seat: 1, Wins: 4, Losses: 0, Draws: 0, AverageTurns: 1),
-            new ArenaRow("attacker", "deserter", "Line", Seat: 2, Wins: 4, Losses: 0, Draws: 0, AverageTurns: 1)
+            new ArenaRow(["attacker", "deserter"], "Line", Seat: 1, Wins: [4, 0], Draws: 0, AverageTurns: 1),
+            new ArenaRow(["attacker", "deserter"], "Line", Seat: 2, Wins: [4, 0], Draws: 0, AverageTurns: 1)
         ]);
-        result.Rows[0].WinRate.ShouldBe(1);
+        result.Rows[0].WinRates.Select(x => x.Rate).ShouldBe([1, 0]);
     }
 
     [Test]
-    public void WeakerBot_LosesEveryGameFromBothSeats()
+    public void SecondBot_WinsEveryGameFromBothSeatsWhenItIsTheStronger()
     {
         ArenaResult result = ArenaStudy.Run(Options("deserter", "attacker"), _bots, _maps);
 
         result.Rows.ShouldBe([
-            new ArenaRow("deserter", "attacker", "Line", Seat: 1, Wins: 0, Losses: 4, Draws: 0, AverageTurns: 1),
-            new ArenaRow("deserter", "attacker", "Line", Seat: 2, Wins: 0, Losses: 4, Draws: 0, AverageTurns: 1)
+            new ArenaRow(["deserter", "attacker"], "Line", Seat: 1, Wins: [0, 4], Draws: 0, AverageTurns: 1),
+            new ArenaRow(["deserter", "attacker"], "Line", Seat: 2, Wins: [0, 4], Draws: 0, AverageTurns: 1)
         ]);
     }
 
@@ -84,8 +84,8 @@ public sealed class ArenaStudyTest
         ArenaResult result = ArenaStudy.Run(Options("idle", "idle"), _bots, _maps);
 
         result.Rows.ShouldBe([
-            new ArenaRow("idle", "idle", "Line", Seat: 1, Wins: 0, Losses: 0, Draws: 4, AverageTurns: 5),
-            new ArenaRow("idle", "idle", "Line", Seat: 2, Wins: 0, Losses: 0, Draws: 4, AverageTurns: 5)
+            new ArenaRow(["idle", "idle"], "Line", Seat: 1, Wins: [0, 0], Draws: 4, AverageTurns: 5),
+            new ArenaRow(["idle", "idle"], "Line", Seat: 2, Wins: [0, 0], Draws: 4, AverageTurns: 5)
         ]);
     }
 
@@ -94,7 +94,7 @@ public sealed class ArenaStudyTest
     {
         ArenaResult result = ArenaStudy.Run(Options("attacker", "deserter", "idle"), _bots, _maps);
 
-        result.Rows.Select(x => (x.Bot, x.Opponent, x.Seat)).ShouldBe([
+        result.Rows.Select(x => (x.Bots[0], x.Bots[1], x.Seat)).ShouldBe([
             ("attacker", "deserter", 1), ("attacker", "deserter", 2),
             ("attacker", "idle", 1), ("attacker", "idle", 2),
             ("deserter", "idle", 1), ("deserter", "idle", 2)

@@ -76,12 +76,10 @@ public static class ArenaStudy
             .. games.Zip(results)
                 .GroupBy(x => (x.First.Pairing, x.Second.Key.Bots, x.Second.Key.Map, x.Second.Key.Seat))
                 .Select(row => new ArenaRow(
-                    row.Key.Bots[0],
-                    row.Key.Bots[1],
+                    row.Key.Bots,
                     row.Key.Map,
                     row.Key.Seat,
-                    Wins: row.Count(x => x.Second.Winner == 0),
-                    Losses: row.Count(x => x.Second.Winner == 1),
+                    Wins: [.. row.Key.Bots.Places.Select(bot => row.Count(x => x.Second.Winner == bot))],
                     Draws: row.Count(x => x.Second.Winner is null),
                     AverageTurns: row.Average(x => (double)x.Second.Turns)))
         ];

@@ -3,7 +3,7 @@ id: bot-game-diagnosis
 title: Man sieht nicht, warum ein Bot verliert
 status: in_progress
 created: 2026-11-16
-updated: 2026-11-22
+updated: 2026-11-23
 depends_on:
 - bot-strength-measurement
 ---
@@ -147,16 +147,17 @@ Behoben:
 - Welcher Spieler der Karte welcher Bot ist, wurde für einen Lauf und für ein Replay getrennt festgelegt. Wären die beiden Stellen auseinandergelaufen, hätte ein Replay ein anderes Spiel gezeigt als das gemessene. Jetzt folgt es an einer Stelle aus Sitz und Karte.
 - Die Reihenfolge der Spieler einer Karte hat jeder Aufrufer selbst festgelegt. Jetzt geben die Settings sie (`GameSettings.SeatOrder`).
 - `replay` nannte den Sieger bei der Spieler-Id statt beim Bot.
+- „Bot" und „Gegner" waren im Lab kein Begriff, sondern überall ein Paar, und jedes Spiel wurde aus der Sicht des ersten Bots gezählt. Bei drei Bots war derselbe Bot in einer Paarung der „Bot" und in der anderen der „Gegner". Jetzt wird ein Spiel aus keiner Sicht gezählt: Die Bots einer Paarung sind eine Liste (`PerBot<T>`), ein Bot ist seine Stelle darin, der Sieger eines Spiels ist eine Stelle oder niemand. Was es je Bot gibt, ist eine Schleife. Die Siegquote steht für beide Bots. Ein Lauf vor und nach dem Umbau gab dieselben Spiele, Bilanzen und ausgewählten Spiele (Profil `quick`).
 
 Noch offen, als Probleme:
 
-- „Bot" und „Gegner" sind im Lab kein Begriff, sondern überall ein Paar: je zwei Methoden für Mittelwert und Ausreißer, eine Hilfsfunktion mit vier Funktionen als Parameter, dreimal eine von Hand gebaute Liste beider Seiten. Der Ausgang für den zweiten Bot wird beim Schreiben der Datei umgedreht. Jede neue Auswertung je Seite, etwa die Streuung, verdoppelt das weiter. Dazu kommt der Name: Beide sind Bots, „Bot" meint den, aus dessen Sicht das Spiel gezählt wird.
 - `arena` und `replay` suchen das Profil, lesen den Ausgabeordner und lesen Zahlen jeweils mit eigenem, gleichem Code. Die Namen der Studien stehen im Programm dreimal.
 - Die Bilanz liest den Preis abgeschlossener Forschung nicht bei `Costs`. Den Preis abgebrochener Forschung bestimmt sie aus dem Zustand nach dem Zug; das stimmt nur, weil je Upgrade höchstens eine Forschung läuft.
 - Eine Gruppe des Vergleichs rechnet Mittelwerte und typisches Spiel bei jedem Zugriff neu. Bei den heutigen Größen ohne Folgen.
 - Die Liste der Posten einer Bilanz mit Namen und Abschnitten liegt im Lab. Eine UI, die eine Bilanz zeigt, braucht sie auch. Ein neuer Posten braucht vier Stellen, nur eine davon sichert ein Test.
 - Die Preise im Bericht eines Zugs stehen je Spieler, sind heute aber für alle gleich und eine Kopie der Settings. Das passt nicht ganz zu „nichts für ein Upgrade bauen, das es vielleicht nie gibt".
 - Die Laufzeit nach dem Umbau ist nur im Akkubetrieb gemessen (Profil `full`, 54 bis 79 s vorher wie nachher, zu verrauscht für eine Aussage). Am Netz nachzumessen und mit den rund 5,3 s von 2026-11-20 zu vergleichen.
+- Zwei Paarungen mit denselben Namen (`--Bots random,idle,idle`) fallen in der Tabelle der Arena und im Vergleich zusammen, obwohl es verschiedene Bots mit verschiedenen Seeds sind. Spielt ein Bot gegen sich selbst, sagt der Name des Siegers in den Dateien nicht, welcher der beiden gewonnen hat. Beides war schon vor dem Umbau so.
 
 Über das Item hinaus, aus dem Gespräch:
 

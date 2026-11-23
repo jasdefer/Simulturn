@@ -70,32 +70,35 @@ public sealed record PlayedGame(ArenaGameResult Game, MatchResult Result, Immuta
 public sealed record PlayedTurn(ushort Turn, int RemainingMatter, PerBot<MatterLedger> Ledgers);
 
 /// <summary>
-/// The games of one bot against one opponent on one map type from one seat, seen from the bot.
+/// The games of one pairing on one map type with the first bot on one seat.
 /// </summary>
-/// <param name="Bot">The bot the row counts for.</param>
-/// <param name="Opponent">The bot it played against.</param>
+/// <param name="Bots">The bots of the pairing in its order.</param>
 /// <param name="Map">The map type.</param>
-/// <param name="Seat">The seat of the bot, 1 is the first player of the settings.</param>
-/// <param name="Wins">The games the bot won.</param>
-/// <param name="Losses">The games the opponent won.</param>
+/// <param name="Seat">The seat of the first bot, 1 is the first player of the settings.</param>
+/// <param name="Wins">The games each bot won.</param>
 /// <param name="Draws">The games without a winner: mutual defeat, stall or turn limit.</param>
 /// <param name="AverageTurns">The average number of turns of a game.</param>
-public sealed record ArenaRow(string Bot, string Opponent, string Map, int Seat, int Wins, int Losses, int Draws, double AverageTurns)
+public sealed record ArenaRow(PerBot<string> Bots, string Map, int Seat, PerBot<int> Wins, int Draws, double AverageTurns)
 {
-    public int Games => Wins + Losses + Draws;
+    public int Games => Wins.Sum() + Draws;
 
     /// <summary>
-    /// The share of won games among all games. A draw is not half a win.
+    /// The win rate of each bot. They do not add up to 1 when a game had no winner.
     /// </summary>
-    public double WinRate => Games == 0 ? 0 : (double)Wins / Games;
+    public PerBot<WinRate> WinRates => [.. Wins.Select(x => WinRate.Of(x, Games))];
+}
 
-    /// <summary>
-    /// The lower end of the range the true win rate lies in with 95 % certainty.
-    /// </summary>
-    public double WinRateLow => WilsonInterval.Of(Wins, Games).Low;
-
-    /// <summary>
-    /// The upper end of the range the true win rate lies in with 95 % certainty.
-    /// </summary>
-    public double WinRateHigh => WilsonInterval.Of(Wins, Games).High;
+/// <summary>
+/// The share of won games among all games. A draw is not half a win.
+/// </summary>
+/// <param name="Rate">The share of won games, 0 without a game.</param>
+/// <param name="Low">The lower end of the range the true win rate lies in with 95 % certainty.</param>
+/// <param name="High">The upper end of the range the true win rate lies in with 95 % certainty.</param>
+public sealed record WinRate(double Rate, double Low, double High)
+{
+    public static WinRate Of(int wins, int games)
+    {
+        (double low, double high) = WilsonInterval.Of(wins, games);
+        return new WinRate(games == 0 ? 0 : (double)wins / games, low, high);
+    }
 }
