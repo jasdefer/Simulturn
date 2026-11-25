@@ -84,12 +84,15 @@ public sealed class TurnResolution
 
     /// <summary>
     /// Pays all orders of the turn at once: the price the command validation checked, by the same call.
+    /// The prices of the turn are reported here, the orders where they are queued.
     /// </summary>
     private void PayOrders(PlayerStateBuilder player, IReadOnlyDictionary<Hexagon, Command> commands)
     {
         OrderCost cost = Costs.Of(_settings, player.UpgradeLevels, commands);
         player.Matter -= cost.Matter;
         player.UsedSpace += cost.Space;
+        player.Report.TrainingPrices = Costs.TrainingPrices(_settings);
+        player.Report.ConstructionPrices = Costs.ConstructionPrices(_settings);
     }
 
     /// <summary>
@@ -99,6 +102,10 @@ public sealed class TurnResolution
     {
         foreach ((Hexagon hexagon, Command command) in commands)
         {
+            if (!command.Training.IsEmpty)
+            {
+                player.Report.TrainingOrders.Add(hexagon, command.Training);
+            }
             foreach (Unit unit in EnumValues.Units)
             {
                 if (command.Training[unit] <= 0)
@@ -126,6 +133,10 @@ public sealed class TurnResolution
     {
         foreach ((Hexagon hexagon, Command command) in commands)
         {
+            if (!command.Construction.IsEmpty)
+            {
+                player.Report.ConstructionOrders.Add(hexagon, command.Construction);
+            }
             foreach (Building building in EnumValues.Buildings)
             {
                 if (command.Construction[building] <= 0)
@@ -162,6 +173,7 @@ public sealed class TurnResolution
             UpgradeLevel level = _settings.NextUpgradeLevel(upgrade, completedLevels)
                 ?? throw new InvalidOperationException($"{upgrade} has no level after {completedLevels}; the research command was not validated.");
             player.Researches.Add(hexagon, new Research(upgrade, Schedule.ResearchCompletion(_state.Turn, level)));
+            player.Report.ResearchOrders.Add(hexagon, new ResearchOrderReport(upgrade, (byte)(completedLevels + 1), level.Cost));
         }
         foreach ((Hexagon hexagon, Research research) in player.Researches.Where(x => x.Value.CompletionTurn == _state.Turn).ToList())
         {

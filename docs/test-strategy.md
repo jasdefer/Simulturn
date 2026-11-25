@@ -56,6 +56,12 @@ Transition invariants (`StateInvariants.CheckTransition`, need the previous stat
 - A neutral army only changes by its losses in a reported fight.
 - The reported defeats are the players that are defeated after the turn and were not before.
 - Every reported movement stays within the range: `Movement.ReachableArmy` with the distance of the movement gives the whole moved army.
+- The reported orders are the orders of the commands, and the matter reported for them adds up to the cost of the commands.
+
+Ledger invariants (checked in the test itself, need the ledgers of the turn before):
+
+- The `MatterLedger` of every player is balanced after every turn: `UnexplainedIncome` and `UnexplainedSpending` are zero. So no matter appears or vanishes without an entry.
+- What the players lost to destruction is what the others razed. What they killed of each other is at most what they lost in fights: the rest fell to neutral armies.
 
 Order invariants (`OrderInvariants.Check`, need the view of a player and the commands entered so far):
 
@@ -72,7 +78,7 @@ Scale: the number of seeds and turns is a constant in the test. The whole suite 
 
 ### Layer 4: Bots
 
-Goal: `Match` and the arena keep their contract. The tests use scripted bots (`ScriptedBot`) on small hand-built maps, so every outcome is exact: who wins, after how many turns, which rows a run has. One test plays the bots of the catalog on the maps of the arena, with small limits.
+Goal: `Match` and the arena keep their contract. The tests use scripted bots (`ScriptedBot`) on small hand-built maps, so every outcome is exact: who wins, after how many turns, which rows and games a run has. What only reads the games of a run (the comparison) is tested on games built by hand, without playing. One test plays the bots of the catalog on the maps of the arena, with small limits.
 
 A test of a bot shows a behaviour of that bot on a scripted situation (`RandomBotTest`: where it trains a dot, what it keeps back, that its army moves as a whole). A bot that rolls dice also gets a test that the same seed plays the same match, and one that a mirror match on every map type issues only valid commands. How strong a bot is against another one is not a test: that is a run of the lab (`Source/Simulturn.Lab`), read by a human.
 

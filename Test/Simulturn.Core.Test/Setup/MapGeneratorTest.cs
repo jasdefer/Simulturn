@@ -280,4 +280,27 @@ public sealed class MapGeneratorTest
     {
         Maps.PlayerIds(3).ShouldBe(["Player01", "Player02", "Player03"]);
     }
+
+    [Test]
+    public void SeatOrder_OfAGeneratedMap_IsTheOrderOfItsPlayerIds()
+    {
+        foreach (int playerCount in _playerCounts)
+        {
+            MapGeneratorOptions options = MapGeneratorOptions.Open with { PlayerIds = Maps.PlayerIds(playerCount) };
+
+            DefaultSettings.Create(options).SeatOrder().ShouldBe(options.PlayerIds);
+        }
+    }
+
+    [Test]
+    public void SeatOrder_SortsThePlayersByIdAndNamesEachOnce()
+    {
+        // South starts on two hexagons and is still one seat. A hexagon without a start is no seat.
+        var map = Maps.Line(-2, 2)
+            .SetItem(new Hexagon(-2, 0), Maps.Start("South"))
+            .SetItem(new Hexagon(-1, 0), Maps.Start("South"))
+            .SetItem(new Hexagon(2, 0), Maps.Start("North"));
+
+        DefaultSettings.Create(map).SeatOrder().ShouldBe(["North", "South"]);
+    }
 }

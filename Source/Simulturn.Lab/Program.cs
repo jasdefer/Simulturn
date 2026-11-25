@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Simulturn.Lab.Arena;
+using Simulturn.Lab.Replay;
 
 // The lab runs what is not a test: studies that take a while and whose result a human reads.
 // Usage: Simulturn.Lab <study> [--profile <name>] [--<Key> <value> ...]
@@ -8,7 +9,7 @@ using Simulturn.Lab.Arena;
 if (args.Length == 0)
 {
     Console.Error.WriteLine("Usage: Simulturn.Lab <study> [--profile <name>] [--<Key> <value> ...]");
-    Console.Error.WriteLine("Studies: arena");
+    Console.Error.WriteLine("Studies: arena, replay");
     return 2;
 }
 
@@ -24,8 +25,10 @@ try
     {
         case "arena":
             return ArenaCommand.Run(configuration, Console.Out);
+        case "replay":
+            return ReplayCommand.Run(configuration, Console.Out);
         default:
-            Console.Error.WriteLine($"There is no study '{args[0]}'. Studies: arena");
+            Console.Error.WriteLine($"There is no study '{args[0]}'. Studies: arena, replay");
             return 2;
     }
 }

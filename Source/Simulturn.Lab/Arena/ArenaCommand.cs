@@ -3,12 +3,14 @@ using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Simulturn.Bots;
 using Simulturn.Bots.Catalog;
+using Simulturn.Lab.Comparison;
 
 namespace Simulturn.Lab.Arena;
 
 /// <summary>
 /// The <c>arena</c> study of the lab: reads a profile from the configuration, plays the run,
-/// prints the table and writes the result to a file.
+/// prints the table and the comparison of its games and writes the result, the games, the
+/// comparison and the games to look at to files.
 /// </summary>
 public static class ArenaCommand
 {
@@ -18,33 +20,52 @@ public static class ArenaCommand
 
     public static int Run(IConfiguration configuration, TextWriter output)
     {
-        string profile = configuration["profile"] ?? DefaultProfile;
-        IConfigurationSection section = configuration.GetSection($"Arena:Profiles:{profile}");
-        if (!section.Exists())
+        if (ReadProfile(configuration, output) is not { } read)
         {
-            IEnumerable<string> known = configuration.GetSection("Arena:Profiles").GetChildren().Select(x => x.Key);
-            output.WriteLine($"There is no arena profile '{profile}'. Known: {string.Join(", ", known)}.");
             return 2;
         }
 
-        ArenaOptions options = ReadOptions(configuration, section);
-        ArenaResult result = ArenaStudy.Run(options, BotCatalog.All, ArenaMaps.All);
+        string profile = read.Name;
+        ArenaResult result = ArenaStudy.Run(read.Options, BotCatalog.All, ArenaMaps.All);
+        ImmutableArray<ComparisonGroup> comparison = ComparisonStudy.Of(result.Games);
         output.Write(ArenaTable.Render(result));
+        output.WriteLine();
+        output.Write(ComparisonTable.Render(comparison));
 
         string folder = configuration["OutputFolder"] ?? "measurements";
         Directory.CreateDirectory(folder);
-        string file = Path.Combine(folder, $"arena-{profile}-{DateTime.Now:yyyyMMdd-HHmmss}.json");
-        File.WriteAllText(file, JsonSerializer.Serialize(result, _json));
+        string name = Path.Combine(folder, $"arena-{profile}-{DateTime.Now:yyyyMMdd-HHmmss}");
+        File.WriteAllText($"{name}.json", JsonSerializer.Serialize(result, _json));
+        File.WriteAllText($"{name}-games.csv", ArenaTable.RenderGamesCsv(result));
+        File.WriteAllText($"{name}-comparison.csv", ComparisonTable.RenderCsv(comparison));
+        File.WriteAllText($"{name}-picks.csv", ComparisonTable.RenderPicksCsv(comparison));
         output.WriteLine();
-        output.WriteLine($"Written to {Path.GetFullPath(file)}");
+        output.WriteLine($"Written to {Path.GetFullPath(name)}.json, the games to -games.csv, the comparison to -comparison.csv, the games to look at to -picks.csv");
+        output.WriteLine($"Look at a game with: replay --profile {profile} --Bots <first>,<second> --Maps <map> --MapSeed <seed> --Seat <seat>");
         return 0;
     }
 
     /// <summary>
-    /// The options of a profile. A value given on the command line (<c>--MapSeeds 50</c>,
-    /// <c>--Bots idle,idle</c>) replaces the one of the profile.
+    /// The arena profile <c>--profile</c> names (<see cref="DefaultProfile"/> when missing) with
+    /// its options. A value given on the command line (<c>--MapSeeds 50</c>, <c>--Bots idle,idle</c>)
+    /// replaces the one of the profile. Every command that plays games of the arena reads them
+    /// here, so that a replay plays with what the run played with.
     /// </summary>
-    public static ArenaOptions ReadOptions(IConfiguration configuration, IConfigurationSection profile)
+    /// <returns>Nothing when there is no such profile; the output then names the known ones.</returns>
+    public static ArenaProfile? ReadProfile(IConfiguration configuration, TextWriter output)
+    {
+        string name = configuration["profile"] ?? DefaultProfile;
+        IConfigurationSection section = configuration.GetSection($"Arena:Profiles:{name}");
+        if (!section.Exists())
+        {
+            IEnumerable<string> known = configuration.GetSection("Arena:Profiles").GetChildren().Select(x => x.Key);
+            output.WriteLine($"There is no arena profile '{name}'. Known: {string.Join(", ", known)}.");
+            return null;
+        }
+        return new ArenaProfile(name, ReadOptions(configuration, section));
+    }
+
+    private static ArenaOptions ReadOptions(IConfiguration configuration, IConfigurationSection profile)
     {
         MatchLimits defaults = new();
         return new ArenaOptions()
@@ -85,3 +106,8 @@ public static class ArenaCommand
         return value is null ? fallback : int.Parse(value, CultureInfo.InvariantCulture);
     }
 }
+
+/// <summary>
+/// An arena profile of the configuration: its name and what it plays.
+/// </summary>
+public sealed record ArenaProfile(string Name, ArenaOptions Options);

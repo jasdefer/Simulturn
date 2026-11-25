@@ -12,11 +12,29 @@ namespace Simulturn.Core.Engine;
 public static class Costs
 {
     /// <summary>
+    /// The matter one unit of each type costs to train. The only place that reads the prices of
+    /// the units from the settings; every other price of a training is computed with it.
+    /// </summary>
+    public static Army TrainingPrices(GameSettings settings)
+    {
+        return settings.ArmyCost;
+    }
+
+    /// <summary>
+    /// The matter one building of each type costs to construct. The only place that reads the
+    /// prices of the buildings from the settings; every other price of a construction is computed with it.
+    /// </summary>
+    public static Compound ConstructionPrices(GameSettings settings)
+    {
+        return settings.CompoundCost;
+    }
+
+    /// <summary>
     /// The price of training the units: their matter and the space they take from the moment they are ordered.
     /// </summary>
     public static OrderCost Training(GameSettings settings, Army training)
     {
-        return new OrderCost(training * settings.ArmyCost, training * settings.RequiredSpace);
+        return new OrderCost(training * TrainingPrices(settings), training * settings.RequiredSpace);
     }
 
     /// <summary>
@@ -32,7 +50,7 @@ public static class Costs
     /// </summary>
     public static OrderCost Construction(GameSettings settings, Compound construction)
     {
-        return new OrderCost(construction * settings.CompoundCost, 0);
+        return new OrderCost(construction * ConstructionPrices(settings), 0);
     }
 
     /// <summary>

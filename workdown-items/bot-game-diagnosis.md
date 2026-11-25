@@ -1,9 +1,9 @@
 ---
 id: bot-game-diagnosis
 title: Man sieht nicht, warum ein Bot verliert
-status: todo
+status: in_progress
 created: 2026-11-16
-updated: 2026-11-18
+updated: 2026-11-23
 depends_on:
 - bot-strength-measurement
 ---
@@ -46,12 +46,133 @@ Was sich messen ließe, als Stoff zum Nachdenken. Welche Kennzahlen es werden, z
 
 Wie andere Spiele es zeigen (aus dem Gedächtnis, nicht nachgeschlagen): StarCraft 2 Kurven für Einkommen, Arbeiter, Armeewert und ungenutzte Rohstoffe, dazu eine Zahl, wie gut das Einkommen ausgegeben wird; Age of Empires eine Zeitleiste und Punkte nach Militär, Wirtschaft und Technik; Dota 2 den Vorsprung an Gold und Erfahrung über die Zeit. Gemeinsam ist die Trennung von Kurven über die Zeit und wenigen Zahlen pro Spiel.
 
+## Richtung
+
+Stand 2026-11-18, aus dem Gespräch zum Start der Umsetzung.
+
+Die Kennzahlen dienen einem Schritt in der Schleife der Bot-Entwicklung: Die Arena sagt, dass ein Bot gegen einen anderen verliert. Die Kennzahlen sagen, worin sich Sieger und Verlierer der Paarung unterscheiden. Dann greift man ein typisches Spiel heraus, sieht es an, ändert den Bot und misst neu. Eine Anzeige in der UI ist ein Nebennutzen, kein Ziel dieses Items.
+
+- Eine Matter-Bilanz statt einer Liste von Kennzahlen: Jede Matter hat eine Herkunft und einen Verbleib. Wie viel hat ein Spieler eingenommen, wofür hat er es ausgegeben, und was ist daraus geworden (lebt noch, im Kampf gefallen, zerstört, abgebrochen, noch auf der Hand)? Die Posten ergeben zusammen das Eingenommene. So fehlt nichts, nichts ist doppelt, und eine falsche Berechnung fällt auf.
+- Eine Definition, zwei Auflösungen: je Spiel die Bilanz am Ende, eine Zeile je Spieler, zum Vergleich über viele Spiele. Je Zug dieselben Posten als Verlauf, nur für ein einzelnes Spiel.
+- Die Bilanz zeigt, wo eine Niederlage entsteht, das einzelne Spiel zeigt, warum. Was keinen Wert in Matter hat (Stellung, Aufklärung, verstreute Armeen), gehört nicht in die Bilanz.
+- Eine Zahl außerhalb der Bilanz kommt erst dazu, wenn sich eine konkrete Frage ohne sie nicht beantworten lässt.
+- Alles folgt aus dem Zustand und dem Bericht jedes Zugs. Gerechnet wird aus dem vollen Zustand, die Diagnose darf alles sehen.
+
+Bekannte Schwäche: Die Bilanz am Ende verschluckt das Tempo. Zwei Spieler, die gleich viel ernten, der eine aber viel später, sehen gleich aus. Vorerst hingenommen.
+
+Entschieden:
+
+- Alle Auswertungen laufen nach dem Spiel auf dem vollen Zustand, nichts davon während des Spiels aus der Sicht eines Spielers.
+- Es werden keine Spiele gespeichert. Ein Spiel folgt aus Bots, Karte, Seed und Sitz und wird zum Ansehen noch einmal gespielt.
+- Die Bilanz eines Spiels ist auch für eine UI gedacht, in der man die eigenen Spiele nachträglich ansieht. Sie darf also nicht nur im Lab liegen. Was viele Spiele vergleicht, dient allein der Untersuchung.
+- Es zählt, was ausgegeben wurde, nicht ein späterer Preis.
+- Spiele ohne Sieger sind beim Vergleich eine eigene Gruppe neben Siegern und Verlierern. Erst Mittelwerte, später die Streuung dazu.
+- Herausgegriffen werden typische Spiele einer Gruppe und Ausreißer bei einem Posten.
+
+Funde im Code, Stand 2026-11-18:
+
+- Der `TurnReport` hält nicht fest, was ein Spieler in einem Zug bestellt und bezahlt hat. Die Kosten aller Befehle werden als eine Summe abgezogen, im Bericht stehen nur Matter vorher und nachher. Wofür ausgegeben wurde, lässt sich daraus nicht ablesen.
+- Bei keinem Abbruch kommt Matter zurück. Ein abgebrochenes Training gibt nur den Space frei.
+- Eine Armee merkt sich nicht, was ihre Einheiten gekostet haben. Solange kein Upgrade einen Preis ändert, sind gezahlter und aktueller Preis gleich.
+
+## Stand
+
+Stand 2026-11-18, nach dem ersten Durchstich.
+
+- Der Bericht eines Zugs hält jetzt die bestellten Aufträge mit der gezahlten Matter fest.
+- Es gibt die Bilanz eines Spielers je Zug, aufsummiert seit Spielbeginn. Herkunft: Start-Matter, Startbestand, geerntet. Ausgegeben für: Dots, Kampfeinheiten, Gebäude, Forschung. Noch da: auf der Hand, Dots, Kampfeinheiten, Gebäude, Forschung, in Auftrag. Weg: gefallen, zerstört, abgebrochen. Daneben, was er anderen angetan hat: vernichtet (Einheiten anderer Spieler und neutrale getrennt), abgerissen. Sie geht in allen Zufallsspielen auf.
+- Ein einzelnes Spiel einer Messung lässt sich über seinen Schlüssel (Bots, Karte, Seed, Sitz) noch einmal spielen. Heraus kommen die Bilanz des Spiels als Tabelle und die Bilanz jedes Zugs als CSV.
+
+Noch nicht da: die Bilanz je Spiel in der Arena, der Vergleich von Siegern, Verlierern und Spielen ohne Sieger, das Herausgreifen typischer Spiele und Ausreißer. Die vier Ursachen aus dem ersten Lauf sind noch nicht mit der Bilanz nachgeprüft.
+
+Stand 2026-11-19: Der Bericht hält die Preise eines Zugs jetzt einmal je Spieler fest (`TrainingPrices`, `ConstructionPrices`), auch ohne Bestellung. Die Aufträge sind Armeen und Gebäude je Hexagon, ohne eigenen Preis.
+
+Stand 2026-11-20: Die Arena hält je Spiel fest, wie es endete, und die Bilanz beider Bots am Ende. Daraus entsteht der Vergleich: je Paarung und Karte die Spiele, die der erste Bot gewonnen, verloren und ohne Sieger beendet hat, mit dem Mittelwert jedes Postens für beide Bots, dazu Zugzahl, Rest-Matter der Karte und die Art des Endes. `arena` druckt ihn und schreibt die Spiele und den Vergleich als CSV. Die Bilanz mitzurechnen kostet keine messbare Laufzeit (Profil `full`, 1600 Spiele: rund 5,3 s vorher und nachher).
+
+Entschieden dabei:
+
+- Die Bilanz wird in jedem Lauf mitgerechnet, ohne Schalter.
+- Der Vergleich liegt im Lab und ist kein eigener Befehl. Er liest nur die Spiele eines Laufs.
+- Beide Sitze fallen in dieselbe Gruppe.
+- Ein typisches Spiel ist das, dessen Posten am nächsten am Mittelwert seiner Gruppe liegen. Noch nicht umgesetzt.
+
+Noch nicht da: das Herausgreifen typischer Spiele und Ausreißer, die Streuung neben den Mittelwerten. Die vier Ursachen aus dem ersten Lauf sind noch nicht nachgeprüft. Der Lauf `random` gegen `idle` zeigt nur Siege und ein einziges Spiel ohne Sieger; für die Gegenprobe braucht es eine Paarung, in der beide Seiten verlieren.
+
+Stand 2026-11-21: Der Vergleich nennt je Gruppe die Spiele zum Ansehen. Das typische Spiel steht in der Tabelle der Arena (Karten-Seed und Sitz). Die Ausreißer stehen in einer eigenen Datei (`-picks.csv`): je Gruppe, Bot und Posten das Spiel mit dem niedrigsten und das mit dem höchsten Wert, daneben der Mittelwert. Jedes davon lässt sich mit `replay` ansehen.
+
+Entschieden dabei:
+
+- Der Abstand eines Spiels zum Mittelwert ist die Matter, um die seine Posten abweichen, über alle Posten beider Bilanzen aufsummiert. Jeder Posten ist Matter, also wird nichts gewichtet und nichts normiert. Zugzahl und Rest-Matter der Karte zählen nicht mit.
+- Ein Ausreißer ist das Spiel am Ende eines Postens, ohne Schwelle. Ein Posten, der in allen Spielen der Gruppe gleich ist, hat keinen.
+- Bei Gleichstand gilt das erste Spiel des Laufs.
+
+Noch nicht da: die Streuung neben den Mittelwerten. Die vier Ursachen aus dem ersten Lauf sind noch nicht nachgeprüft. Weitere Bots, und damit eine Paarung, in der beide Seiten verlieren, kommen später und nicht in diesem PR.
+
+## Zur Diskussion: ein Ort für die Preise
+
+Stand 2026-11-19, aus dem Gespräch. Nicht entschieden.
+
+Regeln sollen an einem Ort stehen, den Zugauflösung, Validierung und Clients gemeinsam fragen, damit nichts auseinanderläuft. Für Preise ist das `Costs`. Sobald ein Upgrade einen Preis ändert, reicht der heutige Stand nicht:
+
+- `Costs.Research` und `Costs.Of` kennen die Upgrades des Spielers, `Costs.Training` und `Costs.Construction` nur die Settings. Ein Preis-Upgrade hat dort keinen Platz.
+- Die Preisliste hat keine eigene Funktion. `TurnResolution.PayOrders` und `StateInvariants` bauen sie beide von Hand.
+- Die Bilanz bewertet an etwa acht Stellen Bestand, Gefallenes und Abgebrochenes zum heutigen Preis. Ändern sich Preise im Spiel, geht sie nicht mehr auf. Das widerspricht auch „Es zählt, was ausgegeben wurde, nicht ein späterer Preis".
+
+Vorschlag für den sauberen Zustand, ohne Rücksicht auf den Aufwand:
+
+- Die Preisliste ist die Grundlage: `Costs.TrainingPrices(settings, upgradeLevels)` und `Costs.ConstructionPrices(settings, upgradeLevels)` lesen als Einzige die Preise der Settings und wenden ein Preis-Upgrade an. Alles andere in `Costs` rechnet damit.
+- Jeder Aufrufer sagt, wessen Preis er meint, und übergibt die Upgrades eines Spielers.
+- Space ist kein Preis. Er wird beim Tod einer Einheit und beim Abbruch zum Wert der Settings zurückgegeben und darf von keinem Upgrade abhängen, sonst läuft `UsedSpace` auseinander. `OrderCost` bündelt heute beides.
+- Die Bilanz liest das Ausgegebene aus den Preisen des Berichts und bewertet Bestand zum Grundpreis. Die Differenz ist ein eigener Posten, „durch Upgrades gespart". So geht sie auf und zeigt, ob sich eine Preis-Forschung gelohnt hat.
+
+Offen:
+
+- Jetzt alles in einem Stück (eine Effektart für Preise in `UpgradeEffect`, die geänderten Signaturen, Tests mit Settings aus `DefaultSettings`, noch kein Upgrade der Standardregeln nutzt sie), oder jetzt nur die Preisliste ohne Upgrade-Parameter und der Rest mit dem ersten Preis-Upgrade?
+- Bedenken gegen den Parameter allein: Ohne Effekt verhält sich ein Aufrufer mit den falschen Upgrades gleich, kein Test fängt das.
+- Soll der Grundsatz „eine Regel, ein Ort" in `AGENTS.md` einen eigenen Abschnitt weit oben bekommen? Es gibt keine `CLAUDE.md`; falls eine dazukommt, sollte sie `AGENTS.md` nur einbinden.
+
+Entschieden, Stand 2026-11-20: Jetzt nur die Preisliste, ohne Upgrade-Parameter. Ob es je ein Upgrade gibt, das einen Preis ändert, ist offen, und nichts wird für ein Upgrade gebaut, das es vielleicht nie gibt.
+
+- Umgesetzt: `Costs.TrainingPrices(settings)` und `Costs.ConstructionPrices(settings)` lesen als Einzige die Preise der Settings. `Costs.Training`, `Costs.Construction`, der Bericht des Zugs und `StateInvariants` fragen dort.
+- Erst mit dem ersten Preis-Upgrade: die Upgrades eines Spielers an den Preisfunktionen und bei allen Aufrufern, die Effektart in `UpgradeEffect`, Space getrennt vom Preis, der Posten „durch Upgrades gespart" in der Bilanz. Der Vorschlag oben gilt dafür weiter.
+- Die Frage nach einem eigenen Abschnitt in `AGENTS.md` für „eine Regel, ein Ort" bleibt offen.
+
+## Aus dem Review
+
+Stand 2026-11-22, aus dem Review des PR auf Struktur, Dopplungen und Lesbarkeit.
+
+Behoben:
+
+- Die Bilanz jedes Zugs wurde im Replay zweimal gerechnet, und wer sie je Zug wollte, musste sich selbst an das Spiel hängen. Jetzt gibt es im Lab eine Stelle, die ein Spiel spielt (`ArenaStudy.Play`). Sie hält jeden Zug fest; ein Lauf behält das Ende, `replay` alles.
+- Welcher Spieler der Karte welcher Bot ist, wurde für einen Lauf und für ein Replay getrennt festgelegt. Wären die beiden Stellen auseinandergelaufen, hätte ein Replay ein anderes Spiel gezeigt als das gemessene. Jetzt folgt es an einer Stelle aus Sitz und Karte.
+- Die Reihenfolge der Spieler einer Karte hat jeder Aufrufer selbst festgelegt. Jetzt geben die Settings sie (`GameSettings.SeatOrder`).
+- `replay` nannte den Sieger bei der Spieler-Id statt beim Bot.
+- „Bot" und „Gegner" waren im Lab kein Begriff, sondern überall ein Paar, und jedes Spiel wurde aus der Sicht des ersten Bots gezählt. Bei drei Bots war derselbe Bot in einer Paarung der „Bot" und in der anderen der „Gegner". Jetzt wird ein Spiel aus keiner Sicht gezählt: Die Bots einer Paarung sind eine Liste (`PerBot<T>`), ein Bot ist seine Stelle darin, der Sieger eines Spiels ist eine Stelle oder niemand. Was es je Bot gibt, ist eine Schleife. Die Siegquote steht für beide Bots. Ein Lauf vor und nach dem Umbau gab dieselben Spiele, Bilanzen und ausgewählten Spiele (Profil `quick`).
+- `arena` und `replay` haben das Profil jeweils selbst gesucht. Hätte `replay` es anders gelesen, hätte es mit anderen Limits gespielt und ein anderes Spiel gezeigt als das gemessene. Jetzt lesen beide es an einer Stelle (`ArenaCommand.ReadProfile`).
+
+Bewusst gelassen:
+
+- `arena` und `replay` lesen den Ausgabeordner je mit zwei gleichen Zeilen, haben je ein `ReadNumber`, das Verschiedenes tut (Wert des Profils mit Ersatzwert, Wert nur von der Kommandozeile), und die Namen der Studien stehen in `Program.cs` dreimal untereinander. Eine gemeinsame Stelle wäre jeweils größer als das, was sie spart. Mit einer dritten oder vierten Studie neu anzusehen.
+- Die Bilanz liest den Preis abgeschlossener Forschung nicht bei `Costs`, sondern bei `NextUpgradeLevel`. Den Preis abgebrochener und laufender Forschung bestimmt sie aus dem Zustand nach dem Zug; das stimmt nur, weil je Upgrade höchstens eine Forschung läuft. Beides ist heute richtig. Eine Funktion in `Costs` für den Preis einer Stufe wäre eine leere Hülle, solange kein Upgrade den Preis einer Forschung ändert. Die Annahme über die eine Forschung machen der Abschluss einer Forschung und `Costs.Research` genauso; die Stufe im Bericht einer abgebrochenen Forschung nähme sie nur an einer Stelle weg. Mit dem ersten Upgrade auf den Preis einer Forschung oder mit zwei Forschungen desselben Upgrades neu anzusehen.
+- Zwei Paarungen mit denselben Namen (`--Bots random,idle,idle`) fallen in der Tabelle der Arena und im Vergleich zusammen. Es sind dieselben Spiele zweimal: Der Seed eines Bots folgt aus Map-Seed und Stelle in der Paarung (`ArenaStudy.BotSeed`), nicht aus der Paarung. Die Mittelwerte bleiben also gleich, nur die Zahl der Spiele verdoppelt sich. Die Eingabe ist ohne Sinn, niemand braucht sie.
+- Spielt ein Bot gegen sich selbst (`--Bots random,random`), sagt der Name des Siegers in den Dateien nicht, welcher der beiden gewonnen hat. Eine Spalte mit der Stelle des Siegers erst, wenn jemand das Spiel eines Bots gegen sich selbst auswertet.
+
+Noch offen, als Probleme:
+
+- Eine Gruppe des Vergleichs rechnet Mittelwerte und typisches Spiel bei jedem Zugriff neu. Bei den heutigen Größen ohne Folgen.
+- Die Liste der Posten einer Bilanz mit Namen und Abschnitten liegt im Lab. Eine UI, die eine Bilanz zeigt, braucht sie auch. Ein neuer Posten braucht vier Stellen, nur eine davon sichert ein Test.
+- Die Preise im Bericht eines Zugs stehen je Spieler, sind heute aber für alle gleich und eine Kopie der Settings. Das passt nicht ganz zu „nichts für ein Upgrade bauen, das es vielleicht nie gibt".
+- Die Laufzeit nach dem Umbau ist nur im Akkubetrieb gemessen (Profil `full`, 54 bis 79 s vorher wie nachher, zu verrauscht für eine Aussage). Am Netz nachzumessen und mit den rund 5,3 s von 2026-11-20 zu vergleichen.
+
+Über das Item hinaus, aus dem Gespräch:
+
+- Die Settings haben keine Liste ihrer Spieler. Die Ids stehen verstreut an den Starthexagonen und als Schlüssel der Start-Upgrades und sind freie Strings; eine Id bei den Start-Upgrades, die nirgends startet, fiele womöglich nicht auf (nicht geprüft).
+- `Player01` klingt nach einem Teilnehmer, ist aber ein Platz der Karte. Wer auf dem Platz sitzt, hält der, der das Spiel veranstaltet. Mit Menschen braucht es dieselbe Zuordnung wie im Lab: User zu Spieler der Karte.
+
 ## Offene Fragen
 
-- Welche Kennzahlen erklären eine Niederlage wirklich? Das zeigt sich erst an Spielen.
-- Kennzahlen aus dem vollen Zustand oder aus der Sicht eines Spielers? Die Diagnose darf alles sehen, eine UI im laufenden Spiel nicht.
-- Wie viel wird je Spiel gespeichert, wenn es viele tausend Spiele sind?
-- Wie sieht man ein Spiel an, solange es keine UI gibt?
+- Reicht die Tabelle je Zug als CSV, um ein Spiel anzusehen, solange es keine UI gibt?
+- Braucht es die Bilanz zu festen Zügen, um das Tempo zu sehen?
 
 ## Woran man es merkt
 
