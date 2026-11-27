@@ -34,13 +34,13 @@ public sealed class RandomBotTest
 
     /// <summary>
     /// Plays the bot against an opponent that never gives an order and returns the last state
-    /// and the commands of the bot turn by turn.
+    /// and the commands of the bot turn by turn. The game may end before the turns are played.
     /// </summary>
     private static (GameState State, List<IReadOnlyDictionary<Hexagon, Command>> Commands) Play(GameSettings settings, RandomBot bot, int turns)
     {
         TurnResult turn = Game.Start(settings);
         List<IReadOnlyDictionary<Hexagon, Command>> played = [];
-        for (int i = 0; i < turns; i++)
+        for (int i = 0; i < turns && !Standing.Of(turn.State).IsGameOver; i++)
         {
             IReadOnlyDictionary<Hexagon, Command> commands = bot.GetCommands(FogOfWar.GetPlayerGameState(turn, Player));
             played.Add(commands);

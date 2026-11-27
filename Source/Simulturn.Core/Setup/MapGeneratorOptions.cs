@@ -47,10 +47,10 @@ public sealed record MapGeneratorOptions
     public static MapGeneratorOptions Expansions { get; } = new()
     {
         HexagonMatter = 0,
-        StartHexagonMatter = 2000,
+        StartHexagonMatter = 5000,
         ExpansionsPerPlayer = 1,
-        ExpansionMatter = 4000,
-        CenterMatter = 6000
+        ExpansionMatter = 10000,
+        CenterMatter = 15000
     };
 
     /// <summary>
@@ -86,9 +86,9 @@ public sealed record MapGeneratorOptions
     /// <summary>
     /// The matter on every hexagon that is neither a start hexagon nor an expansion nor a center with its own matter.
     /// </summary>
-    public int HexagonMatter { get; init; } = 1500;
+    public int HexagonMatter { get; init; } = 10000;
 
-    public int StartHexagonMatter { get; init; } = 1500;
+    public int StartHexagonMatter { get; init; } = 10000;
 
     /// <summary>
     /// The matter in the center. Without a value the center is a hexagon like any other.
@@ -100,7 +100,7 @@ public sealed record MapGeneratorOptions
     /// </summary>
     public int ExpansionsPerPlayer { get; init; }
 
-    public int ExpansionMatter { get; init; } = 4000;
+    public int ExpansionMatter { get; init; } = 10000;
 
     /// <summary>
     /// How far an expansion may be away from the start hexagon of its player.

@@ -1,9 +1,10 @@
 ---
 id: bot-game-diagnosis
 title: Man sieht nicht, warum ein Bot verliert
-status: in_progress
+status: done
 created: 2026-11-16
 updated: 2026-11-23
+completed: 2026-11-27
 depends_on:
 - bot-strength-measurement
 ---

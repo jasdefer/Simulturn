@@ -103,8 +103,8 @@ public sealed class LedgerTest
     public void Raid_ShowsWhatFellWasDestroyedAndWasCanceledOnBothSides()
     {
         // Player02 marches 10 squares into the home of Player01, who in the same turn orders a
-        // square, an axis and the triangle upgrade there. The 5 dots die with 4 of the squares,
-        // the 6 surviving squares destroy the cube, and all three orders are canceled.
+        // square, an axis and the triangle upgrade there. The 5 dots die with 1 of the squares,
+        // the 9 surviving squares destroy the cube, and all three orders are canceled.
         GameState start = new GameState(_settings);
         TurnResult turn1 = start.ResolveTurn(DictionaryExtensions.MovementsToDictionary([
             ("Player02", _player2Start, _center, new Army() { Square = 10 })
@@ -129,17 +129,17 @@ public sealed class LedgerTest
         raided.Fallen.ShouldBe(375);
         raided.Destroyed.ShouldBe(150);
         raided.Canceled.ShouldBe(200 + 150 + _researchPrice);
-        raided.Killed.ShouldBe(800);
+        raided.Killed.ShouldBe(200);
         raided.Razed.ShouldBe(0);
         raided.Stock.ShouldBe(350);
         raided.UnexplainedIncome.ShouldBe(0);
         raided.UnexplainedSpending.ShouldBe(0);
 
         MatterLedger raider = ledgers["Player02"];
-        raider.Fallen.ShouldBe(800);
+        raider.Fallen.ShouldBe(200);
         raider.Killed.ShouldBe(375);
         raider.Razed.ShouldBe(150);
-        raider.FightingUnits.ShouldBe(1200);
+        raider.FightingUnits.ShouldBe(1800);
         raider.UnexplainedIncome.ShouldBe(0);
         raider.UnexplainedSpending.ShouldBe(0);
     }

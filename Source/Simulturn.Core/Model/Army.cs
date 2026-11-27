@@ -126,13 +126,20 @@ public readonly struct Army : IEquatable<Army>, IAdditionOperators<Army, Army, A
         };
     }
 
-    public double GetStrengthOver(Army opponent, Army exponent)
+    /// <summary>
+    /// The strength of this army in a fight against the opponent. A fighting unit takes its
+    /// countered type off the opponent first, what is left of a type counts with its exponent.
+    /// Dots are countered by nothing and have no exponent: each adds the dot strength.
+    /// </summary>
+    /// <param name="exponent">The fight exponent per unit type, divided by 100.</param>
+    /// <param name="dotStrength">The strength of one dot, divided by 100.</param>
+    public double GetStrengthOver(Army opponent, Army exponent, int dotStrength)
     {
         var strength =
             Math.Pow(Math.Max(0, Triangle - opponent.Square), exponent.Triangle / 100d) +
             Math.Pow(Math.Max(0, Square - opponent.Circle), exponent.Square / 100d) +
             Math.Pow(Math.Max(0, Circle - opponent.Triangle), exponent.Circle / 100d) +
-            Dot;
+            Dot * (dotStrength / 100d);
         return strength;
     }
 

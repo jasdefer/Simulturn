@@ -29,7 +29,7 @@ public static class Combat
         {
             for (int j = i + 1; j < sides.Count; j++)
             {
-                (Army lossesI, Army lossesJ) = Fight(sides[i].Army, sides[i].Exponent, sides[j].Army, sides[j].Exponent);
+                (Army lossesI, Army lossesJ) = Fight(settings, sides[i].Army, sides[i].Exponent, sides[j].Army, sides[j].Exponent);
                 losses[sides[i].PlayerId] += lossesI;
                 losses[sides[j].PlayerId] += lossesJ;
             }
@@ -71,10 +71,10 @@ public static class Combat
     /// The stronger army destroys the weaker one and loses the fraction of itself that matches
     /// the strength ratio, rounded up per unit. Two armies of the same strength destroy each other.
     /// </summary>
-    private static (Army Losses1, Army Losses2) Fight(Army army1, Army exponent1, Army army2, Army exponent2)
+    private static (Army Losses1, Army Losses2) Fight(GameSettings settings, Army army1, Army exponent1, Army army2, Army exponent2)
     {
-        double strength1 = army1.GetStrengthOver(army2, exponent1);
-        double strength2 = army2.GetStrengthOver(army1, exponent2);
+        double strength1 = army1.GetStrengthOver(army2, exponent1, settings.DotFightStrength);
+        double strength2 = army2.GetStrengthOver(army1, exponent2, settings.DotFightStrength);
         if (strength1 > strength2)
         {
             return (army1.MultiplyAndRoundUp(strength2 / strength1), army2);

@@ -25,6 +25,7 @@ public static class DefaultSettings
             CompoundCost = new Compound() { Axis = 150, Dome = 100, Cube = 150, Plane = 350, Pyramid = 150 },
             ConstructionDuration = new Compound() { Axis = 2, Dome = 3, Cube = 3, Plane = 4, Pyramid = 3 },
             FightExponent = new Army() { Triangle = 120, Circle = 120, Square = 120, Dot = 0 },
+            DotFightStrength = 25,
             Income = new Army() { Triangle = 0, Circle = 0, Square = 0, Dot = 10 },
             MovementRange = new Army() { Triangle = 1, Circle = 1, Square = 1, Dot = 1 },
             ProvidedSpace = new Compound() { Axis = 10, Dome = 0, Cube = 0, Plane = 10, Pyramid = 0 },

@@ -195,6 +195,32 @@ public sealed class FightTest
     }
 
     [Test]
+    public void Fight_DotsAgainstFightingUnitsOfTheSamePrice_LoseWithTheStandardDotStrength()
+    {
+        // 8 dots cost as much as 3 triangles. A dot counts a quarter: 3^1.2 = 3.74 against 2.
+        FightReport fight = Combat.Fight(_gameSettings, Combatants(
+            ("Player01", new Army() { Triangle = 3 }),
+            ("Player02", new Army() { Dot = 8 })));
+
+        fight.Losses["Player01"].ShouldBe(new Army() { Triangle = 2 });
+        fight.Losses["Player02"].ShouldBe(new Army() { Dot = 8 });
+    }
+
+    [Test]
+    public void Fight_DotStrengthOfTheSettings_DecidesWhatADotCounts()
+    {
+        // With a full strength per dot the same dots win: 8 against 3^1.2 = 3.74.
+        GameSettings settings = _gameSettings with { DotFightStrength = 100 };
+
+        FightReport fight = Combat.Fight(settings, Combatants(
+            ("Player01", new Army() { Triangle = 3 }),
+            ("Player02", new Army() { Dot = 8 })));
+
+        fight.Losses["Player01"].ShouldBe(new Army() { Triangle = 3 });
+        fight.Losses["Player02"].ShouldBe(new Army() { Dot = 4 });
+    }
+
+    [Test]
     public void Fight_EqualStrength_DestroysBothArmies()
     {
         // Act

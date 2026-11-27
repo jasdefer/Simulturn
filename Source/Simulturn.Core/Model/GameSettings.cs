@@ -25,9 +25,17 @@ public sealed record GameSettings
 
     /// <summary>
     /// The values are divided by 100, so 100 means 1.0. It is the exponent for the fight calculation.
-    /// Dots have no exponent: they count one by one, and the value for dots is never read.
+    /// Dots have no exponent: they count one by one with <see cref="DotFightStrength"/>, and the
+    /// value for dots is never read.
     /// </summary>
     public required Army FightExponent { get; init; }
+
+    /// <summary>
+    /// What one dot adds to the strength of its army in a fight, divided by 100: 25 means that
+    /// four dots count as much as one fighting unit that fights alone. The rule is applied by
+    /// <see cref="Engine.Combat"/>.
+    /// </summary>
+    public required int DotFightStrength { get; init; }
     public required Compound CompoundCost { get; init; }
     public required Compound ProvidedSpace { get; init; }
     public required Compound ConstructionDuration { get; init; }

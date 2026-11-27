@@ -230,8 +230,8 @@ public sealed class GameStateTest
     [Test]
     public void CancelConstructionsAfterDotKill()
     {
-        // Assign
-        var gameSettings = WithStarts((new Army() { Dot = 15 }, new Compound() { Plane = 10 }), (new Army() { Square = 3 }, new Compound() { Plane = 10 })) with { StartMatter = 2000 };
+        // Assign: a dot counts like a fighting unit here, so the 15 dots win and lose 4 of them.
+        var gameSettings = WithStarts((new Army() { Dot = 15 }, new Compound() { Plane = 10 }), (new Army() { Square = 3 }, new Compound() { Plane = 10 })) with { StartMatter = 2000, DotFightStrength = 100 };
         var gameState = new GameState(gameSettings);
         var commands = DictionaryExtensions.CommandsToDictionary([
             ("Player01", _player1Start, new Command() { Construction = new Compound() { Plane = 2, Pyramid = 2} }),

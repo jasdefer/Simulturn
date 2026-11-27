@@ -1,6 +1,6 @@
 # Graph: depends_on
 
-Directed graph of items connected through `depends_on`, nested by `parent`.
+Directed graph of items connected through `depends_on`, nested by `parent`. An arrow from A to B means B is in A's `depends_on`.
 
 ```mermaid
 flowchart TD
