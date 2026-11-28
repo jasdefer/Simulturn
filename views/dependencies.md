@@ -12,6 +12,7 @@ flowchart TD
     combat-forecast-core["Kampfausgang vorab berechnen können"]
     dotnet-upgrade-and-union-types["Auf die nächste .NET-Version wechseln und neue Sprachfeatures nutzen"]
     engine-rules-for-clients["Ein Client muss Regeln der Engine nachbauen"]
+    fight-rule["Die Kampfregel kippt an einzelnen Einheiten"]
     flat-pending-queues["Warteschlangen für Trainings und Konstruktionen ohne verschachtelte Dictionaries"]
     game-persistence["Spielstände speichern und wiederherstellen"]
     map-generator-and-default-settings["Karten erzeugen und Settings nicht sechsfach pflegen"]
@@ -41,6 +42,7 @@ flowchart TD
     ai-opponents-too-weak --> client-possible-orders
     ai-opponents-too-weak --> client-what-if
     ai-opponents-too-weak --> engine-rules-for-clients
+    ai-opponents-too-weak --> fight-rule
     ai-opponents-too-weak --> opponent-estimate
     ai-opponents-too-weak --> state-evaluation
     ai-opponents-too-weak --> upgrade-concept

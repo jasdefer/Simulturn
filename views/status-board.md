@@ -4,6 +4,7 @@ Cards grouped into columns by `status`.
 
 ## todo
 - [Ein Client kann nicht fragen, was passieren würde](../workdown-items/client-what-if.md)
+- [Die Kampfregel kippt an einzelnen Einheiten](../workdown-items/fight-rule.md)
 - [Spielstände speichern und wiederherstellen](../workdown-items/game-persistence.md)
 - [Ein Bot weiß nicht, womit er beim Gegner rechnen muss](../workdown-items/opponent-estimate.md)
 - [Die Zusammensetzung einer gegnerischen Armee erfährt man nur im Kampf](../workdown-items/reconnaissance.md)

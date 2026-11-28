@@ -9,6 +9,7 @@ depends_on:
 - engine-rules-for-clients
 - bot-strength-measurement
 - bot-game-diagnosis
+- fight-rule
 - client-possible-orders
 - client-what-if
 - opponent-estimate
@@ -101,18 +102,13 @@ Jede Entscheidung ist von einer von drei Arten: eine Rechnung (folgt aus den Set
 ### Offen
 
 - Das erste Trainingsgebäude wird gebaut, ohne etwas über den Gegner zu wissen. Fest oder gewürfelt? Eine feste Wahl lässt sich bei gleichzeitigen Zügen auskontern.
-- Die Kampfregel, siehe den Zwischenstand unten. Der Bot wird erst danach gebaut, weil seine Rechnungen an ihr hängen.
+- Die Kampfregel ([[fight-rule]]). Die Rechnungen des Bots zu Armeen hängen an ihr. Stand 2026-11-28: Sie wird zuerst bearbeitet, der Bot danach, damit seine Arena-Zahlen von Anfang an für die neue Regel gelten.
 
 ### Zwischenstand: Die Standardwerte auf Plausibilität geprüft
 
 Stand 2026-11-27. Bevor der Bot aus den Settings rechnet, wurden die Standardwerte durchgesehen. Die Dot-Stärke und die Matter je Feld sind behoben (siehe Entschieden). Offen sind:
 
-Im Kampf:
-
-- **Das Aufrunden frisst den Exponenten.** Die Verluste des Siegers werden je Einheitentyp aufgerundet. Bei 10 gegen 5 Triangles wären es 4,35 Verluste, daraus werden 5, genau wie ohne Exponent. Bis etwa 10 Einheiten wirkt der Exponent von 1,2 kaum.
-- **Siege ohne Überlebende.** Durch das Aufrunden kann der Sieger alles verlieren (6 Triangles gegen eine Wache aus 2/2/2).
-- **Der Konter zählt doppelt.** Eine konternde Einheit streicht eine gegnerische und kämpft selbst mit voller Stärke. 5 Squares sind ein Gleichstand gegen 10 Triangles.
-- **Gemischt gegen gemischt kippt an einer Einheit.** 4/4/4 gegen 4/4/3 endet ohne einen einzigen Verlust für den Sieger, weil sich alles Gekonterte ganz streicht.
+Im Kampf: Die Regel kippt an einzelnen Einheiten, und das Aufrunden frisst den Exponenten. Die Funde und die durchgerechneten Varianten stehen in [[fight-rule]].
 
 In der Wirtschaft:
 
@@ -120,42 +116,6 @@ In der Wirtschaft:
 - Der Dome kostet 100, Cube und Pyramid 150, ohne erkennbaren Grund.
 - Upkeep gibt es noch nicht ([[upkeep]]).
 
-Für die Kampfregel wurden Varianten durchgerechnet, mit einem Skript, das die Regel nachbaut, nicht mit der Engine. „A 6/10" heißt: A gewinnt, 6 von 10 überleben. T, S, C sind Triangle, Square, Circle, gemischte Armeen stehen als T/S/C.
-
-- **Neu gerundet:** Der Verlust der ganzen Armee wird auf die nächste Einheit gerundet statt je Typ aufgerundet. Alle Spalten außer „heute" runden so.
-- **Bonus 1:** Ein Stapel zählt bis zu doppelt, je nach dem Anteil seiner Einheiten, die ein Konter-Ziel finden.
-- **Konter 0,5:** Eine gekonterte Einheit wird nicht gestrichen, sondern zählt noch halb. Der Wert 1 ist die heutige Regel.
-
-| Kampf (A gegen B) | heute | heute, neu gerundet | Bonus 1 | Konter 0,5 | Konter 0,5, Exponent 1,5 | Konter 0,75, Exponent 1,5 |
-|---|---|---|---|---|---|---|
-| 10 T gegen 5 T | A 5/10 | A 6/10 | A 6/10 | A 6/10 | A 6/10 | A 6/10 |
-| 10 T gegen 8 T | A 2/10 | A 2/10 | A 2/10 | A 2/10 | A 3/10 | A 3/10 |
-| 20 T gegen 10 T | A 11/20 | A 11/20 | A 11/20 | A 11/20 | A 13/20 | A 13/20 |
-| 6 T gegen 3 T | A 3/6 | A 3/6 | A 3/6 | A 3/6 | A 4/6 | A 4/6 |
-| 10 T gegen 3 S | A 6/10 | A 6/10 | A 5/10 | A 7/10 | A 8/10 | A 8/10 |
-| 10 T gegen 5 S | beide tot | beide tot | A 1/10 | A 4/10 | A 5/10 | A 3/10 |
-| 10 T gegen 6 S | B 2/6 | B 2/6 | B 0/6 | A 2/10 | A 2/10 | B 1/6 |
-| 10 T gegen 10 S | B 10/10 | B 10/10 | B 5/10 | B 6/10 | B 6/10 | B 9/10 |
-| 4/4/4 gegen 4/4/3 | A 12/12 | A 12/12 | A 1/12 | A 2/12 | A 3/12 | A 5/12 |
-| 4/4/4 gegen 3/3/3 | A 12/12 | A 12/12 | A 2/12 | A 5/12 | A 6/12 | A 9/12 |
-| 4/4/4 gegen 2/2/2 | A 12/12 | A 12/12 | A 5/12 | A 9/12 | A 10/12 | A 11/12 |
-| 12 T gegen 4/4/4 | A 1/12 | A 2/12 | A 2/12 | A 2/12 | A 5/12 | A 4/12 |
-| 6/6/0 gegen 4/4/4 | B 0/12 | B 2/12 | A 1/12 | A 1/12 | A 2/12 | A 0/12 |
-| 10 T + 1 C gegen 10 T | beide tot | beide tot | B 0/10 | A 0/11 | A 0/11 | A 0/11 |
-| 8 T gegen 12 Dots | A 6/8 | A 6/8 | A 6/8 | A 6/8 | A 7/8 | A 7/8 |
-| 3 T gegen 12 Dots | A 0/3 | A 1/3 | A 1/3 | A 1/3 | A 1/3 | A 1/3 |
-| 6 T gegen Wache 2/2/2 | A 0/6 | A 1/6 | A 1/6 | A 1/6 | A 2/6 | A 2/6 |
-
-Was die Rechnung zeigt:
-
-- Der Bonus hilft dem Exponenten nicht. Die Verluste hängen am Verhältnis der Stärken, nicht an ihrer Höhe. Dem Exponenten helfen nur das andere Runden und ein höherer Wert.
-- Das neue Runden allein behebt die Siege ohne Überlebende, aber nicht das Kippen an einer Einheit.
-- Bonus und abgeschwächter Konter beheben beide das Kippen.
-- Beim Bonus kann eine eigene Einheit die eigene Armee schwächen: 10 T + 1 C verlieren gegen 10 T, weil der Circle den gegnerischen Triangles ein Ziel gibt. Beim abgeschwächten Konter schadet eine Einheit mehr nie.
-- Der abgeschwächte Konter macht den Konter schwächer: Bei 0,5 behalten 10 Squares gegen 10 Triangles nur 6.
-- Ein Exponent von 1,5 lässt der größeren Armee mehr übrig und begünstigt Armeen aus einem Typ.
-
-Noch nicht entschieden und nichts davon umgesetzt. Der Vorschlag aus dem Gespräch: abgeschwächter Konter mit 0,5 als Wert in den Settings, dazu das neue Runden; den Exponenten getrennt entscheiden, wenn der Bot in der Arena zeigt, wie groß Armeen werden.
 ## Funde
 
 Stand 2026-11-14 an den alten Spielern. Sie werden entfernt; die Funde bleiben als Liste dessen, woran ein neuer Bot denken muss.
